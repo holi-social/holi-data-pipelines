@@ -1,0 +1,279 @@
+#!/bin/bash
+
+# log script output to file for later inspection
+set -o errexit
+readonly LOG_FILE="/var/log/startup-script.log"
+touch $LOG_FILE
+# Open standard out at `$LOG_FILE` for write.
+# This has the effect of stdout ending up in the logfile
+exec 1>$LOG_FILE
+# Redirect standard error to standard out such that
+# standard error ends up going to wherever standard
+# out goes (the file).
+exec 2>&1
+
+# unattended upgrades, python3-gi for using shutdown signal instead of polling
+apt install -y unattended-upgrades python3-gi
+echo unattended-upgrades unattended-upgrades/enable_auto_updates boolean true | debconf-set-selections
+dpkg-reconfigure -f noninteractive unattended-upgrades
+cat << 'EOF' > /etc/apt/apt.conf.d/99unattended-upgrades
+Unattended-Upgrade::Origins-Pattern {
+        "origin=Debian,codename=$${distro_codename}";
+        "origin=google-compute-engine-$${distro_codename}-stable";
+        "origin=cloud-sdk-$${distro_codename}";
+        "origin=google-cloud-ops-agent-$${distro_codename}";
+        "origin=Docker";
+};
+Unattended-Upgrade::Automatic-Reboot "true";
+EOF
+
+# log retention for systemd-journald
+cat << 'EOF' > /etc/systemd/journald.conf
+[Journal]
+MaxRetentionSec=1month
+EOF
+systemctl restart systemd-journald
+
+# Ops Agent for logging to StackDriver
+# install the agent
+curl -sSO https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh
+bash add-google-cloud-ops-agent-repo.sh --also-install
+# custom logging and monitoring config
+cat << 'EOF' > /etc/google-cloud-ops-agent/config.yaml
+logging:
+  receivers:
+    nginx-access:
+      type: files
+      include_paths: [/var/log/nginx/*access.log]
+      record_log_file_path: true
+    nginx-error:
+      type: files
+      include_paths: [/var/log/nginx/*error.log]
+      record_log_file_path: true
+    unattended-upgrades:
+      type: files
+      include_paths: [/var/log/unattended-upgrades/*.log]
+      record_log_file_path: true
+    letsencrypt:
+      type: files
+      include_paths: [/var/log/letsencrypt/*.log]
+      record_log_file_path: true
+    startup:
+      type: files
+      include_paths: [/var/log/startup-script.log]
+      record_log_file_path: true
+    systemd-journald:
+      type: systemd_journald
+  service:
+    pipelines:
+      custom:
+        receivers:
+          - nginx-access
+          - nginx-error
+          - unattended-upgrades
+          - letsencrypt
+          - startup
+          - systemd-journald
+metrics:
+  receivers:
+    hostmetrics:
+      type: hostmetrics
+      # Inspired by https://blog.emn178.cc/en/post/gcp-cloud-monitoring-reduce-data-and-cost/
+      collection_interval: 60s
+    nginx:
+      type: nginx
+      stub_status_url: http://127.0.0.1:80/nginx_status
+  processors:
+    metrics_filter:
+      type: exclude_metrics
+      metrics_pattern:
+        # Inspired by https://blog.emn178.cc/en/post/gcp-cloud-monitoring-reduce-data-and-cost/
+        # The following are the metrics to be excluded. Comment out the required metrics.
+        - agent.googleapis.com/agent/*
+        #- agent.googleapis.com/cpu/*
+        # keep only percentage_used and io_time for disk
+        #- agent.googleapis.com/disk/percentage_used
+        #- agent.googleapis.com/disk/io_time
+        - agent.googleapis.com/disk/read_bytes_count
+        - agent.googleapis.com/disk/write_bytes_count
+        - agent.googleapis.com/disk/bytes_used
+        - agent.googleapis.com/disk/weighted_io_time
+        - agent.googleapis.com/disk/merged_operations
+        - agent.googleapis.com/disk/operation_time
+        - agent.googleapis.com/disk/operation_count
+        - agent.googleapis.com/disk/pending_operations
+        #- agent.googleapis.com/interface/*
+        #- agent.googleapis.com/memory/*
+        #- agent.googleapis.com/network/*
+        - agent.googleapis.com/processes/*
+        #- agent.googleapis.com/swap/*
+  service:
+    pipelines:
+      default_pipeline:
+        receivers:
+          - hostmetrics
+        processors:
+          - metrics_filter
+      nginx:
+        receivers:
+          - nginx
+global:
+  default_self_log_file_rotation:
+    enabled: true
+    max_file_size_megabytes: 1
+    backup_count: 1
+EOF
+# install logrotation
+apt install -y logrotate
+
+# docker apt sources
+apt install -y ca-certificates curl gnupg lsb-release
+curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+# update apt package index & install docker
+apt update
+apt install -y docker-ce
+
+# nginx
+apt install -y nginx certbot python3-certbot-nginx
+# set up stub_status for nginx monitoring via Ops Agent
+cat << 'EOF' > /etc/nginx/conf.d/status.conf
+server {
+  listen 80;
+  server_name 127.0.0.1;
+  location /nginx_status {
+    stub_status on;
+    access_log off;
+    allow 127.0.0.1;
+    deny all;
+  }
+  location / {
+   root /dev/null;
+  }
+}
+EOF
+# make sure that nginx logs which contain PII (IP addresses) get deleted after 2 days
+cat << 'EOF' > /etc/logrotate.d/nginx
+/var/log/nginx/*.log {
+  daily
+  missingok
+  rotate 2
+  compress
+  delaycompress
+  notifempty
+  create 0640 www-data adm
+  sharedscripts
+  prerotate
+    if [ -d /etc/logrotate.d/httpd-prerotate ]; then \
+      run-parts /etc/logrotate.d/httpd-prerotate; \
+    fi \
+  endscript
+  postrotate
+    invoke-rc.d nginx rotate >/dev/null 2>&1
+  endscript
+}
+EOF
+systemctl restart logrotate
+# certificate
+[[ -d "/etc/letsencrypt/live/prefect.data.holi.social" ]] || certbot certonly --nginx -n --agree-tos -m development@holi.team -d prefect.data.holi.social
+# nginx site
+cat << EOF > /etc/nginx/sites-available/prefect-server
+server {
+  listen 80;
+  server_name prefect.data.holi.social;
+
+  access_log /var/log/nginx/prefect-server.access.log;
+  error_log /var/log/nginx/prefect-server.error.log;
+
+  return 301 https://\$host\$request_uri;
+}
+server {
+  server_name prefect.data.holi.social;
+
+  access_log /var/log/nginx/prefect-server.access.log;
+  error_log /var/log/nginx/prefect-server.error.log;
+
+  location / {
+    resolver 1.1.1.1 ipv6=off valid=30s;
+    proxy_set_header X-Real-IP \$remote_addr;
+    proxy_set_header Host \$http_host;
+    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto \$scheme;
+    proxy_pass http://localhost:4200;
+    proxy_redirect off;
+    proxy_ssl_server_name on;
+  }
+
+  listen 443 ssl; # managed by Certbot
+  ssl_certificate /etc/letsencrypt/live/prefect.data.holi.social/fullchain.pem; # managed by Certbot
+  ssl_certificate_key /etc/letsencrypt/live/prefect.data.holi.social/privkey.pem; # managed by Certbot
+  include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+  ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+}
+EOF
+ln -fs /etc/nginx/sites-available/prefect-server /etc/nginx/sites-enabled/prefect-server
+rm /etc/nginx/sites-enabled/default
+hsystemctl reload nginx
+
+# create a service account key file for accessing buckets by the runner machines
+# shellcheck disable=SC2154 # provided by terraform
+#mkdir -p /etc/data-pipeline
+#cat << EOF > /etc/data-pipeline/service-account.json
+#{json_key}
+#EOF
+
+echo before prefect
+
+# prefect setup
+# TODO: use pyenv for managing python version...?
+apt install -y sqlite3 python3-venv
+mkdir -p /srv/prefect-server
+python3 -m venv /srv/prefect-server/.venv
+source /srv/prefect-server/.venv/bin/activate
+pip3 install -U pip
+pip3 install -U prefect
+
+# TODO configure postgresql access
+# prefect config set PREFECT_API_DATABASE_CONNECTION_URL="postgresql+asyncpg://postgres:yourTopSecretPassword@localhost:5432/prefect"
+# https://docs.prefect.io/3.0/develop/settings-ref#serversettings
+cat << EOF > /srv/prefect-server/profiles.toml
+active = "default"
+
+[profiles.default]
+PREFECT_SERVER_ALLOW_EPHEMERAL_MODE = "true"
+PREFECT_API_TLS_INSECURE_SKIP_VERIFY = "True"
+PREFECT_SERVER_LOGGING_LEVEL = "DEBUG"
+PREFECT_SERVER_ANALYTICS_ENABLED = "False"
+PREFECT_SERVER_METRICS_ENABLED = "True"
+PREFECT_API_ENABLE_METRICS = "True"
+PREFECT_API_URL = "https://prefect.data.holi.social/api"
+PREFECT_UI_API_URL = "https://prefect.data.holi.social/api"
+PREFECT_UI_URL = "https://prefect.data.holi.social/"
+EOF
+
+cat << 'EOF' > /etc/systemd/system/prefect-server.service
+[Unit]
+Description=Prefect Server
+AssertFileNotEmpty=/srv/prefect-server/profiles.toml
+AssertPathIsDirectory=/srv/prefect-server/.venv
+
+[Service]
+Environment=VIRTUAL_ENV="/srv/prefect-server/.venv"
+Environment=PREFECT_HOME="/srv/prefect-server"
+Environment=PREFECT_PROFILES_PATH="/srv/prefect-server/profiles.toml"
+Restart=on-failure
+WorkingDirectory=/srv/prefect-server
+ExecStart=/srv/prefect-server/.venv/bin/prefect server start
+ExecStop=/srv/prefect-server/.venv/bin/prefect server stop
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl enable --now prefect-server
+
+prefect version
+
+# signal we're done to the log file
+echo "done"
