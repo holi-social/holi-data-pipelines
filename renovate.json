@@ -1,0 +1,46 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":configMigration",
+    ":label('renovatebot')",
+    ":enableVulnerabilityAlertsWithLabel('renovatebot/security')",
+    ":semanticCommits",
+    ":automergePatch",
+    ":automergeTesters",
+    ":automergeLinters"
+  ],
+  "packageRules": [
+    {
+      "matchSourceUrls": [
+        "https://github.com/hashicorp/terraform"
+      ],
+      "groupName": "terraform"
+    },
+    {
+      "matchJsonata": [
+        "$match(depName,/python$/)"
+      ],
+      "groupName": "python"
+    },
+    {
+      "matchManagers": [
+        "pip_requirements"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "pin",
+        "digest"
+      ],
+      "matchCurrentVersion": "!/^0/",
+      "automerge": true
+    },
+    {
+      "matchDepTypes": [
+        "devDependencies"
+      ],
+      "automerge": true
+    }
+  ]
+}

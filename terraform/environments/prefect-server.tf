@@ -7,13 +7,13 @@ data "google_compute_default_service_account" "compute_default" {
 resource "google_service_account_iam_member" "compute_default" {
   service_account_id = data.google_compute_default_service_account.compute_default.name
   role               = "roles/iam.serviceAccountUser"
-  member             = "serviceAccount:${google_service_account.data_pipeline.email}"
+  member             = "serviceAccount:${data.terraform_remote_state.holi_data_pipeline_common_state.outputs.data_pipeline_service_account_email}"
 }
 
 # This exclusively binds the role to the specific service account. If you ever need to bind this role to other 
 # members, either do it here or convert both occurrences to member resources.
 resource "google_service_account_iam_binding" "data_pipeline" {
-  service_account_id = google_service_account.data_pipeline.name
+  service_account_id = data.terraform_remote_state.holi_data_pipeline_common_state.outputs.data_pipeline_service_account_name
   role               = "roles/iam.serviceAccountUser"
   members = [
     "serviceAccount:${data.terraform_remote_state.holi_infra_state.outputs.terraform_service_account_email}",
@@ -21,7 +21,7 @@ resource "google_service_account_iam_binding" "data_pipeline" {
 }
 
 resource "google_service_account_key" "data_pipeline" {
-  service_account_id = google_service_account.data_pipeline.name
+  service_account_id = data.terraform_remote_state.holi_data_pipeline_common_state.outputs.data_pipeline_service_account_name
   public_key_type    = "TYPE_X509_PEM_FILE"
 }
 
@@ -63,7 +63,7 @@ resource "google_compute_instance" "prefect_server_green" {
 
   service_account {
     # Google recommends custom service accounts that have cloud-platform scope and permissions granted via IAM Roles.
-    email  = google_service_account.data_pipeline.email
+    email  = data.terraform_remote_state.holi_data_pipeline_common_state.outputs.data_pipeline_service_account_email
     scopes = ["compute-rw"]
   }
 }

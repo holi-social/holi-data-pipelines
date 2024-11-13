@@ -14,3 +14,11 @@ resource "google_project_iam_member" "data_pipeline_cloud_run" {
   role    = "roles/run.developer"
   member  = "serviceAccount:${google_service_account.data_pipeline.email}"
 }
+
+output "data_pipeline_service_account_email" {
+  value = google_service_account.data_pipeline.email
+}
+
+output "data_pipeline_service_account_name" {
+  value = google_service_account.data_pipeline.name
+}
