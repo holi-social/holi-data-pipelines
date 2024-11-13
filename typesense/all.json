@@ -10,7 +10,7 @@
       "name": "id",
       "type": "string",
       "comment": "added for debugging, not indexed",
-      "index": false,
+      "index": false
     },
     {
       "name": "title_de",
@@ -45,12 +45,12 @@
     {
       "name": "location",
       "type": "string",
-      "optional": "true",
+      "optional": true
     },
     {
       "name": "location_lat_lng",
       "type": "geopoint",
-      "optional": "true",
+      "optional": true
     },
     {
       "name": "image_url",
@@ -76,9 +76,9 @@
           "location"
         ],
         "model_config": {
-          "model_name": "ts/distiluse-base-multilingual-cased-v2",
-        },
-      },
-    },
+          "model_name": "ts/distiluse-base-multilingual-cased-v2"
+        }
+      }
+    }
   ]
 }
