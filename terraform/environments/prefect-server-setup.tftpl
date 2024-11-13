@@ -176,12 +176,12 @@ cat << 'EOF' > /etc/logrotate.d/nginx
 EOF
 systemctl restart logrotate
 # certificate
-[[ -d "/etc/letsencrypt/live/prefect.data.holi.social" ]] || certbot certonly --nginx -n --agree-tos -m development@holi.team -d prefect.data.holi.social
+[[ -d "/etc/letsencrypt/live/${domain}" ]] || certbot certonly --nginx -n --agree-tos -m development@holi.team -d ${domain}
 # nginx site
 cat << EOF > /etc/nginx/sites-available/prefect-server
 server {
   listen 80;
-  server_name prefect.data.holi.social;
+  server_name ${domain};
 
   access_log /var/log/nginx/prefect-server.access.log;
   error_log /var/log/nginx/prefect-server.error.log;
@@ -189,7 +189,7 @@ server {
   return 301 https://\$host\$request_uri;
 }
 server {
-  server_name prefect.data.holi.social;
+  server_name ${domain};
 
   access_log /var/log/nginx/prefect-server.access.log;
   error_log /var/log/nginx/prefect-server.error.log;
@@ -206,15 +206,15 @@ server {
   }
 
   listen 443 ssl; # managed by Certbot
-  ssl_certificate /etc/letsencrypt/live/prefect.data.holi.social/fullchain.pem; # managed by Certbot
-  ssl_certificate_key /etc/letsencrypt/live/prefect.data.holi.social/privkey.pem; # managed by Certbot
+  ssl_certificate /etc/letsencrypt/live/${domain}/fullchain.pem; # managed by Certbot
+  ssl_certificate_key /etc/letsencrypt/live/${domain}/privkey.pem; # managed by Certbot
   include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
   ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
 }
 EOF
 ln -fs /etc/nginx/sites-available/prefect-server /etc/nginx/sites-enabled/prefect-server
 rm /etc/nginx/sites-enabled/default
-hsystemctl reload nginx
+systemctl reload nginx
 
 # create a service account key file for accessing buckets by the runner machines
 # shellcheck disable=SC2154 # provided by terraform
@@ -247,9 +247,9 @@ PREFECT_SERVER_LOGGING_LEVEL = "DEBUG"
 PREFECT_SERVER_ANALYTICS_ENABLED = "False"
 PREFECT_SERVER_METRICS_ENABLED = "True"
 PREFECT_API_ENABLE_METRICS = "True"
-PREFECT_API_URL = "https://prefect.data.holi.social/api"
-PREFECT_UI_API_URL = "https://prefect.data.holi.social/api"
-PREFECT_UI_URL = "https://prefect.data.holi.social/"
+PREFECT_API_URL = "https://${domain}/api"
+PREFECT_UI_API_URL = "https://${domain}/api"
+PREFECT_UI_URL = "https://${domain}/"
 EOF
 
 cat << 'EOF' > /etc/systemd/system/prefect-server.service

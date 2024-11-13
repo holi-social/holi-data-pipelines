@@ -1,8 +1,3 @@
-resource "google_service_account" "data_pipeline" {
-  account_id   = "data-pipeline"
-  display_name = "Service Account for the data pipeline"
-}
-
 # this account was imported after default creation by google
 data "google_compute_default_service_account" "compute_default" {
 }
@@ -36,7 +31,7 @@ resource "google_compute_instance" "prefect_server_green" {
   name         = "prefect-server-${local.environment}-green"
   machine_type = "t2d-standard-2"
   zone         = "${local.default_region}-a"
-  tags         = ["http-server", "https-server", "team-matching", "data-pipeline", local.environment]
+  tags         = ["http-server", "https-server", "team-matching", "data-pipeline", local.environment_type]
 
   boot_disk {
     kms_key_self_link = data.terraform_remote_state.holi_data_pipeline_common_state.outputs.data_pipeline_key
@@ -62,6 +57,7 @@ resource "google_compute_instance" "prefect_server_green" {
   metadata = {
     startup-script = templatefile("prefect-server-setup.tftpl", {
       json_key = base64decode(google_service_account_key.data_pipeline.private_key),
+      domain   = local.prefect_dns_domain
     })
   }
 
@@ -73,9 +69,9 @@ resource "google_compute_instance" "prefect_server_green" {
 }
 
 resource "google_dns_record_set" "prefect_data_holi_social" {
-  name         = "prefect.${data.terraform_remote_state.holi_data_pipeline_common_state.outputs.dns_data_domain}."
+  name         = "${local.prefect_dns_domain}."
   type         = "A"
   ttl          = 300
-  managed_zone = data.terraform_remote_state.holi_data_pipeline_common_state.outputs.dns_data_domain_name
+  managed_zone = data.terraform_remote_state.holi_data_pipeline_common_state.outputs.dns_prefect_domain_name
   rrdatas      = [google_compute_instance.prefect_server_green.network_interface[0].access_config[0].nat_ip]
 }

@@ -9,6 +9,9 @@ terraform {
       source  = "hashicorp/google-beta"
       version = ">= 5.12"
     }
+    prefect = {
+      source = "prefecthq/prefect"
+    }
   }
   backend "gcs" {
     bucket = "holi-shared-terraform-state"
@@ -41,4 +44,8 @@ provider "google" {
 provider "google-beta" {
   project = "holi-shared" # string, because referencing google_project.holi_shared would be a cycle
   region  = local.default_region
+}
+
+provider "prefect" {
+  endpoint = "https://${local.prefect_dns_domain}"
 }
