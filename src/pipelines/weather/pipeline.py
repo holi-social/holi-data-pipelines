@@ -2,6 +2,7 @@ import httpx
 from prefect import flow, task
 from prefect.artifacts import create_markdown_artifact
 
+
 @task
 def mark_it_down(temp):
     markdown_report = f"""# Weather Report

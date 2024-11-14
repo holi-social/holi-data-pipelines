@@ -1,8 +1,10 @@
 from datetime import datetime
+
 from prefect import flow, task
 from prefect.artifacts import create_markdown_artifact
-from variables import resolve
 from prefect_gcp.bigquery import BigQueryWarehouse
+
+from variables import resolve
 
 
 @task
@@ -27,14 +29,14 @@ def bigquery_report():
         table_name = resolve("volunteering_voltastics_raw_table")
         result = warehouse.fetch_one(
             f"""
-            SELECT
-              count(*) as amount FROM `{table_name}` 
-            WHERE
-              TIMESTAMP_TRUNC(_PARTITIONTIME, DAY) = TIMESTAMP(%(day)s)
-            """,
+        SELECT
+          count(*) as amount FROM `{table_name}` 
+        WHERE
+          TIMESTAMP_TRUNC(_PARTITIONTIME, DAY) = TIMESTAMP(%(day)s)
+        """,
             parameters={"day": day_as_string, "table_name": table_name},
         )
-        mark_it_down(day_as_string, result.get('amount'))
+        mark_it_down(day_as_string, result.get("amount"))
 
 
 if __name__ == "__main__":
