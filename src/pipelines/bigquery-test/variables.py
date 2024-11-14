@@ -1,4 +1,5 @@
 import json
+import os
 from prefect.variables import Variable
 from typing import Dict, List, Optional, Union
 
@@ -25,4 +26,7 @@ def resolve(key: str, default: Optional[JsonType] = None) -> JsonType:
                 return value
         return default
 
-    return json.loads(Variable.get(key) or getenv_case_insensitive(key, default))
+    prefect_var = Variable.get(key)
+    env_var = getenv_case_insensitive(key, default)
+
+    return prefect_var or json.loads(env_var)

@@ -24,7 +24,9 @@ resource "prefect_block" "bigquery_warehouse" {
   type_slug = "bigquery-warehouse"
 
   data = jsonencode({
-    "gcp_credentials" = "application-default-credentials"
+    "gcp_credentials" = {
+      "project" = "holi-shared"
+    }
   })
   depends_on = [null_resource.prefect_server_available, prefect_block.application_default_credentials]
 }
