@@ -33,7 +33,8 @@ deployments:
 - name: bigquery-test-deploy
   version:
   tags: []
-  description:
+  description: "A flow for generating a report of how many current volunteering opportunities
+    are available in BigQuery.\n\n:return:"
   entrypoint: src/pipelines/bigquery-test/pipeline.py:bigquery_report
   schedules:
   - cron: 0 5 29 2 * 0 2020/10
