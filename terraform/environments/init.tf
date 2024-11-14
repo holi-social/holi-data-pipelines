@@ -12,6 +12,10 @@ terraform {
     prefect = {
       source = "prefecthq/prefect"
     }
+    null = {
+      source  = "hashicorp/null"
+      version = ">= 3.2.2"
+    }
   }
   backend "gcs" {
     bucket = "holi-shared-terraform-state"

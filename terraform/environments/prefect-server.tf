@@ -29,7 +29,7 @@ resource "google_service_account_key" "data_pipeline" {
 # TODO green/blue certificate replication
 resource "google_compute_instance" "prefect_server_green" {
   name         = "prefect-server-${local.environment}-green"
-  machine_type = "t2d-standard-2"
+  machine_type = "e2-small" # TODO re-evaluate (e.g. from observability data) whether this machine type is enough...
   zone         = "${local.default_region}-a"
   tags         = ["http-server", "https-server", "team-matching", "data-pipeline", local.environment_type]
 

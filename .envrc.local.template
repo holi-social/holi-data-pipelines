@@ -1,0 +1,9 @@
+export DB_NAME=
+export DB_USERNAME=
+export DB_PASSWORD=""
+export DB_PORT=
+export ENVIRONMENT=development
+export DRY_RUN=True
+export ENGAGEMENT_TYPE=DONATIONS
+export ENVIRONMENT_HOLI_API=staging.unified.apis.holi.social
+export GOOGLE_APPLICATION_CREDENTIALS="../../.holi-terraform.key"

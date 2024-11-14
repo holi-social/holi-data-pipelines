@@ -1,8 +1,40 @@
+resource "null_resource" "prefect_server_available" {
+  provisioner "local-exec" {
+    command = "scripts/wait-for-startup-script.sh -i ${google_compute_instance.prefect_server_green.name} -z ${google_compute_instance.prefect_server_green.zone}"
+  }
+}
+
+resource "prefect_variable" "voltastics_raw_table" {
+  name  = "volunteering_voltastics_raw_table"
+  value = "holi-shared.datalake_production.volunteering_voltastics_raw"
+}
+
+resource "prefect_block" "application_default_credentials" {
+  name      = "application-default-credentials"
+  type_slug = "gcp-credentials"
+
+  data = jsonencode({
+    "project" = "holi-shared"
+  })
+  depends_on = [null_resource.prefect_server_available]
+}
+
+resource "prefect_block" "bigquery_warehouse" {
+  name      = "bigquery-warehouse"
+  type_slug = "bigquery-warehouse"
+
+  data = jsonencode({
+    "gcp_credentials" = "application-default-credentials"
+  })
+  depends_on = [null_resource.prefect_server_available, prefect_block.application_default_credentials]
+}
+
 resource "prefect_work_pool" "cloud_run" {
   name              = "cloud-run"
   type              = "cloud-run"
   paused            = false
   base_job_template = file("./cloud-run-work-pool-base-job-template.json")
+  depends_on        = [null_resource.prefect_server_available]
 }
 
 resource "google_cloud_run_service" "work_pool_cloud_run_worker" {
@@ -21,26 +53,27 @@ resource "google_cloud_run_service" "work_pool_cloud_run_worker" {
           name  = "PREFECT_API_URL"
           value = "https://${local.prefect_dns_domain}/api"
         }
-        # resources {
-        #   limits = {
-        #     # cpu can only be scaled down to 1000m as long as container_concurrency is set to != 1
-        #     cpu    = local.environment == "production" ? "1000m" : "1000m"
-        #     memory = local.environment == "production" ? "1024Mi" : "1024Mi"
-        #   }
-        #   requests = {
-        #     cpu    = local.environment == "production" ? "1000m" : "1000m"
-        #     memory = local.environment == "production" ? "1024Mi" : "1024Mi"
-        #   }
-        # }
-        # startup_probe {
-        #   initial_delay_seconds = 30
-        #   period_seconds        = 5
-        #   timeout_seconds       = 5
-        #   failure_threshold     = 10
-        #   http_get {
-        #     path = "/"
-        #   }
-        # }
+        resources {
+          limits = {
+            # cpu can only be scaled down to 1000m as long as container_concurrency is set to != 1 and cpu-throttling is set to false
+            cpu    = "1000m"
+            memory = "512Mi"
+          }
+          requests = {
+            cpu    = "1000m"
+            memory = "512Mi"
+          }
+        }
+        startup_probe {
+          http_get {
+            path = "/health"
+          }
+        }
+        liveness_probe {
+          http_get {
+            path = "/health"
+          }
+        }
       }
       container_concurrency = 100 # 0 means thread safe, no restriction on max concurrency
     }
@@ -72,4 +105,6 @@ resource "google_cloud_run_service" "work_pool_cloud_run_worker" {
     percent         = 100
     latest_revision = true
   }
+
+  depends_on = [null_resource.prefect_server_available, prefect_work_pool.cloud_run]
 }

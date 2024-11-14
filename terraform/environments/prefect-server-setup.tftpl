@@ -126,7 +126,7 @@ EOF
 # install logrotation
 apt install -y logrotate
 
-# docker apt sources
+# docker apt sources TODO docker most probably is not needed on the server
 apt install -y ca-certificates curl gnupg lsb-release
 curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
@@ -230,8 +230,6 @@ systemctl reload nginx
 #{json_key}
 #EOF
 
-echo before prefect
-
 # prefect setup
 # TODO: use pyenv for managing python version...?
 apt install -y sqlite3 python3-venv
@@ -239,7 +237,8 @@ mkdir -p /srv/prefect-server
 python3 -m venv /srv/prefect-server/.venv
 source /srv/prefect-server/.venv/bin/activate
 pip3 install -U pip
-pip3 install -U prefect
+pip3 install -U "prefect-gcp[all_extras]"
+PREFECT_API_URL=https://${domain}/api prefect block register -m prefect_gcp
 
 # TODO configure postgresql access
 # prefect config set PREFECT_API_DATABASE_CONNECTION_URL="postgresql+asyncpg://postgres:yourTopSecretPassword@localhost:5432/prefect"
