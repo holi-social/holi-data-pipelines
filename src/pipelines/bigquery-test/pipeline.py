@@ -4,7 +4,7 @@ from prefect import flow, task
 from prefect.artifacts import create_markdown_artifact
 from prefect_gcp.bigquery import BigQueryWarehouse
 
-from variables import resolve
+from variables import variable_value
 
 
 @task
@@ -16,9 +16,9 @@ def mark_it_down(day_as_string, count):
 | {day_as_string}|      {count} |
 """
     create_markdown_artifact(
-        key="weather-report",
+        key="volunteering-report",
         markdown=markdown_report,
-        description="Very scientific weather report",
+        description="the number of volunteering opportunities",
     )
 
 
@@ -26,7 +26,7 @@ def mark_it_down(day_as_string, count):
 def bigquery_report():
     with BigQueryWarehouse.load("bigquery-warehouse") as warehouse:
         day_as_string = datetime.today().strftime("%Y-%m-%d")
-        table_name = resolve("volunteering_voltastics_raw_table")
+        table_name = variable_value("volunteering_voltastics_raw_table")
         result = warehouse.fetch_one(
             f"""
         SELECT

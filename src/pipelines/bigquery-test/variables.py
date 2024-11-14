@@ -6,7 +6,7 @@ from typing import Dict, List, Optional, Union
 JsonType = Union[None, int, str, bool, List["JsonType"], Dict[str, "JsonType"]]
 
 
-def resolve(key: str, default: Optional[JsonType] = None) -> JsonType:
+def variable_value(key: str, default: Optional[JsonType] = None) -> JsonType:
     """
     Resolves the value for a given key by first attempting to retrieve it from
     Prefect variables. If not found, it falls back to searching the environment

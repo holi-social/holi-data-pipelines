@@ -1,0 +1,4 @@
+black[d]==24.10.0
+prefect==3.1.2
+prefect-gcp[all_extras]==0.6.1
+typing_extensions==4.12.2

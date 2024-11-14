@@ -11,7 +11,7 @@ build:
 - prefect_docker.deployments.steps.build_docker_image:
     id: build_image
     requires: prefect-docker>=0.3.1
-    image_name: europe-north1-docker.pkg.dev/holi-shared/docker/weather
+    image_name: europe-north1-docker.pkg.dev/holi-shared/docker/data-pipeline-job
     tag: latest
     dockerfile: auto
     platform: linux/amd64
@@ -30,25 +30,6 @@ pull:
 
 # the deployments section allows you to provide configuration for deploying flows
 deployments:
-- name: weather-deploy
-  version:
-  tags: []
-  description:
-  entrypoint: src/pipelines/weather/pipeline.py:fetch_weather
-  schedules:
-  - cron: 0 5 29 2 * 0 2020/10
-    timezone:
-    day_or: true
-    active: true
-  parameters:
-    lat: 14.5994
-    lon: 28.6731
-  work_pool:
-    name: cloud-run
-    work_queue_name: default
-    job_variables:
-      image: '{{ build_image.image }}'
-  concurrency_limit:
 - name: bigquery-test-deploy
   version:
   tags: []
@@ -66,3 +47,4 @@ deployments:
       image: '{{ build_image.image }}'
   concurrency_limit:
   parameters: {}
+  enforce_parameter_schema: true
