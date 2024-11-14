@@ -31,12 +31,15 @@ pull:
 # the deployments section allows you to provide configuration for deploying flows
 deployments:
 - name: weather-deploy
-  version: null
+  version:
   tags: []
-  description: null
-  schedule: {}
-  flow_name: null
+  description:
   entrypoint: src/pipelines/weather/pipeline.py:fetch_weather
+  schedules:
+  - cron: 0 5 29 2 * 0 2020/10
+    timezone:
+    day_or: true
+    active: true
   parameters:
     lat: 14.5994
     lon: 28.6731
@@ -45,15 +48,21 @@ deployments:
     work_queue_name: default
     job_variables:
       image: '{{ build_image.image }}'
+  concurrency_limit:
 - name: bigquery-test-deploy
-  version: null
+  version:
   tags: []
-  description: null
-  schedule: {}
-  flow_name: null
+  description:
   entrypoint: src/pipelines/bigquery-test/pipeline.py:bigquery_report
+  schedules:
+  - cron: 0 5 29 2 * 0 2020/10
+    timezone:
+    day_or: true
+    active: true
   work_pool:
     name: cloud-run
     work_queue_name: default
     job_variables:
       image: '{{ build_image.image }}'
+  concurrency_limit:
+  parameters: {}

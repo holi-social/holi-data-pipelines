@@ -1,7 +1,8 @@
 import json
 from prefect.variables import Variable
+from typing import Dict, List, Optional, Union
 
-JsonType = Union[None, int, str, bool, List[JsonType], Dict[str, JsonType]]
+JsonType = Union[None, int, str, bool, List["JsonType"], Dict[str, "JsonType"]]
 
 
 def resolve(key: str, default: Optional[JsonType] = None) -> JsonType:
