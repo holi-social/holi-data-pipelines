@@ -49,3 +49,4 @@ tzdata==2024.2
 urllib3==2.2.3
 typesense==0.21.0
 prefect==3.1.2
+langdetect==1.0.9
