@@ -25,13 +25,30 @@ resource "google_service_account_key" "data_pipeline" {
   public_key_type    = "TYPE_X509_PEM_FILE"
 }
 
+data "google_compute_subnetwork" "default-region" {
+  name   = data.terraform_remote_state.holi_infra_state.outputs.google_compute_network_default_name
+  region = local.default_region
+}
+
+resource "google_compute_firewall" "prefect_allow_unauthenticated" {
+  name          = "prefect-allow-unauthenticated"
+  network       = data.terraform_remote_state.holi_infra_state.outputs.google_compute_network_default_name
+  source_ranges = ["0.0.0.0/0"]
+  target_tags   = ["prefect"]
+
+  allow {
+    protocol = "tcp"
+    ports    = [8443]
+  }
+}
+
 # TODO green/blue
 # TODO green/blue certificate replication
 resource "google_compute_instance" "prefect_server_green" {
   name         = "prefect-server-${local.environment}-green"
   machine_type = "e2-small" # TODO re-evaluate (e.g. from observability data) whether this machine type is enough...
   zone         = "${local.default_region}-a"
-  tags         = ["http-server", "https-server", "team-matching", "data-pipeline", local.environment_type]
+  tags         = ["http-server", "https-server", "team-matching", "data-pipeline", "prefect", local.environment_type]
 
   boot_disk {
     kms_key_self_link = data.terraform_remote_state.holi_data_pipeline_common_state.outputs.data_pipeline_key
@@ -56,8 +73,9 @@ resource "google_compute_instance" "prefect_server_green" {
 
   metadata = {
     startup-script = templatefile("prefect-server-setup.tftpl", {
-      json_key = base64decode(google_service_account_key.data_pipeline.private_key),
-      domain   = local.prefect_dns_domain
+      json_key           = base64decode(google_service_account_key.data_pipeline.private_key),
+      domain             = local.prefect_dns_domain
+      allowed_cidr_range = data.google_compute_subnetwork.default-region.ip_cidr_range
     })
   }
 
