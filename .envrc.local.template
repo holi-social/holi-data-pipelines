@@ -1,9 +1,10 @@
-export DB_NAME=
-export DB_USERNAME=
-export DB_PASSWORD=""
-export DB_PORT=
+export TYPESENSE_API_KEY=
+export TYPESENSE_HOST=
+export TYPESENSE_PORT=
+export TYPESENSE_PROTOCOL=
 export ENVIRONMENT=development
 export DRY_RUN=True
+export PROJECT_ID="holi-shared"
 export ENGAGEMENT_TYPE=DONATIONS
 export ENVIRONMENT_HOLI_API=staging.unified.apis.holi.social
 export GOOGLE_APPLICATION_CREDENTIALS="../../.holi-terraform.key"
