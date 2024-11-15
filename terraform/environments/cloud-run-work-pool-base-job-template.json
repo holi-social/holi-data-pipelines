@@ -23,6 +23,10 @@
                 "containers": [
                   {
                     "image": "{{ image }}",
+                    "env": {
+                      "name": "PYTHONPATH",
+                      "value": "$PYTHONPATH:.:/opt/prefect/holi-data-pipelines"
+                    },
                     "command": "{{ command }}",
                     "resources": {
                       "limits": {

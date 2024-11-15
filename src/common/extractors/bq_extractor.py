@@ -1,46 +1,49 @@
 import logging
+
+import prefect.logging
 from google.cloud import bigquery
-from google.api_core.exceptions import GoogleAPIError, NotFound
+#from google.api_core.exceptions import GoogleAPIError, NotFound
 from google.auth.exceptions import DefaultCredentialsError
-import pandas as pd
+#import pandas as pd
 from typing import Dict, Union, Optional
-from common.logging_setup import initialize_logging
+#from common.logging_setup import initialize_logging
+from prefect_gcp import BigQueryWarehouse
 
 # Initialize logging from logging_setup
-initialize_logging()
-logger = logging.getLogger(__name__)
+#initialize_logging()
+logger = prefect.logging.get_logger()
 
 
 class BigQueryExtractor:
-    def __init__(self, project_id: str):
-        """
-        Initializes BigQuery client using the project ID from configuration.
-
-        Raises:
-            ValueError: If PROJECT_ID is not set in the configuration.
-            DefaultCredentialsError: If Google Cloud credentials are not set.
-        """
-        self.project_id = project_id
-        if not self.project_id:
-            raise ValueError("PROJECT_ID is required.")
-
-        try:
-            # Initialize BigQuery client
-            self.client = bigquery.Client(project=self.project_id)
-            logger.info(
-                "BigQuery client initialized successfully.",
-                extra={"project_id": self.project_id},
-            )
-        except DefaultCredentialsError as e:
-            logger.error("Google Cloud credentials not found.", exc_info=True)
-            raise e
+    # def __init__(self, project_id: str):
+    #     """
+    #     Initializes BigQuery client using the project ID from configuration.
+    #
+    #     Raises:
+    #         ValueError: If PROJECT_ID is not set in the configuration.
+    #         DefaultCredentialsError: If Google Cloud credentials are not set.
+    #     """
+    #     self.project_id = project_id
+    #     if not self.project_id:
+    #         raise ValueError("PROJECT_ID is required.")
+    #
+    #     try:
+    #         # Initialize BigQuery client
+    #         self.client = bigquery.Client(project=self.project_id)
+    #         logger.info(
+    #             "BigQuery client initialized successfully.",
+    #             extra={"project_id": self.project_id},
+    #         )
+    #     except DefaultCredentialsError as e:
+    #         logger.error("Google Cloud credentials not found.", exc_info=True)
+    #         raise e
 
     def extract_data_from_bigquery(
         self,
         query: Optional[str] = None,
         table_name: Optional[str] = None,
         return_format: str = "dict_list",
-    ) -> Union[pd.DataFrame, list[Dict]]:
+    ) -> list[Dict]:
         """
         Extracts data from BigQuery based on a SQL query or table name using the initialized BigQuery client.
 
@@ -66,33 +69,24 @@ class BigQueryExtractor:
 
         logger.info("Executing BigQuery query.", extra={"query": sql_query})
 
-        try:
-            query_job = self.client.query(sql_query)
-            result = query_job.result()  # Waits for the query to complete
+        with BigQueryWarehouse.load("bigquery-warehouse") as warehouse:
+            result = warehouse.fetch_all(sql_query)
 
-            if return_format == "dataframe":
-                dataframe = result.to_dataframe()
-                logger.info(
-                    "Query executed successfully, returning DataFrame.",
-                    extra={"num_rows": len(dataframe)},
-                )
-                return dataframe
-            elif return_format == "dict_list":
-                dict_list = [dict(row) for row in result]
-                logger.info(
-                    "Query executed successfully, returning list of dictionaries.",
-                    extra={"num_rows": len(dict_list)},
-                )
-                return dict_list
-            else:
-                raise ValueError(
-                    "Invalid return_format. Choose 'dataframe' or 'dict_list'."
-                )
-
-        except (GoogleAPIError, NotFound) as e:
-            logger.error(
-                "Query execution failed.",
-                extra={"error": str(e), "query": sql_query},
-                exc_info=True,
+            # if return_format == "dataframe":
+            #     dataframe = result.to_dataframe()
+            #     logger.info(
+            #         "Query executed successfully, returning DataFrame.",
+            #         extra={"num_rows": len(dataframe)},
+            #     )
+            #     return dataframe
+            # elif return_format == "dict_list":
+            dict_list = [dict(row) for row in result]
+            logger.info(
+                "Query executed successfully, returning list of dictionaries.",
+                extra={"num_rows": len(dict_list)},
             )
-            raise e
+            return dict_list
+            # else:
+            #     raise ValueError(
+            #         "Invalid return_format. Choose 'dataframe' or 'dict_list'."
+            #     )

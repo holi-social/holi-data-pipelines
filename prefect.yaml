@@ -49,3 +49,22 @@ deployments:
   concurrency_limit:
   parameters: {}
   enforce_parameter_schema: true
+- name: bq-to-typesense
+  version:
+  tags: []
+  description: "Orchestrates the ETL pipeline to move data from BigQuery to Typesense."
+  entrypoint: src/pipelines/bq_to_typesense/pipeline.py:volunteering_to_typesense_etl
+  schedules:
+  - cron: 0 5 29 2 * 0 2020/10
+    timezone:
+    day_or: true
+    active: true
+  work_pool:
+    name: cloud-run
+    work_queue_name: default
+    job_variables:
+      image: '{{ build_image.image }}'
+      memory: '4096Mi'
+  concurrency_limit:
+  parameters: {}
+  enforce_parameter_schema: true

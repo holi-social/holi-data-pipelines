@@ -5,7 +5,7 @@ from prefect.logging import get_run_logger, get_logger
 from prefect.artifacts import create_markdown_artifact
 from prefect_gcp.bigquery import BigQueryWarehouse
 
-from variables import variable_value
+from src.common.variables import variable_value
 
 
 @task

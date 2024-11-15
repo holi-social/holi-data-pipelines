@@ -1,10 +1,12 @@
 import json
+import os
 from prefect.variables import Variable
+from typing import Dict, List, Optional, Union
 
-JsonType = Union[None, int, str, bool, List[JsonType], Dict[str, JsonType]]
+JsonType = Union[None, int, str, bool, List["JsonType"], Dict[str, "JsonType"]]
 
 
-def resolve(key: str, default: Optional[JsonType] = None) -> JsonType:
+def variable_value(key: str, default: Optional[JsonType] = None) -> JsonType:
     """
     Resolves the value for a given key by first attempting to retrieve it from
     Prefect variables. If not found, it falls back to searching the environment
@@ -24,4 +26,7 @@ def resolve(key: str, default: Optional[JsonType] = None) -> JsonType:
                 return value
         return default
 
-    return json.loads(Variable.get(key) or getenv_case_insensitive(key, default))
+    prefect_var = Variable.get(key)
+    env_var = getenv_case_insensitive(key, default)
+
+    return prefect_var or json.loads(env_var)
