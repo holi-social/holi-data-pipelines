@@ -7,9 +7,9 @@
       "facet": true
     },
     {
-      "name": "id",
+      "name": "volunteering_id",
       "type": "string",
-      "comment": "added for debugging, not indexed",
+      "comment": "added for debugging, not indexed. id -> volunteering_id. Collection schema cannot contain a field with name id.",
       "index": false
     },
     {
@@ -33,14 +33,16 @@
       "type": "string",
       "optional": true,
       "comment": "current assumption: we don't have really long text, so we don't store as separate paragraphs",
-      "stem": true
+      "stem": true,
+      "locale": "de"
     },
     {
       "name": "description_en",
       "type": "string",
       "optional": true,
       "comment": "current assumption: we don't have really long text, so we don't store as separate paragraphs",
-      "stem": true
+      "stem": true,
+      "locale": "en"
     },
     {
       "name": "location",
@@ -62,6 +64,7 @@
       "name": "link_path",
       "type": "string",
       "comment": "without host, only the URIs path + query + fragment. Placeholder until we know how to generate a link",
+      "optional": true,
       "index": false
     },
     {
