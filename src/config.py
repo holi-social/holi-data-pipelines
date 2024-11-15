@@ -16,7 +16,7 @@ def get_config():
             "DB_NAME": os.getenv("DB_NAME"),
             "DB_USERNAME": os.getenv("DB_USERNAME"),
             "DB_PASSWORD": os.getenv("DB_PASSWORD"),
-            "GEOAPIFY_API_KEY": os.getenv("GEOAPIFY_API_KEY")
+            "GEOAPIFY_API_KEY": os.getenv("GEOAPIFY_API_KEY"),
         }
 
     return CONFIG

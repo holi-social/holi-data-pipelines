@@ -12,6 +12,7 @@ from common.logging_setup import setup_logging
 setup_logging()
 logger = logging.getLogger(__name__)
 
+
 @task
 def extract_data(config: Dict[str, str]) -> List[Dict[str, Any]]:
     """Extract data from BigQuery."""
@@ -19,12 +20,15 @@ def extract_data(config: Dict[str, str]) -> List[Dict[str, Any]]:
         bq_extractor = BigQueryExtractor(config["PROJECT_ID"])
         volunteering_table = f"{config['PROJECT_ID']}.datapool_{config['ENVIRONMENT']}.volunteering_voltastics_with_classification_enriched"
         logger.info(f"Extracting data from table: {volunteering_table}")
-        data = bq_extractor.extract_data_from_bigquery(table_name=volunteering_table, return_format="dict_list")
+        data = bq_extractor.extract_data_from_bigquery(
+            table_name=volunteering_table, return_format="dict_list"
+        )
         logger.info(f"Extracted {len(data)} records from BigQuery")
         return data
     except Exception as e:
         logger.error(f"Error extracting data from BigQuery: {e}")
         raise
+
 
 @task
 def transform_data(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -36,6 +40,7 @@ def transform_data(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     except Exception as e:
         logger.error(f"Error transforming data: {e}")
         raise
+
 
 @task
 def load_data(documents: List[Dict[str, Any]], config: Dict[str, str]) -> None:
@@ -65,6 +70,7 @@ def load_data(documents: List[Dict[str, Any]], config: Dict[str, str]) -> None:
         logger.error(f"Error loading data into Typesense: {e}")
         raise
 
+
 @flow
 def volunteering_to_typesense_etl() -> None:
     """Orchestrates the ETL pipeline to move data from BigQuery to Typesense."""
@@ -77,6 +83,7 @@ def volunteering_to_typesense_etl() -> None:
     except Exception as e:
         logger.error(f"Error in ETL pipeline: {e}")
         raise
+
 
 if __name__ == "__main__":
     volunteering_to_typesense_etl.serve(name="bq-to-typesense", cron="* * * * *")

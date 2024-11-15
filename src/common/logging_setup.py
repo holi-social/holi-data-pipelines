@@ -6,20 +6,20 @@ from logging import config as logging_config
 import structlog
 import traceback
 
-ENVIRONMENT_ID = os.getenv("ENVIRONMENT") # staging, production
+ENVIRONMENT_ID = os.getenv("ENVIRONMENT")  # staging, production
 SERVICE_NAME = "holi-data-classification"
 TEAM_NAME = "Data&Matching"
 LABELS = {"environment": ENVIRONMENT_ID, "service": SERVICE_NAME, "team": TEAM_NAME}
 
 gcloud_severities = {
-        "critical": "CRITICAL",
-        "exception": "ERROR",
-        "error": "ERROR",
-        "warn": "WARNING",
-        "warning": "WARNING",
-        "info": "INFO",
-        "debug": "DEBUG",
-        "notset": "DEFAULT",
+    "critical": "CRITICAL",
+    "exception": "ERROR",
+    "error": "ERROR",
+    "warn": "WARNING",
+    "warning": "WARNING",
+    "info": "INFO",
+    "debug": "DEBUG",
+    "notset": "DEFAULT",
 }
 
 _shared_processors = [
@@ -30,12 +30,17 @@ _shared_processors = [
     structlog.processors.UnicodeDecoder(),
 ]
 
+
 def holi_gcloud_serializer(event_dict, **kwargs):
     # - Use Google fields for severity & other
     # - Add static applicationlevel fields (service & environment)
     if "exc_info" in event_dict:
         event_dict["traceback"] = "".join(
-            traceback.format_exception(event_dict["exc_info"][0], event_dict["exc_info"][1], event_dict["exc_info"][2])
+            traceback.format_exception(
+                event_dict["exc_info"][0],
+                event_dict["exc_info"][1],
+                event_dict["exc_info"][2],
+            )
         )
     event_dict["message"] = event_dict.pop("event")
     event_dict["severity"] = gcloud_severities.get(event_dict.pop("level"))
@@ -49,7 +54,9 @@ LOGGING_CONFIG = {
     "formatters": {
         "json_formatter": {
             "()": structlog.stdlib.ProcessorFormatter,
-            "processor": structlog.processors.JSONRenderer(serializer=holi_gcloud_serializer),
+            "processor": structlog.processors.JSONRenderer(
+                serializer=holi_gcloud_serializer
+            ),
             "foreign_pre_chain": _shared_processors,
         },
         "console_formatter": {
@@ -78,9 +85,16 @@ LOGGING_CONFIG = {
     },
     "root": {
         "level": "INFO",
-        "handlers": ["console" if (sys.stdout.isatty() or "PYCHARM_HOSTED" in os.environ) else "json"],
+        "handlers": [
+            (
+                "console"
+                if (sys.stdout.isatty() or "PYCHARM_HOSTED" in os.environ)
+                else "json"
+            )
+        ],
     },
 }
+
 
 def initialize_logging():
     logging_config.dictConfig(LOGGING_CONFIG)
@@ -95,4 +109,3 @@ def initialize_logging():
     )
 
     return LOGGING_CONFIG
-

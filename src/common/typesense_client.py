@@ -8,6 +8,7 @@ from common.logging_setup import initialize_logging
 initialize_logging()
 logger = logging.getLogger(__name__)
 
+
 class TypesenseClient:
     def __init__(self, config: Dict[str, str]) -> None:
         """
@@ -35,23 +36,27 @@ class TypesenseClient:
             typesense.Client: Configured Typesense client.
         """
         try:
-            typesense_api_key = config.get('TYPESENSE_API_KEY')
-            typesense_host = config.get('TYPESENSE_HOST', 'localhost')
-            typesense_port = int(config.get('TYPESENSE_PORT', 8108))
-            typesense_protocol = config.get('TYPESENSE_PROTOCOL', 'http')
+            typesense_api_key = config.get("TYPESENSE_API_KEY")
+            typesense_host = config.get("TYPESENSE_HOST", "localhost")
+            typesense_port = int(config.get("TYPESENSE_PORT", 8108))
+            typesense_protocol = config.get("TYPESENSE_PROTOCOL", "http")
 
             if not typesense_api_key:
                 raise ValueError("TYPESENSE_API_KEY is required in the configuration.")
 
-            client = typesense.Client({
-                'api_key': typesense_api_key,
-                'nodes': [{
-                    'host': typesense_host,
-                    'port': typesense_port,
-                    'protocol': typesense_protocol
-                }],
-                'connection_timeout_seconds': 10,
-            })
+            client = typesense.Client(
+                {
+                    "api_key": typesense_api_key,
+                    "nodes": [
+                        {
+                            "host": typesense_host,
+                            "port": typesense_port,
+                            "protocol": typesense_protocol,
+                        }
+                    ],
+                    "connection_timeout_seconds": 10,
+                }
+            )
 
             logger.info("Typesense client successfully created.")
             return client
@@ -87,8 +92,12 @@ class TypesenseClient:
 
             # Create the collection with the new schema
             self.client.collections.create(schema)
-            logger.info(f"Typesense schema for '{collection_name}' created/updated successfully.")
+            logger.info(
+                f"Typesense schema for '{collection_name}' created/updated successfully."
+            )
 
         except Exception as e:
-            logger.error(f"Error creating/updating Typesense schema: {e}", exc_info=True)
+            logger.error(
+                f"Error creating/updating Typesense schema: {e}", exc_info=True
+            )
             raise

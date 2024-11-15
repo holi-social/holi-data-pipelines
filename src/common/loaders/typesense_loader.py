@@ -8,14 +8,17 @@ from common.logging_setup import initialize_logging
 initialize_logging()
 logger = logging.getLogger(__name__)
 
-def index_documents_in_batches(client: object, docs: List[Dict[str, object]], batch_num: int, index_name: str) -> List[Dict[str, object]]:
+
+def index_documents_in_batches(
+    client: object, docs: List[Dict[str, object]], batch_num: int, index_name: str
+) -> List[Dict[str, object]]:
     """
     Index a batch of documents into Typesense using the upsert action.
 
     Args:
         client (object): The Typesense client instance used to interact with the Typesense API.
-        docs (List[Dict[str, object]]): A list of dictionaries representing documents to be indexed. 
-                                        Each document is expected to have key-value pairs where keys are strings 
+        docs (List[Dict[str, object]]): A list of dictionaries representing documents to be indexed.
+                                        Each document is expected to have key-value pairs where keys are strings
                                         and values can be of any type (e.g., string, number, etc.).
         batch_num (int): The current batch number, used for logging and identifying the batch being processed.
         index_name (str): The name of the index to which the documents will be added or updated.
@@ -30,13 +33,14 @@ def index_documents_in_batches(client: object, docs: List[Dict[str, object]], ba
     try:
         # Import documents with upsert option
         response = client.collections[index_name].documents.import_(
-            docs,
-            {'action': 'upsert', 'dirty_values': 'coerce_or_reject'}
+            docs, {"action": "upsert", "dirty_values": "coerce_or_reject"}
         )
 
         # Parse and filter results
-        results = [json.loads(line) if isinstance(line, str) else line for line in response]
-        failed_items = [item for item in results if not item.get('success', True)]
+        results = [
+            json.loads(line) if isinstance(line, str) else line for line in response
+        ]
+        failed_items = [item for item in results if not item.get("success", True)]
         success_count = len(results) - len(failed_items)
 
         if failed_items:

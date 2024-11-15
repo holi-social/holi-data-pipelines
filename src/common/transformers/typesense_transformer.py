@@ -8,6 +8,7 @@ from common.logging_setup import initialize_logging
 initialize_logging()
 logger = logging.getLogger(__name__)
 
+
 def transform_row(row: Dict[str, Optional[str]]) -> Dict[str, Optional[str]]:
     """Transform each row, detect language, and format for Typesense."""
     # Initialize document with default values
@@ -25,7 +26,7 @@ def transform_row(row: Dict[str, Optional[str]]) -> Dict[str, Optional[str]]:
             else None
         ),
         "image_url": row.get("image", ""),
-        "link_path": row.get("link", "")
+        "link_path": row.get("link", ""),
     }
 
     def assign_language_field(text: str, de_field: str, en_field: str) -> None:
@@ -33,17 +34,21 @@ def transform_row(row: Dict[str, Optional[str]]) -> Dict[str, Optional[str]]:
         try:
             if text:
                 lang = detect(text)
-                if lang == 'de':
+                if lang == "de":
                     doc[de_field] = text
                 else:
                     doc[en_field] = text
             else:
-                logger.debug(f"No text provided for language detection in field: {de_field}/{en_field}")
+                logger.debug(
+                    f"No text provided for language detection in field: {de_field}/{en_field}"
+                )
         except LangDetectException:
             logger.warning(f"Language detection failed for text: {text[:30]}...")
 
     # Detect language for title and description
     assign_language_field(row.get("title", ""), "title_de", "title_en")
-    assign_language_field(row.get("description", ""), "description_de", "description_en")
-    
+    assign_language_field(
+        row.get("description", ""), "description_de", "description_en"
+    )
+
     return doc

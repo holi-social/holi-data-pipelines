@@ -1,87 +1,70 @@
 {
-  "name": "all",
-  "fields": [
-    {
-      "name": "type",
-      "type": "string",
-      "facet": true
-    },
-    {
-      "name": "volunteering_id",
-      "type": "string",
-      "comment": "added for debugging, not indexed. id -> volunteering_id. Collection schema cannot contain a field with name id.",
-      "index": false
-    },
-    {
-      "name": "title_de",
-      "type": "string",
-      "optional": true,
-      "infix": true,
-      "stem": true,
-      "locale": "de"
-    },
-    {
-      "name": "title_en",
-      "type": "string",
-      "optional": true,
-      "infix": true,
-      "stem": true,
-      "locale": "en"
-    },
-    {
-      "name": "description_de",
-      "type": "string",
-      "optional": true,
-      "comment": "current assumption: we don't have really long text, so we don't store as separate paragraphs",
-      "stem": true,
-      "locale": "de"
-    },
-    {
-      "name": "description_en",
-      "type": "string",
-      "optional": true,
-      "comment": "current assumption: we don't have really long text, so we don't store as separate paragraphs",
-      "stem": true,
-      "locale": "en"
-    },
-    {
-      "name": "location",
-      "type": "string",
-      "optional": true
-    },
-    {
-      "name": "location_lat_lng",
-      "type": "geopoint",
-      "optional": true
-    },
-    {
-      "name": "image_url",
-      "type": "string",
-      "optional": true,
-      "index": false
-    },
-    {
-      "name": "link_path",
-      "type": "string",
-      "comment": "without host, only the URIs path + query + fragment. Placeholder until we know how to generate a link",
-      "optional": true,
-      "index": false
-    },
-    {
-      "name": "embedding",
-      "type": "float[]",
-      "embed": {
-        "from": [
-          "title_de",
-          "title_en",
-          "description_de",
-          "description_en",
-          "location"
-        ],
-        "model_config": {
-          "model_name": "ts/distiluse-base-multilingual-cased-v2"
-        }
-      }
-    }
-  ]
+    "name": "all",
+    "fields": [
+        {"name": "type", "type": "string", "facet": true},
+        {
+            "name": "volunteering_id",
+            "type": "string",
+            "comment": "added for debugging, not indexed. id -> volunteering_id. Collection schema cannot contain a field with name id.",
+            "index": false,
+        },
+        {
+            "name": "title_de",
+            "type": "string",
+            "optional": true,
+            "infix": true,
+            "stem": true,
+            "locale": "de",
+        },
+        {
+            "name": "title_en",
+            "type": "string",
+            "optional": true,
+            "infix": true,
+            "stem": true,
+            "locale": "en",
+        },
+        {
+            "name": "description_de",
+            "type": "string",
+            "optional": true,
+            "comment": "current assumption: we don't have really long text, so we don't store as separate paragraphs",
+            "stem": true,
+            "locale": "de",
+        },
+        {
+            "name": "description_en",
+            "type": "string",
+            "optional": true,
+            "comment": "current assumption: we don't have really long text, so we don't store as separate paragraphs",
+            "stem": true,
+            "locale": "en",
+        },
+        {"name": "location", "type": "string", "optional": true},
+        {"name": "location_lat_lng", "type": "geopoint", "optional": true},
+        {"name": "image_url", "type": "string", "optional": true, "index": false},
+        {
+            "name": "link_path",
+            "type": "string",
+            "comment": "without host, only the URIs path + query + fragment. Placeholder until we know how to generate a link",
+            "optional": true,
+            "index": false,
+        },
+        {
+            "name": "embedding",
+            "type": "float[]",
+            "embed": {
+                "from": [
+                    "title_de",
+                    "title_en",
+                    "description_de",
+                    "description_en",
+                    "location",
+                ],
+                "model_config": {
+                    "model_name": "ts/distiluse-base-multilingual-cased-v2"
+                },
+            },
+        },
+    ],
 }
