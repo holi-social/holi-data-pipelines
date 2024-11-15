@@ -1,0 +1,97 @@
+default:
+  before_script:
+    - set -ex
+    # env -0 | sort -z | tr '\0' '\n': Sort env output alphabetically, keeping multiline variables intact
+    # egrep: Remove sensitive information from the output of env
+    - env -0 | sort -z | tr '\0' '\n' | egrep -ve '^(DOCKER_AUTH_CONFIG|GOOGLE_APPLICATION_CREDENTIALS)=.*'
+  interruptible: true
+  tags:
+    - 1cpu-4gb
+
+variables:
+  API_DOMAIN_PATH: '$CI_PROJECT_DIR/api_domain'
+
+.deploy:
+  image:
+    name: 'europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/hashicorp/terraform:1.9.8'
+    entrypoint: ['/bin/sh', '-c']
+  variables:
+    ENVIRONMENT_ID: $CI_ENVIRONMENT_SLUG
+  artifacts:
+    paths:
+      - 'terraform/environments/crash.log'
+      - 'terraform/environments/terraform-*.log'
+      - $API_DOMAIN_PATH
+    name: '${CI_JOB_NAME}_${CI_JOB_ID}'
+    expire_in: 1 month
+  script:
+    - terraform/environments/scripts/create-or-update-env.sh $ENVIRONMENT_ID $CI_COMMIT_SHA
+    - echo "$(terraform/environments/scripts/get-output.sh api_domain)" > $API_DOMAIN_PATH
+  resource_group: $ENVIRONMENT_ID
+  interruptible: false
+
+.smoketest:
+  image: 'europe-north1-docker.pkg.dev/holi-shared/docker/holi-docker/holi-k6-builder'
+  script:
+    - API_DOMAIN=$(cat $API_DOMAIN_PATH)
+    - terraform/environments/scripts/wait-for-ssl.sh "https://${API_DOMAIN}"
+    - BASE_URL="https://${API_DOMAIN}" k6 run smoketest/main.js
+    # TODO should/could we roll back the service to the last working revision on test failure?
+
+## staging environment
+staging_deploy:
+  extends: .deploy
+  needs: ['build_docker']
+  environment:
+    name: staging
+    deployment_tier: staging
+    url: https://staging.translation.apis.holi.social
+  variables:
+    ENVIRONMENT_ID: staging
+  only:
+    - main
+
+staging_smoketest:
+  extends: .smoketest
+  needs: ['staging_deploy']
+  only:
+    - main
+
+staging_trigger_unified-api_redeployment:
+  needs: ['staging_smoketest']
+  trigger:
+    project: 'app/holi-unified-api'
+    branch: 'main'
+  only:
+    - main
+  resource_group: unified-api-staging
+
+## production environment
+
+production_deploy:
+  extends: .deploy
+  needs: ['build_docker']
+  allow_failure: false
+  environment:
+    name: production
+    deployment_tier: production
+    url: https://production.translation.apis.holi.social
+  variables:
+    ENVIRONMENT_ID: production
+  only:
+    - production
+
+production_smoketest:
+  extends: .smoketest
+  needs: ['production_deploy']
+  only:
+    - production
+
+production_trigger_unified-api_redeployment:
+  needs: ['production_smoketest']
+  trigger:
+    project: 'app/holi-unified-api'
+    branch: 'production'
+  only:
+    - production
+  resource_group: unified-api-production
