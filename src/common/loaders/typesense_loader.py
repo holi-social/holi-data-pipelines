@@ -32,6 +32,7 @@ def index_documents_in_batches(
     """
     try:
         # Import documents with upsert option
+        # TODO: This works for initial sync but we need to figure out how to do this for later syncs
         response = client.collections[index_name].documents.import_(
             docs, {"action": "upsert", "dirty_values": "coerce_or_reject"}
         )
