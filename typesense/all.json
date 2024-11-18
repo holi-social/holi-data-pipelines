@@ -1,5 +1,6 @@
 {
     "name": "staging_all",
+    "enable_nested_fields": true,
     "fields": [
         {"name": "type", "type": "string", "facet": true},
         {
