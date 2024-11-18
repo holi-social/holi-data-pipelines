@@ -1,12 +1,12 @@
 {
-    "name": "all",
+    "name": "staging_all",
     "fields": [
         {"name": "type", "type": "string", "facet": true},
         {
             "name": "volunteering_id",
             "type": "string",
             "comment": "added for debugging, not indexed. id -> volunteering_id. Collection schema cannot contain a field with name id.",
-            "index": false,
+            "index": false
         },
         {
             "name": "title_de",
@@ -14,7 +14,7 @@
             "optional": true,
             "infix": true,
             "stem": true,
-            "locale": "de",
+            "locale": "de"
         },
         {
             "name": "title_en",
@@ -22,7 +22,7 @@
             "optional": true,
             "infix": true,
             "stem": true,
-            "locale": "en",
+            "locale": "en"
         },
         {
             "name": "description_de",
@@ -30,7 +30,7 @@
             "optional": true,
             "comment": "current assumption: we don't have really long text, so we don't store as separate paragraphs",
             "stem": true,
-            "locale": "de",
+            "locale": "de"
         },
         {
             "name": "description_en",
@@ -38,17 +38,16 @@
             "optional": true,
             "comment": "current assumption: we don't have really long text, so we don't store as separate paragraphs",
             "stem": true,
-            "locale": "en",
+            "locale": "en"
         },
         {"name": "location", "type": "string", "optional": true},
         {"name": "location_lat_lng", "type": "geopoint", "optional": true},
         {"name": "image_url", "type": "string", "optional": true, "index": false},
         {
-            "name": "link_path",
-            "type": "string",
-            "comment": "without host, only the URIs path + query + fragment. Placeholder until we know how to generate a link",
-            "optional": true,
-            "index": false,
+            "name": "link_locators",
+            "type": "object",
+            "comment": "Stores locators for volunteering. Example: {'volunteering': '1234'}",
+            "index": false
         },
         {
             "name": "embedding",
@@ -59,12 +58,12 @@
                     "title_en",
                     "description_de",
                     "description_en",
-                    "location",
+                    "location"
                 ],
                 "model_config": {
                     "model_name": "ts/distiluse-base-multilingual-cased-v2"
-                },
-            },
-        },
-    ],
+                }
+            }
+        }
+    ]
 }

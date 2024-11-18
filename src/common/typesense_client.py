@@ -1,49 +1,48 @@
 import json
-import logging
 import typesense
-from typing import Dict, Optional
-from common.logging_setup import initialize_logging
+from typing import Dict
+from src.common.variables import variable_value
+import prefect
 
 # Initialize logging
-initialize_logging()
-logger = logging.getLogger(__name__)
-
+logger = prefect.logging.get_logger()
 
 class TypesenseClient:
     def __init__(self, config: Dict[str, str]) -> None:
         """
-        Initialize TypesenseManager with a given configuration.
+        Initialize TypesenseClient with a given configuration.
 
         Args:
             config (dict): Configuration dictionary to initialize the Typesense client.
         """
-        self.client = self.get_typesense_client(config)
+        self.client = self._initialize_typesense_client(config)
 
-    def get_typesense_client(self, config: Dict[str, str]) -> typesense.Client:
+    def _initialize_typesense_client(self, config: Dict[str, str]) -> typesense.Client:
         """
         Initialize and return a Typesense client to connect to the Typesense server.
 
-        The client configuration is passed via the `config` dictionary.
-
         Args:
-            config (dict): The configuration dictionary containing Typesense connection details.
+            config (dict): Configuration dictionary containing Typesense connection details.
 
         Raises:
-            ValueError: If required Typesense configuration values are missing or invalid.
+            ValueError: If required configuration values are missing or invalid.
             Exception: If any other issue arises while creating the client.
 
         Returns:
             typesense.Client: Configured Typesense client.
         """
         try:
-            typesense_api_key = config.get("TYPESENSE_API_KEY")
-            typesense_host = config.get("TYPESENSE_HOST", "localhost")
-            typesense_port = int(config.get("TYPESENSE_PORT", 8108))
-            typesense_protocol = config.get("TYPESENSE_PROTOCOL", "http")
+            # Fetch necessary variables
+            typesense_api_key = variable_value("typesense_api_key")
+            typesense_host = variable_value("typesense_host", "localhost")
+            typesense_port = variable_value("typesense_port", 8108)
+            typesense_protocol = variable_value("typesense_protocol", "http")
 
+            # Validate the API key
             if not typesense_api_key:
                 raise ValueError("TYPESENSE_API_KEY is required in the configuration.")
 
+            # Create the client
             client = typesense.Client(
                 {
                     "api_key": typesense_api_key,
@@ -67,6 +66,15 @@ class TypesenseClient:
         except Exception as e:
             logger.exception("Unexpected error creating Typesense client.")
             raise
+
+    def get_client(self) -> typesense.Client:
+        """
+        Return the Typesense client for direct use.
+
+        Returns:
+            typesense.Client: The Typesense client instance.
+        """
+        return self.client
 
     def create_typesense_schema(self, schema_file_path: str = "all.json") -> None:
         """
@@ -95,6 +103,8 @@ class TypesenseClient:
             logger.info(
                 f"Typesense schema for '{collection_name}' created/updated successfully."
             )
+
+            return collection_name
 
         except Exception as e:
             logger.error(
