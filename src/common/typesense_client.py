@@ -53,7 +53,7 @@ class TypesenseClient:
                             "protocol": typesense_protocol,
                         }
                     ],
-                    "connection_timeout_seconds": 10,
+                    "connection_timeout_seconds": 60 * 60,
                 }
             )
 
