@@ -53,74 +53,62 @@ resource "null_resource" "close_unauthenticated_endpoint" {
   depends_on = [prefect_variable.voltastics_raw_table, prefect_block.application_default_credentials, prefect_block.bigquery_warehouse, prefect_work_pool.cloud_run]
 }
 
-resource "google_cloud_run_service" "work_pool_cloud_run_worker" {
+resource "google_cloud_run_v2_service" "work_pool_cloud_run_worker" {
   name     = "prefect-worker-${local.environment_name}"
   location = local.default_region # finland, low CO2 emissions
-  # https://github.com/hashicorp/terraform-provider-google/issues/5898
-  autogenerate_revision_name = true
 
   template {
-    spec {
-      service_account_name = data.terraform_remote_state.holi_data_pipeline_common_state.outputs.data_pipeline_service_account_email
-      containers {
-        image = "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3-latest"
-        args  = ["prefect", "worker", "start", "--install-policy", "always", "--with-healthcheck", "-p", "cloud-run", "-t", "cloud-run"]
-        env {
-          name  = "PREFECT_API_URL"
-          value = "https://dataeng:foobar@${local.prefect_dns_domain}/api"
-        }
-        resources {
-          limits = {
-            # cpu can only be scaled down to 1000m as long as container_concurrency is set to != 1 and cpu-throttling is set to false
-            cpu    = "1000m"
-            memory = "512Mi"
-          }
-          requests = {
-            cpu    = "1000m"
-            memory = "512Mi"
-          }
-        }
-        startup_probe {
-          http_get {
-            path = "/health"
-          }
-        }
-        liveness_probe {
-          http_get {
-            path = "/health"
-          }
+    service_account = data.terraform_remote_state.holi_data_pipeline_common_state.outputs.data_pipeline_service_account_email
+    containers {
+      image = "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3-latest"
+      args  = ["prefect", "worker", "start", "--install-policy", "always", "--with-healthcheck", "-p", "cloud-run", "-t", "cloud-run"]
+      env {
+        name  = "PREFECT_API_URL"
+        value = "http://${local.prefect_internal_domain}:${local.prefect_internal_port}/api"
+      }
+      resources {
+        cpu_idle          = false
+        startup_cpu_boost = true
+        limits = {
+          cpu    = "1"
+          memory = "512Mi"
         }
       }
-      container_concurrency = 100 # 0 means thread safe, no restriction on max concurrency
-    }
-
-    metadata {
-      annotations = {
-        "run.googleapis.com/cpu-throttling"    = false
-        "autoscaling.knative.dev/minScale"     = 1
-        "run.googleapis.com/startup-cpu-boost" = "true"
+      startup_probe {
+        http_get {
+          path = "/health"
+        }
       }
-      # labels set on the revision level
-      labels = {
-        "environment_type" = local.environment_type
-        "holi_service"     = "prefect-worker"
+      liveness_probe {
+        http_get {
+          path = "/health"
+        }
       }
     }
-  }
-
-  metadata {
-    # labels set on the service level
+    vpc_access {
+      egress = "PRIVATE_RANGES_ONLY"
+      network_interfaces {
+        network = data.terraform_remote_state.holi_infra_state.outputs.google_compute_network_default_name
+      }
+    }
+    max_instance_request_concurrency = 100 # 0 means thread safe, no restriction on max concurrency
     labels = {
       "environment_type" = local.environment_type
       "holi_service"     = "prefect-worker"
     }
-
   }
+
+  scaling {
+    min_instance_count = 1
+    #max_instance_count = 1 # TODO this should work, but does not
+  }
+
+  ingress = "INGRESS_TRAFFIC_INTERNAL_ONLY"
 
   traffic {
-    percent         = 100
-    latest_revision = true
+    type    = "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"
+    percent = 100
   }
 
-  depends_on = [null_resource.prefect_server_available, prefect_work_pool.cloud_run]
+  depends_on = [null_resource.prefect_server_available]
 }

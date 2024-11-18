@@ -30,16 +30,12 @@ data "google_compute_subnetwork" "default-region" {
   region = local.default_region
 }
 
-resource "google_compute_firewall" "prefect_allow_unauthenticated" {
-  name          = "prefect-allow-unauthenticated"
-  network       = data.terraform_remote_state.holi_infra_state.outputs.google_compute_network_default_name
-  source_ranges = ["0.0.0.0/0"]
-  target_tags   = ["prefect"]
+data "google_secret_manager_secret_version_access" "prefect_server_username" {
+  secret = local.environment == "production" ? "DATA_PIPELINE_PREFECT_USERNAME_PRODUCTION" : "DATA_PIPELINE_PREFECT_USERNAME_DEVELOPMENT"
+}
 
-  allow {
-    protocol = "tcp"
-    ports    = [8443]
-  }
+data "google_secret_manager_secret_version_access" "prefect_server_password" {
+  secret = local.environment == "production" ? "DATA_PIPELINE_PREFECT_PASSWORD_PRODUCTION" : "DATA_PIPELINE_PREFECT_PASSWORD_DEVELOPMENT"
 }
 
 # TODO green/blue
@@ -75,7 +71,11 @@ resource "google_compute_instance" "prefect_server_green" {
     startup-script = templatefile("prefect-server-setup.tftpl", {
       json_key           = base64decode(google_service_account_key.data_pipeline.private_key),
       domain             = local.prefect_dns_domain
+      internal_domain    = trimsuffix(local.prefect_internal_domain, ".")
+      internal_port      = local.prefect_internal_port
       allowed_cidr_range = data.google_compute_subnetwork.default-region.ip_cidr_range
+      username           = data.google_secret_manager_secret_version_access.prefect_server_username.secret_data
+      password           = data.google_secret_manager_secret_version_access.prefect_server_password.secret_data
     })
   }
 
@@ -92,4 +92,12 @@ resource "google_dns_record_set" "prefect_data_holi_social" {
   ttl          = 300
   managed_zone = data.terraform_remote_state.holi_data_pipeline_common_state.outputs.dns_prefect_domain_name
   rrdatas      = [google_compute_instance.prefect_server_green.network_interface[0].access_config[0].nat_ip]
+}
+
+resource "google_dns_record_set" "prefect_server_holi_internal" {
+  name         = local.prefect_internal_domain
+  type         = "A"
+  ttl          = 300
+  managed_zone = data.terraform_remote_state.holi_infra_state.outputs.dns_internal_zone_name
+  rrdatas      = [google_compute_instance.prefect_server_green.network_interface[0].network_ip]
 }

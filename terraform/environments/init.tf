@@ -51,5 +51,5 @@ provider "google-beta" {
 }
 
 provider "prefect" {
-  endpoint = "https://${local.prefect_dns_domain}:8443"
+  endpoint = "http://${local.prefect_internal_domain}:${local.prefect_internal_port}"
 }
