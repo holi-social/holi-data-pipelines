@@ -1,12 +1,13 @@
 import logging
 from langdetect import detect, LangDetectException
 from typing import Dict, Optional
+import prefect
 
-from common.logging_setup import initialize_logging
+# from common.logging_setup import initialize_logging
 
-# Initialize logging from logging_setup
-initialize_logging()
-logger = logging.getLogger(__name__)
+# Initialize logging
+# initialize_logging()
+logger = prefect.logging.get_logger()
 
 
 def transform_row(row: Dict[str, Optional[str]]) -> Dict[str, Optional[str]]:
@@ -39,16 +40,12 @@ def transform_row(row: Dict[str, Optional[str]]) -> Dict[str, Optional[str]]:
                 else:
                     doc[en_field] = text
             else:
-                logger.debug(
-                    f"No text provided for language detection in field: {de_field}/{en_field}"
-                )
+                logger.debug(f"No text provided for language detection in field: {de_field}/{en_field}")
         except LangDetectException:
             logger.warning(f"Language detection failed for text: {text[:30]}...")
 
     # Detect language for title and description
     assign_language_field(row.get("title", ""), "title_de", "title_en")
-    assign_language_field(
-        row.get("description", ""), "description_de", "description_en"
-    )
+    assign_language_field(row.get("description", ""), "description_de", "description_en")
 
     return doc

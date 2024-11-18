@@ -2,11 +2,13 @@ import json
 import logging
 from typing import List, Dict
 from typesense.exceptions import TypesenseClientError
-from common.logging_setup import initialize_logging
+import prefect
+
+# from common.logging_setup import initialize_logging
 
 # Initialize logging from logging_setup
-initialize_logging()
-logger = logging.getLogger(__name__)
+# initialize_logging()
+logger = prefect.logging.get_logger()
 
 
 def index_documents_in_batches(
@@ -38,9 +40,7 @@ def index_documents_in_batches(
         )
 
         # Parse and filter results
-        results = [
-            json.loads(line) if isinstance(line, str) else line for line in response
-        ]
+        results = [json.loads(line) if isinstance(line, str) else line for line in response]
         failed_items = [item for item in results if not item.get("success", True)]
         success_count = len(results) - len(failed_items)
 
@@ -50,9 +50,7 @@ def index_documents_in_batches(
             )
             logger.debug(f"Failed items in batch {batch_num}: {failed_items}")
         else:
-            logger.info(
-                f"Batch {batch_num} successfully processed with {success_count} documents."
-            )
+            logger.info(f"Batch {batch_num} successfully processed with {success_count} documents.")
         return failed_items
 
     except TypesenseClientError as e:
