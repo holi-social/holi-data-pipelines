@@ -10,10 +10,12 @@ from src.common.loaders.typesense_loader import index_documents_in_batches
 from src.common.typesense_client import TypesenseClient
 from src.config import get_config
 from src.common.variables import variable_value
+
 # import logging
 
 # Initialize logging
 logger = prefect.logging.get_logger()
+
 
 @task
 def extract_data(config: Dict[str, str]) -> List[Dict[str, Any]]:
@@ -42,8 +44,18 @@ def transform_data(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     except Exception as e:
         logger.error(f"Error transforming data: {e}")
         raise
+
+
 #
 #
+
+
+def batch(iterable, n=1):
+    l = len(iterable)
+    for ndx in range(0, l, n):
+        yield iterable[ndx : min(ndx + n, l)]
+
+
 @task
 def load_data(documents: List[Dict[str, Any]], config: Dict[str, str]) -> None:
     """Load transformed data into Typesense in batches."""
@@ -55,22 +67,12 @@ def load_data(documents: List[Dict[str, Any]], config: Dict[str, str]) -> None:
         # index_name = "staging_all"
         logger.info("Typesense schema created/updated successfully")
 
-        batch_size = 10000
-        batch = []
         batch_count = 0
 
-        for doc in documents:
-            batch.append(doc)
-            if len(batch) >= batch_size:
-                index_documents_in_batches(ts_client, batch, batch_count, index_name)
-                logger.info(f"Indexed batch {batch_count} of size {len(batch)}")
-                batch.clear()
-                batch_count += 1
-
-        # Load any remaining documents
-        if batch:
-            index_documents_in_batches(ts_client, batch, batch_count, index_name)
-            logger.info(f"Indexed remaining batch {batch_count} of size {len(batch)}")
+        for docs_batch in batch(documents, 100):
+            batch_count += 1
+            index_documents_in_batches(ts_client, docs_batch, batch_count, index_name)
+            logger.info(f"Indexed batch {batch_count} of size {len(docs_batch)}")
     except Exception as e:
         logger.error(f"Error loading data into Typesense: {e}")
         raise
@@ -94,4 +96,4 @@ def volunteering_to_typesense_etl() -> None:
 
 if __name__ == "__main__":
     volunteering_to_typesense_etl()
-    #volunteering_to_typesense_etl.serve(name="bq-to-typesense", cron="* * * * *")
+    # volunteering_to_typesense_etl.serve(name="bq-to-typesense", cron="* * * * *")
