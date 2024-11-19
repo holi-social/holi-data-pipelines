@@ -3,7 +3,16 @@ import os
 from prefect.variables import Variable
 from typing import Dict, List, Optional, Union
 
+# TODO maybe use pydantic.JsonType instead?
 JsonType = Union[None, int, str, bool, List["JsonType"], Dict[str, "JsonType"]]
+
+
+def getenv_case_insensitive(key: str, default: str = None) -> JsonType:
+    # TODO convert this code to first convert the key to uppercase and then lookup using os.environ.get or similar
+    for env_key, value in os.environ.items():
+        if env_key.lower() == key.lower():
+            return value
+    return default
 
 
 def variable_value(key: str, default: Optional[JsonType] = None) -> JsonType:
@@ -19,14 +28,5 @@ def variable_value(key: str, default: Optional[JsonType] = None) -> JsonType:
     Returns:
         The resolved value, parsed as JSON if applicable.
     """
-
-    def getenv_case_insensitive(key: str, default: str = None) -> JsonType:
-        for env_key, value in os.environ.items():
-            if env_key.lower() == key.lower():
-                return value
-        return default
-
     prefect_var = Variable.get(key)
-    env_var = getenv_case_insensitive(key, default)
-
-    return prefect_var or json.loads(env_var)
+    return prefect_var or json.loads(getenv_case_insensitive(key, default))
