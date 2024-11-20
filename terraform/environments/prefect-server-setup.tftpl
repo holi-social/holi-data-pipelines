@@ -128,15 +128,9 @@ apt install -y logrotate
 
 # docker apt sources TODO docker most probably is not needed on the server
 apt install -y ca-certificates curl gnupg lsb-release
-curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
-
-# update apt package index & install docker
-apt update
-apt install -y docker-ce
 
 # nginx
-apt install -y nginx certbot python3-certbot-nginx
+apt install -y nginx
 # set up stub_status for nginx monitoring via Ops Agent
 cat << 'EOF' > /etc/nginx/conf.d/status.conf
 server {
@@ -176,21 +170,8 @@ cat << 'EOF' > /etc/logrotate.d/nginx
 EOF
 systemctl restart logrotate
 
-# certificate
-[[ -d "/etc/letsencrypt/live/${domain}" ]] || certbot certonly --nginx -n --agree-tos -m development@holi.team -d ${domain}
-
 # nginx site
-echo "${username}:$(openssl passwd ${password})" > /etc/nginx/htpasswd
 cat << EOF > /etc/nginx/sites-available/prefect-server
-server {
-  listen 80;
-  server_name ${domain};
-
-  access_log /var/log/nginx/prefect-server.access.log;
-  error_log /var/log/nginx/prefect-server.error.log;
-
-  return 301 https://\$host\$request_uri;
-}
 map \$http_upgrade \$connection_upgrade {
   default upgrade;
   ''      close;
@@ -219,96 +200,19 @@ server {
     proxy_redirect off;
   }
 }
-server {
-  server_name ${domain};
-
-  access_log /var/log/nginx/prefect-server.access.log;
-  error_log /var/log/nginx/prefect-server.error.log;
-
-  location / {
-    satisfy any;
-
-    allow ${allowed_cidr_range};
-    allow 127.0.0.1;
-    deny  all;
-
-    auth_basic           "Restricted";
-    auth_basic_user_file /etc/nginx/htpasswd;
-
-    resolver 1.1.1.1 ipv6=off valid=30s;
-    proxy_set_header X-Real-IP \$remote_addr;
-    proxy_set_header Host \$http_host;
-    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto \$scheme;
-    proxy_http_version 1.1;
-    proxy_set_header Upgrade \$http_upgrade;
-    proxy_set_header Connection \$connection_upgrade;
-    proxy_pass http://localhost:4200;
-    proxy_redirect off;
-    proxy_ssl_server_name on;
-  }
-
-  listen 443 ssl; # managed by Certbot
-  ssl_certificate /etc/letsencrypt/live/${domain}/fullchain.pem; # managed by Certbot
-  ssl_certificate_key /etc/letsencrypt/live/${domain}/privkey.pem; # managed by Certbot
-  include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
-  ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
-}
 EOF
 ln -fs /etc/nginx/sites-available/prefect-server /etc/nginx/sites-enabled/prefect-server
-cat << EOF > /etc/nginx/sites-available/prefect-server-unauthenticated
-map \$http_upgrade \$connection_upgrade {
-  default upgrade;
-  ''      close;
-}
-server {
-  server_name ${domain};
-
-  access_log /var/log/nginx/prefect-server-unauthenticated.access.log;
-  error_log /var/log/nginx/prefect-server-unauthenticated.error.log;
-
-  location / {
-    resolver 1.1.1.1 ipv6=off valid=30s;
-    proxy_set_header X-Real-IP \$remote_addr;
-    proxy_set_header Host \$http_host;
-    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto \$scheme;
-    proxy_http_version 1.1;
-    proxy_set_header Upgrade \$http_upgrade;
-    proxy_set_header Connection \$connection_upgrade;
-    proxy_pass http://localhost:4200;
-    proxy_redirect off;
-    proxy_ssl_server_name on;
-  }
-
-  listen 8443 ssl;
-  ssl_certificate /etc/letsencrypt/live/${domain}/fullchain.pem;
-  ssl_certificate_key /etc/letsencrypt/live/${domain}/privkey.pem;
-  include /etc/letsencrypt/options-ssl-nginx.conf;
-  ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
-}
-EOF
 rm /etc/nginx/sites-enabled/default
 systemctl reload nginx
 
-# create a service account key file for accessing buckets by the runner machines
-# shellcheck disable=SC2154 # provided by terraform
-#mkdir -p /etc/data-pipeline
-#cat << EOF > /etc/data-pipeline/service-account.json
-#{json_key}
-#EOF
-
 # prefect setup
-apt install -y sqlite3 python3-venv
+apt install -y python3-venv
 mkdir -p /srv/prefect-server
 python3 -m venv /srv/prefect-server/.venv
 source /srv/prefect-server/.venv/bin/activate
 pip3 install -U pip
 pip3 install -U "prefect-gcp[all_extras]"
 
-# TODO configure postgresql access
-# prefect config set PREFECT_API_DATABASE_CONNECTION_URL="postgresql+asyncpg://postgres:yourTopSecretPassword@localhost:5432/prefect"
-# https://docs.prefect.io/3.0/develop/settings-ref#serversettings
 cat << EOF > /srv/prefect-server/profiles.toml
 active = "default"
 
@@ -322,6 +226,7 @@ PREFECT_API_ENABLE_METRICS = "True"
 PREFECT_API_URL = "http://${internal_domain}:${internal_port}/api"
 PREFECT_UI_API_URL = "http://${internal_domain}:${internal_port}/api"
 PREFECT_UI_URL = "http://${internal_domain}:${internal_port}/"
+PREFECT_API_DATABASE_CONNECTION_URL="postgresql+asyncpg://${database_username}:${database_password}@${database_host}:5432/${database_name}"
 EOF
 
 cat << 'EOF' > /etc/systemd/system/prefect-server.service
@@ -348,7 +253,7 @@ systemctl enable --now prefect-server
 prefect version
 
 sleep 10 # wait for the server to start
-PREFECT_API_URL=http://${internal_domain}/api prefect block register -m prefect_gcp
+PREFECT_API_URL=http://${internal_domain}:${internal_port}/api prefect block register -m prefect_gcp
 
 # signal we're done to the log file
 echo "done"

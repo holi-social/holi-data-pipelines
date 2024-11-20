@@ -6,7 +6,7 @@ locals {
 
   # the dns name can be at most 64 chars in total
   prefect_dns_domain      = "${local.environment_name}.${data.terraform_remote_state.holi_data_pipeline_common_state.outputs.dns_prefect_domain}"
-  prefect_internal_domain = "prefect-server-${local.environment}.${data.terraform_remote_state.holi_infra_state.outputs.dns_internal_zone_domain}"
+  prefect_internal_domain = "prefect-server-${local.environment}.${trimsuffix(data.terraform_remote_state.holi_infra_state.outputs.dns_internal_zone_domain, ".")}"
   prefect_internal_port   = local.environment == "production" ? 8420 : 8421 # separation of ports allows parallel ssh port forwardings from dev machines
   default_region          = data.terraform_remote_state.holi_infra_state.outputs.default_region
   default_project         = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id

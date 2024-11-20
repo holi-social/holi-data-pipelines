@@ -1,3 +1,31 @@
+# Prefect Block types of interest:
+#  bigquery-warehouse
+#  custom-webhook
+#  database-credentials
+#  date-time
+#  discord-webhook
+#  docker-host
+#  docker-registry-credentials
+#  gcp-credentials
+#  gcpsecret
+#  gcs-bucket
+#  github-credentials
+#  github-repository
+#  gitlab-credentials
+#  gitlab-repository
+#  json
+#  lambda-function
+#  local-file-system
+#  minio-credentials
+#  opsgenie-webhook
+#  pager-duty-webhook
+#  remote-file-system
+#  secret
+#  shell-operation
+#  slack-credentials
+#  slack-webhook
+#  smb
+
 resource "null_resource" "prefect_server_available" {
   provisioner "local-exec" {
     command = "scripts/wait-for-startup-script.sh -i ${google_compute_instance.prefect_server_green.name} -z ${google_compute_instance.prefect_server_green.zone} -t 600"
@@ -68,8 +96,9 @@ resource "prefect_work_pool" "cloud_run" {
 }
 
 resource "google_cloud_run_v2_service" "work_pool_cloud_run_worker" {
-  name     = "prefect-worker-${local.environment_name}"
-  location = local.default_region # finland, low CO2 emissions
+  name                = "prefect-worker-${local.environment_name}"
+  location            = local.default_region # finland, low CO2 emissions
+  deletion_protection = false
 
   template {
     service_account = data.terraform_remote_state.holi_data_pipeline_common_state.outputs.data_pipeline_service_account_email
@@ -124,5 +153,5 @@ resource "google_cloud_run_v2_service" "work_pool_cloud_run_worker" {
     percent = 100
   }
 
-  depends_on = [null_resource.prefect_server_available]
+  depends_on = [prefect_work_pool.cloud_run]
 }

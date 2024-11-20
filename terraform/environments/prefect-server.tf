@@ -30,12 +30,12 @@ data "google_compute_subnetwork" "default-region" {
   region = local.default_region
 }
 
-data "google_secret_manager_secret_version_access" "prefect_server_username" {
-  secret = local.environment == "production" ? "DATA_PIPELINE_PREFECT_USERNAME_PRODUCTION" : "DATA_PIPELINE_PREFECT_USERNAME_DEVELOPMENT"
+data "google_secret_manager_secret_version_access" "prefect_database_username" {
+  secret = local.environment == "production" ? "PREFECT_DB_USERNAME_PRODUCTION" : "PREFECT_DB_USERNAME_DEVELOPMENT"
 }
 
-data "google_secret_manager_secret_version_access" "prefect_server_password" {
-  secret = local.environment == "production" ? "DATA_PIPELINE_PREFECT_PASSWORD_PRODUCTION" : "DATA_PIPELINE_PREFECT_PASSWORD_DEVELOPMENT"
+data "google_secret_manager_secret_version_access" "prefect_database_password" {
+  secret = local.environment == "production" ? "PREFECT_DB_PASSWORD_PRODUCTION" : "PREFECT_DB_PASSWORD_DEVELOPMENT"
 }
 
 # TODO green/blue
@@ -71,11 +71,13 @@ resource "google_compute_instance" "prefect_server_green" {
     startup-script = templatefile("prefect-server-setup.tftpl", {
       json_key           = base64decode(google_service_account_key.data_pipeline.private_key),
       domain             = local.prefect_dns_domain
-      internal_domain    = trimsuffix(local.prefect_internal_domain, ".")
+      internal_domain    = local.prefect_internal_domain
       internal_port      = local.prefect_internal_port
       allowed_cidr_range = data.google_compute_subnetwork.default-region.ip_cidr_range
-      username           = data.google_secret_manager_secret_version_access.prefect_server_username.secret_data
-      password           = data.google_secret_manager_secret_version_access.prefect_server_password.secret_data
+      database_username  = data.google_secret_manager_secret_version_access.prefect_database_username.secret_data
+      database_password  = data.google_secret_manager_secret_version_access.prefect_database_password.secret_data
+      database_name      = google_sql_database.database.name
+      database_host      = local.environment_name == "production" ? data.terraform_remote_state.holi_infra_state.outputs.database_ip_address_production : data.terraform_remote_state.holi_infra_state.outputs.database_ip_address_development
     })
   }
 
@@ -95,7 +97,7 @@ resource "google_dns_record_set" "prefect_data_holi_social" {
 }
 
 resource "google_dns_record_set" "prefect_server_holi_internal" {
-  name         = local.prefect_internal_domain
+  name         = "${local.prefect_internal_domain}."
   type         = "A"
   ttl          = 300
   managed_zone = data.terraform_remote_state.holi_infra_state.outputs.dns_internal_zone_name
