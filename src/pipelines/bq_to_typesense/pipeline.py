@@ -3,12 +3,14 @@ from typing import List, Dict, Any
 
 import prefect.logging
 from prefect import task, flow
+import prefect.states
 
 from src.common.extractors.bq_extractor import extract_data_from_bigquery_table
 from src.common.loaders.typesense_loader import index_documents_in_batches
-from src.common.transformers.typesense_transformer import transform_row
+from src.pipelines.bq_to_typesense.typesense_transformer import transform_row
 from src.common.typesense_client import TypesenseClient
 from src.common.variables import variable_value, JsonType, secret_value
+from src.common.utils import batches
 
 # Initialize logging
 logger = prefect.logging.get_logger()
@@ -31,33 +33,26 @@ def transform_data(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return transformed
 
 
-def batch(iterable, n=1):
-    length = len(iterable)
-    for ndx in range(0, length, n):
-        yield iterable[ndx : min(ndx + n, length)]
-
-
 @task
-def load_data(documents: List[Dict[str, Any]], config: Dict[str, str]) -> None:
+def load_data(documents: List[Dict[str, Any]], typesense_client, schema_path: str) -> None:
     """Load transformed data into Typesense in batches."""
-    try:
-        typesense_client_wrapper = TypesenseClient(config)
-        ts_client = typesense_client_wrapper.get_client()
 
-        index_name = typesense_client_wrapper.create_typesense_schema("typesense/all.json")
-        # index_name = "staging_all"
-        logger.info("Typesense schema created/updated successfully")
+    collection_name = typesense_client.drop_and_create_collection(schema_path)
 
-        batch_count = 0
-
-        for docs_batch in batch(documents, 100):
-            batch_count += 1
-            # TODO handle returned result of index method
-            index_documents_in_batches(ts_client, docs_batch, batch_count, index_name)
-            logger.info(f"Indexed batch {batch_count} of size {len(docs_batch)}")
-    except Exception as e:
-        logger.error(f"Error loading data into Typesense: {e}")
-        raise
+    ingestion_failures = False
+    for (docs_batch, batch_count) in batches(documents, 100):
+        failed_documents, success_count = index_documents_in_batches(typesense_client, docs_batch, batch_count, collection_name)
+        if failed_documents:
+            ingestion_failures = True
+            logger.error(
+                f"Batch {batch_count} processed with failures: {len(failed_documents)} failed items out of {len(docs_batch)}."
+            )
+            logger.error(f"Failed items in batch {batch_count}: {failed_documents}")
+        else:
+            logger.info(f"Batch {batch_count} successfully processed with {success_count} documents.")
+    
+    if ingestion_failures:
+        return prefect.states.Failed("Some documents failed ingestion. Please see error log.")
 
 
 def get_config() -> dict[str, JsonType]:
@@ -69,6 +64,7 @@ def get_config() -> dict[str, JsonType]:
             "port": variable_value("typesense_port"),
             "protocol": variable_value("typesense_protocol"),
         },
+        "schema_path": "typesense/staging_all.json",
     }
 
 
@@ -76,17 +72,15 @@ def get_config() -> dict[str, JsonType]:
 @flow()
 def volunteering_to_typesense_etl() -> None:
     """Orchestrates the ETL pipeline to move data from BigQuery to Typesense."""
-    try:
-        config = get_config()
-        raw_data = extract_data(config["volunteering_with_classification"])
-        logger.info(f"first row: {raw_data[0]}")
-        transformed_data = transform_data(raw_data)
-        logger.info(f"first transformed row: {transformed_data[0]}")
-        load_data(transformed_data, config=config)
-        logger.info("ETL pipeline completed successfully")
-    except Exception as e:
-        logger.error(f"Error in ETL pipeline: {e}")
-        raise
+    config, typesense_client = setup_pipeline()
+    raw_data = extract_data(config["volunteering_with_classification"])
+    transformed_data = transform_data(raw_data)
+    load_data(transformed_data, typesense_client, config["schema_path"])
+
+def setup_pipeline():
+    config = get_config()
+    typesense_client = TypesenseClient(config["typesense_config"])
+    return config,typesense_client
 
 
 if __name__ == "__main__":

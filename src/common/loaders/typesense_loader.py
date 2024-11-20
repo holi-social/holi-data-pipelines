@@ -28,34 +28,16 @@ def index_documents_in_batches(
     Returns:
         List[Dict[str, object]]: A list of failed items (if any), where each item is a dictionary with information about the failure.
 
-    Raises:
-        TypesenseClientError: If there is an issue with the Typesense client or document import (e.g., network issues, invalid configuration).
-        Exception: If any other unexpected error occurs during the batch processing.
     """
-    try:
-        # Import documents with upsert option
-        # TODO: This works for initial sync but we need to figure out how to do this for later syncs
-        response = client.collections[index_name].documents.import_(
-            docs, {"action": "upsert", "dirty_values": "coerce_or_reject"}
-        )
+    # Import documents with upsert option
+    # TODO: This works for initial sync but we need to figure out how to do this for later syncs
+    response = client.collections[index_name].documents.import_(
+        docs, {"action": "upsert", "dirty_values": "coerce_or_reject"}
+    )
 
-        # Parse and filter results
-        results = [json.loads(line) if isinstance(line, str) else line for line in response]
-        failed_items = [item for item in results if not item.get("success", True)]
-        success_count = len(results) - len(failed_items)
+    # Parse and filter results
+    results = [json.loads(line) if isinstance(line, str) else line for line in response]
+    failed_items = [item for item in results if not item.get("success", True)]
+    success_count = len(results) - len(failed_items)
 
-        if failed_items:
-            logger.warning(
-                f"Batch {batch_num} processed with failures: {len(failed_items)} failed items out of {len(docs)}."
-            )
-            logger.debug(f"Failed items in batch {batch_num}: {failed_items}")
-        else:
-            logger.info(f"Batch {batch_num} successfully processed with {success_count} documents.")
-        return failed_items
-
-    except TypesenseClientError as e:
-        logger.error(f"Typesense client error in batch {batch_num}: {e}")
-        raise
-    except Exception as e:
-        logger.exception(f"Unexpected error processing batch {batch_num}: {e}")
-        raise
+    return failed_items, success_count
