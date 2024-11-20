@@ -54,9 +54,7 @@ LOGGING_CONFIG = {
     "formatters": {
         "json_formatter": {
             "()": structlog.stdlib.ProcessorFormatter,
-            "processor": structlog.processors.JSONRenderer(
-                serializer=holi_gcloud_serializer
-            ),
+            "processor": structlog.processors.JSONRenderer(serializer=holi_gcloud_serializer),
             "foreign_pre_chain": _shared_processors,
         },
         "console_formatter": {
@@ -85,13 +83,7 @@ LOGGING_CONFIG = {
     },
     "root": {
         "level": "INFO",
-        "handlers": [
-            (
-                "console"
-                if (sys.stdout.isatty() or "PYCHARM_HOSTED" in os.environ)
-                else "json"
-            )
-        ],
+        "handlers": [("console" if (sys.stdout.isatty() or "PYCHARM_HOSTED" in os.environ) else "json")],
     },
 }
 

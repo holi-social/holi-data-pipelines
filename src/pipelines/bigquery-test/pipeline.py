@@ -41,6 +41,7 @@ def mark_it_down(day_as_string: str, count: int) -> None:
 
 # TODO task caching: https://docs.prefect.io/3.0/develop/task-caching
 
+
 @flow(timeout_seconds=300)
 def bigquery_report() -> None:
     """

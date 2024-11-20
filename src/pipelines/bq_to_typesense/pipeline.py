@@ -1,3 +1,4 @@
+import sys
 from typing import List, Dict, Any
 
 import prefect.logging
@@ -7,7 +8,7 @@ from src.common.extractors.bq_extractor import extract_data_from_bigquery_table
 from src.common.loaders.typesense_loader import index_documents_in_batches
 from src.common.transformers.typesense_transformer import transform_row
 from src.common.typesense_client import TypesenseClient
-from src.common.variables import variable_value, JsonType
+from src.common.variables import variable_value, JsonType, secret_value
 
 # Initialize logging
 logger = prefect.logging.get_logger()
@@ -31,9 +32,9 @@ def transform_data(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
 
 def batch(iterable, n=1):
-    l = len(iterable)
-    for ndx in range(0, l, n):
-        yield iterable[ndx: min(ndx + n, l)]
+    length = len(iterable)
+    for ndx in range(0, length, n):
+        yield iterable[ndx : min(ndx + n, length)]
 
 
 @task
@@ -63,11 +64,11 @@ def get_config() -> dict[str, JsonType]:
     return {
         "volunteering_with_classification": variable_value("volunteering_with_classification"),
         "typesense_config": {
-            "api_key": variable_value("typesense_api_key"),  # FIXME move this to a secret block
+            "api_key": secret_value("typesense-api-key"),
             "host": variable_value("typesense_host"),
             "port": variable_value("typesense_port"),
-            "protocol": variable_value("typesense_protocol")
-        }
+            "protocol": variable_value("typesense_protocol"),
+        },
     }
 
 
@@ -90,4 +91,3 @@ def volunteering_to_typesense_etl() -> None:
 
 if __name__ == "__main__":
     volunteering_to_typesense_etl()
-    # volunteering_to_typesense_etl.serve(name="bq-to-typesense", cron="* * * * *")

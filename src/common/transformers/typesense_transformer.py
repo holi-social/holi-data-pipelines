@@ -16,6 +16,7 @@ def _key_for_lang(key: str, lang: str) -> str:
 
 def transform_row(row: Dict[str, Optional[str]]) -> Dict[str, Optional[str]]:
     """Transform each row, detect language, and format for Typesense."""
+
     def _lang_for(value: str) -> str:
         """Helper to detect language and assign to appropriate field."""
         try:
@@ -25,6 +26,7 @@ def transform_row(row: Dict[str, Optional[str]]) -> Dict[str, Optional[str]]:
                 logger.warning(f"No text provided for language detection in document with id {row.get("id")}")
         except LangDetectException:
             logger.warning(f"Language detection failed in document with id {row.get("id")} for text: {value[:30]}...")
+
     return "de"
 
     # Initialize document with default values

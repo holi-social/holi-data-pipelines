@@ -7,6 +7,7 @@ import prefect
 # Initialize logging
 logger = prefect.logging.get_logger()
 
+
 class TypesenseClient:
     def __init__(self, config: Dict[str, str]) -> None:
         """
@@ -100,14 +101,10 @@ class TypesenseClient:
 
             # Create the collection with the new schema
             self.client.collections.create(schema)
-            logger.info(
-                f"Typesense schema for '{collection_name}' created/updated successfully."
-            )
+            logger.info(f"Typesense schema for '{collection_name}' created/updated successfully.")
 
             return collection_name
 
         except Exception as e:
-            logger.error(
-                f"Error creating/updating Typesense schema: {e}", exc_info=True
-            )
+            logger.error(f"Error creating/updating Typesense schema: {e}", exc_info=True)
             raise

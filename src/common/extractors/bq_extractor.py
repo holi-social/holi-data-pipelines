@@ -7,7 +7,7 @@ logger = prefect.logging.get_logger()
 
 
 def extract_data_from_bigquery(
-        query: str,
+    query: str,
 ) -> list[Dict]:
     """
     Extracts data from BigQuery based on a SQL query using the initialized BigQuery client.
