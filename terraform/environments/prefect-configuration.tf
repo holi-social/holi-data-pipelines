@@ -52,6 +52,11 @@ resource "prefect_variable" "typesense_protocol" {
   value = "https"
 }
 
+resource "prefect_variable" "prefect_environment" {
+  name  = "prefect_environment"
+  value = local.environment
+}
+
 resource "prefect_block" "typesense_admin_api_key" {
   name      = "typesense-admin-api-key"
   type_slug = "gcpsecret"

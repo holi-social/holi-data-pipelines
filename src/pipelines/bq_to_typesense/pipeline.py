@@ -66,7 +66,7 @@ def get_config() -> dict[str, JsonType]:
             "port": variable_value("typesense_port"),
             "protocol": variable_value("typesense_protocol"),
         },
-        "schema_path": "typesense/staging_all.json",
+        "schema_path": f"typesense/{variable_value("prefect_environment")}_all.json",
     }
 
 

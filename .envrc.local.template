@@ -71,10 +71,7 @@ export TYPESENSE_PORT=
 export TYPESENSE_PROTOCOL=
 export GOOGLE_APPLICATION_CREDENTIALS=../.holi-terraform.key
 
-# develop against staging prefect
 #export PREFECT_API_URL=http://prefect-server-staging.holi.internal:8421/api
-#daemonize prefect-tunnel gcloud compute ssh --zone "europe-north1-a" prefect-server-staging-green --project "holi-shared" -- -L8421:localhost:8421
-
-# run against production prefect
 export PREFECT_API_URL=http://prefect-server-production.holi.internal:8420/api
-daemonize prefect-tunnel gcloud compute ssh --zone "europe-north1-a" prefect-server-production-green --project "holi-shared" -- -L8420:localhost:8420 sleep 86400
+daemonize prefect-tunnel-staging gcloud compute ssh --zone "europe-north1-a" prefect-server-staging-green --project "holi-shared" -- -L8421:localhost:8421 sleep 86400
+daemonize prefect-tunnel-production gcloud compute ssh --zone "europe-north1-a" prefect-server-production-green --project "holi-shared" -- -L8420:localhost:8420 sleep 86400
