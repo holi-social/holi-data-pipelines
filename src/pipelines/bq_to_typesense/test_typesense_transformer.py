@@ -8,6 +8,7 @@ fake = Faker()
 
 @pytest.fixture
 def row():
+    """Generates a random row with all fields set"""
     return {
         "id": fake.uuid4(),
         "title": fake.text(max_nb_chars=100),
@@ -103,6 +104,7 @@ def test_returns_none_for_invalid_lat(row):
 
     assert result["location_lat_lng"] is None
 
+# noinspection PyTypedDict
 def test_returns_none_for_invalid_lng(row):
     row["longitude"] = ""
 
