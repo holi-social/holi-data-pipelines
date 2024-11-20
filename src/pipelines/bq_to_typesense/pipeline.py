@@ -1,9 +1,9 @@
 import sys
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Union
 
 import prefect.logging
 from prefect import task, flow
-import prefect.states
+from prefect.states import Failed
 
 from src.common.extractors.bq_extractor import extract_data_from_bigquery_table
 from src.common.loaders.typesense_loader import index_documents_in_batches
@@ -34,7 +34,7 @@ def transform_data(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
 
 @task
-def load_data(documents: List[Dict[str, Any]], typesense_client, schema_path: str) -> None:
+def load_data(documents: List[Dict[str, Any]], typesense_client, schema_path: str) -> None | Failed:
     """Load transformed data into Typesense in batches."""
 
     collection_name = typesense_client.drop_and_create_collection(schema_path)
@@ -52,7 +52,7 @@ def load_data(documents: List[Dict[str, Any]], typesense_client, schema_path: st
             logger.info(f"Batch {batch_count} successfully processed with {success_count} documents.")
     
     if ingestion_failures:
-        return prefect.states.Failed("Some documents failed ingestion. Please see error log.")
+        return Failed(message="Some documents failed ingestion. Please see error log.")
 
 
 def get_config() -> dict[str, JsonType]:
