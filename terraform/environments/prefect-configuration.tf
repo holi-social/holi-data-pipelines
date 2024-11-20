@@ -4,25 +4,46 @@ resource "null_resource" "prefect_server_available" {
   }
 }
 
-resource "null_resource" "open_unauthenticated_endpoint" {
-  provisioner "local-exec" {
-    command = "scripts/manage-unauthenticated-endpoint.sh -o -d ${local.prefect_dns_domain} -p 8443 -i ${google_compute_instance.prefect_server_green.name} -z ${google_compute_instance.prefect_server_green.zone}"
-  }
-  depends_on = [null_resource.prefect_server_available]
+resource "prefect_variable" "volunteering_with_classification" {
+  name  = "volunteering_with_classification"
+  value = local.environment == "production" ? "holi-shared.datapool_production.volunteering_voltastics_with_classification_enriched" : "holi-shared.datapool_development.volunteering_voltastics_with_classification_enriched"
 }
 
-resource "prefect_variable" "voltastics_raw_table" {
-  name       = "volunteering_voltastics_raw_table"
-  value      = "holi-shared.datalake_production.volunteering_voltastics_raw"
-  depends_on = [null_resource.open_unauthenticated_endpoint]
+resource "prefect_variable" "typesense_host" {
+  name  = "typesense_host"
+  value = "t9vemwkibxajcorqp-1.a1.typesense.net"
 }
 
-resource "prefect_block" "application_default_credentials" {
-  name       = "application-default-credentials"
-  type_slug  = "gcp-credentials"
-  depends_on = [null_resource.open_unauthenticated_endpoint]
+resource "prefect_variable" "typesense_port" {
+  name  = "typesense_port"
+  value = 443
+}
+
+resource "prefect_variable" "typesense_protocol" {
+  name  = "typesense_protocol"
+  value = "https"
+}
+
+# TODO is this block needed? seems to work with direct embedding in depending resources
+# resource "prefect_block" "application_default_credentials" {
+#   name      = "application-default-credentials"
+#   type_slug = "gcp-credentials"
+#   data = jsonencode({
+#     "project" = "holi-shared"
+#   })
+#   depends_on = [null_resource.prefect_server_available]
+# }
+
+resource "prefect_block" "typesense_admin_api_key" {
+  name      = "typesense-admin-api-key"
+  type_slug = "gcpsecret"
+
   data = jsonencode({
-    "project" = "holi-shared"
+    "gcp_credentials" = {
+      "project" = "holi-shared"
+    }
+    "secret_name"    = "TYPESENSE_ADMIN_API_KEY"
+    "secret_version" = "latest"
   })
 }
 
@@ -35,7 +56,7 @@ resource "prefect_block" "bigquery_warehouse" {
       "project" = "holi-shared"
     }
   })
-  depends_on = [null_resource.open_unauthenticated_endpoint, prefect_block.application_default_credentials]
+  depends_on = [null_resource.prefect_server_available]
 }
 
 resource "prefect_work_pool" "cloud_run" {
@@ -43,14 +64,7 @@ resource "prefect_work_pool" "cloud_run" {
   type              = "cloud-run"
   paused            = false
   base_job_template = file("./cloud-run-work-pool-base-job-template.json")
-  depends_on        = [null_resource.open_unauthenticated_endpoint]
-}
-
-resource "null_resource" "close_unauthenticated_endpoint" {
-  provisioner "local-exec" {
-    command = "scripts/manage-unauthenticated-endpoint.sh -d ${local.prefect_dns_domain} -p 8443 -i ${google_compute_instance.prefect_server_green.name} -z ${google_compute_instance.prefect_server_green.zone}"
-  }
-  depends_on = [prefect_variable.voltastics_raw_table, prefect_block.application_default_credentials, prefect_block.bigquery_warehouse, prefect_work_pool.cloud_run]
+  depends_on        = [null_resource.prefect_server_available]
 }
 
 resource "google_cloud_run_v2_service" "work_pool_cloud_run_worker" {

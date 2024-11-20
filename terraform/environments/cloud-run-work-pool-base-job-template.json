@@ -40,7 +40,7 @@
                     }
                   }
                 ],
-                "timeoutSeconds": "{{ timeout }}",
+                "timeoutSeconds": "{{ timeout_execution}}",
                 "serviceAccountName": "{{ service_account_name }}"
               }
             }
@@ -73,9 +73,7 @@
         "additionalProperties": {
           "type": "string"
         },
-        "default": {
-          "TEST": "123"
-        }
+        "default": {}
       },
       "labels": {
         "title": "Labels",
@@ -84,9 +82,7 @@
         "additionalProperties": {
           "type": "string"
         },
-        "default": {
-          "test-label": "test-value"
-        }
+        "default": {}
       },
       "command": {
         "title": "Command",
@@ -150,10 +146,18 @@
       },
       "timeout": {
         "title": "Job Timeout",
-        "description": "The length of time that Prefect will wait for Cloud Run Job state changes.",
+        "description": "The length of time (in seconds) that Prefect will wait for Cloud Run Job state changes.",
         "default": 600,
         "exclusiveMinimum": 0,
         "maximum": 3600,
+        "type": "integer"
+      },
+      "timeout_execution": {
+        "title": "Execution Timeout",
+        "description": "The length of time (in seconds) that Prefect will wait for Cloud Run Job executions.",
+        "default": 3600,
+        "exclusiveMinimum": 0,
+        "maximum": 86400,
         "type": "integer"
       }
     },

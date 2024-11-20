@@ -65,6 +65,7 @@ deployments:
     job_variables:
       image: '{{ build_image.image }}'
       memory: '4096Mi'
+      timeout_execution: '86400'
   concurrency_limit:
   parameters: {}
   enforce_parameter_schema: true

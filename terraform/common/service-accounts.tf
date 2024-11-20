@@ -8,8 +8,6 @@ resource "google_project_iam_member" "data_pipeline" {
   for_each = toset([
     "roles/iam.serviceAccountUser",
     "roles/run.developer",
-    "roles/bigquery.dataEditor", # might be unneeded
-    "roles/bigquery.jobUser",
     "roles/bigquery.user",
   ])
   role   = each.key

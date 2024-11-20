@@ -299,7 +299,6 @@ systemctl reload nginx
 #EOF
 
 # prefect setup
-# TODO: use pyenv for managing python version...?
 apt install -y sqlite3 python3-venv
 mkdir -p /srv/prefect-server
 python3 -m venv /srv/prefect-server/.venv
@@ -320,9 +319,9 @@ PREFECT_SERVER_LOGGING_LEVEL = "DEBUG"
 PREFECT_SERVER_ANALYTICS_ENABLED = "False"
 PREFECT_SERVER_METRICS_ENABLED = "True"
 PREFECT_API_ENABLE_METRICS = "True"
-PREFECT_API_URL = "http://${internal_domain}/api"
-PREFECT_UI_API_URL = "http://${internal_domain}/api"
-PREFECT_UI_URL = "http://${domain}/"
+PREFECT_API_URL = "http://${internal_domain}:${internal_port}/api"
+PREFECT_UI_API_URL = "http://${internal_domain}:${internal_port}/api"
+PREFECT_UI_URL = "http://${internal_domain}:${internal_port}/"
 EOF
 
 cat << 'EOF' > /etc/systemd/system/prefect-server.service
