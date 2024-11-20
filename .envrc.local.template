@@ -1,10 +1,80 @@
-export TYPESENSE_API_KEY=
+# Usage: daemonize <name> [<command> [...<args>]]
+#
+# Starts the command in the background with an exclusive lock on $name.
+#
+# If no command is passed, it uses the name as the command.
+#
+# Logs are in .direnv/$name.log
+#
+# To kill the process, run `kill $(< .direnv/$name.pid)`.
+daemonize() {
+  local name=$1
+  shift
+  local pid_file=$(direnv_layout_dir)/$name.pid
+  local log_file=$(direnv_layout_dir)/$name.log
+
+  if [[ $# -lt 1 ]]; then
+    cmd=$name
+  else
+    cmd=$1
+    shift
+  fi
+
+  if ! has "$cmd"; then
+    echo "ERROR: $cmd not found"
+    return 1
+  fi
+
+  mkdir -p "$(direnv_layout_dir)"
+
+  # Open pid_file on file descriptor 200
+  exec 200>"$pid_file"
+
+  # Check that we have exclusive access
+  if ! flock --nonblock 200; then
+    echo "daemonize[$name] is already running as pid $(< "$pid_file")"
+    return
+  fi
+
+  # Start the process in the background. This requires two forks to escape the
+  # control of bash.
+
+  # First fork
+  (
+    # Second fork
+    (
+      echo "daemonize[$name:$BASHPID]: starting $cmd $*" >&2
+      echo $BASHPID
+      # Record the PID for good measure
+      echo "$BASHPID" >&200
+
+      # Redirect standard file descriptors
+      exec 0</dev/null
+      exec 1>"$log_file"
+      exec 2>&1
+      # Used by direnv
+      exec 3>&-
+      exec 4>&-
+
+      # Run command
+      exec "$cmd" "$@"
+    ) &
+  ) &
+
+  # Release that file descriptor
+  exec 200>&-
+}
+
+export TYPESENSE_ADMIN_API_KEY=
 export TYPESENSE_HOST=
 export TYPESENSE_PORT=
 export TYPESENSE_PROTOCOL=
-export ENVIRONMENT=development
-export DRY_RUN=True
-export PROJECT_ID="holi-shared"
-export ENGAGEMENT_TYPE=DONATIONS
-export ENVIRONMENT_HOLI_API=staging.unified.apis.holi.social
-export GOOGLE_APPLICATION_CREDENTIALS="../../.holi-terraform.key"
+export GOOGLE_APPLICATION_CREDENTIALS=../.holi-terraform.key
+
+# develop against staging prefect
+#export PREFECT_API_URL=http://prefect-server-staging.holi.internal:8421/api
+#daemonize prefect-tunnel gcloud compute ssh --zone "europe-north1-a" prefect-server-staging-green --project "holi-shared" -- -L8421:localhost:8421
+
+# run against production prefect
+export PREFECT_API_URL=http://prefect-server-production.holi.internal:8420/api
+daemonize prefect-tunnel gcloud compute ssh --zone "europe-north1-a" prefect-server-production-green --project "holi-shared" -- -L8420:localhost:8420 sleep 86400

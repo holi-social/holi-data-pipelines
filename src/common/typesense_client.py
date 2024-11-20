@@ -15,12 +15,12 @@ class TypesenseClient:
         Args:
             config (dict): Configuration dictionary to initialize the Typesense client.
         """
-        
-            # Fetch necessary variables
-        typesense_api_key = config["typesense_api_key"]
-        typesense_host = config["typesense_host"]
-        typesense_port = config["typesense_port"]
-        typesense_protocol = config["typesense_protocol"]
+
+        # Fetch necessary variables
+        typesense_api_key = config["api_key"]
+        typesense_host = config["host"]
+        typesense_port = config["port"]
+        typesense_protocol = config["protocol"]
         # Create the client
         self.client = typesense.Client(
             {
@@ -37,7 +37,6 @@ class TypesenseClient:
         )
 
         logger.debug("Typesense client successfully initialized.")
-
 
     def drop_and_create_collection(self, schema_file_path: str) -> str:
         """
@@ -62,7 +61,7 @@ class TypesenseClient:
             logger.info(f"Typesense collection '{collection_name}' deleted.")
         except typesense.exceptions.ObjectNotFound:
             logger.debug("Couldn't find collection. Proceeding....")
-        
+
         # Create the collection with the new schema
         self.client.collections.create(schema)
         logger.info(f"Typesense collection '{collection_name}' created/updated.")

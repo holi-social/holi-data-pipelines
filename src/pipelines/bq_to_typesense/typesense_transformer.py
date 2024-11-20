@@ -21,7 +21,7 @@ def _lang_for(value: str) -> str:
             logger.warning(f"No text provided for language detection in document")
     except LangDetectException:
         logger.warning(f"Language detection failed")
-    
+
     return "de"
 
 
@@ -37,8 +37,8 @@ def transform_row(row: Dict[str, Optional[str]]) -> Dict[str, Optional[str]]:
             return Decimal(value)
         except (ValueError, decimal.InvalidOperation):
             return None
-        
-     # Compute latitude and longitude as decimals or None
+
+    # Compute latitude and longitude as decimals or None
     latitude = decimal_or_none(row.get("latitude"))
     longitude = decimal_or_none(row.get("longitude"))
 
@@ -53,7 +53,7 @@ def transform_row(row: Dict[str, Optional[str]]) -> Dict[str, Optional[str]]:
         "location": row.get("location"),
         "location_lat_lng": [latitude, longitude] if latitude is not None and longitude is not None else None,
         "image_url": row.get("image"),
-        "link_locators": { "volunteering": row.get("id") },
+        "link_locators": {"volunteering": row.get("id")},
     }
 
     title_lang = _lang_for(row.get("title"))

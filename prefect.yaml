@@ -31,12 +31,11 @@ pull:
 # the deployments section allows you to provide configuration for deploying flows
 # TODO create an example hello world entry with documentation/comments for specific properties
 deployments:
-- name: bigquery-test-deploy
+- name: example-deploy
   version:
   tags: []
-  description: "A flow for generating a report of how many current volunteering opportunities
-    are available in BigQuery.\n\n:return:"
-  entrypoint: src/pipelines/bigquery-test/pipeline.py:bigquery_report
+  description:
+  entrypoint: src/pipelines/example/pipeline.py:hello_universe
   schedules:
   - cron: 0 5 29 2 * 0 2020/10
     timezone:
@@ -47,7 +46,7 @@ deployments:
     work_queue_name: default
     job_variables:
       image: '{{ build_image.image }}'
-      timeout_execution: '86400'
+      timeout_execution: 86400
   concurrency_limit:
   parameters: {}
   enforce_parameter_schema: true
@@ -67,6 +66,7 @@ deployments:
     job_variables:
       image: '{{ build_image.image }}'
       memory: '4096Mi'
+      timeout_execution: 86400
   concurrency_limit:
   parameters: {}
   enforce_parameter_schema: true

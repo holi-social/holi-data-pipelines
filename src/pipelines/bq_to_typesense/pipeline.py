@@ -1,8 +1,7 @@
-import sys
 from typing import List, Dict, Any, Union
 
 import prefect.logging
-from prefect import task, flow
+from prefect import task, flow, State
 from prefect.states import Failed
 
 from src.common.extractors.bq_extractor import extract_data_from_bigquery_table
@@ -34,23 +33,26 @@ def transform_data(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
 
 @task
-def load_data(documents: List[Dict[str, Any]], typesense_client, schema_path: str) -> None | Failed:
+def load_data(documents: List[Dict[str, Any]], typesense_client, schema_path: str) -> None | State:
     """Load transformed data into Typesense in batches."""
 
     collection_name = typesense_client.drop_and_create_collection(schema_path)
 
     ingestion_failures = False
-    for (docs_batch, batch_count) in batches(documents, 100):
-        failed_documents, success_count = index_documents_in_batches(typesense_client, docs_batch, batch_count, collection_name)
+    for docs_batch, batch_count in batches(documents, 100):
+        failed_documents, success_count = index_documents_in_batches(
+            typesense_client, docs_batch, batch_count, collection_name
+        )
         if failed_documents:
             ingestion_failures = True
             logger.error(
-                f"Batch {batch_count} processed with failures: {len(failed_documents)} failed items out of {len(docs_batch)}."
+                f"Batch {batch_count} processed with failures: {len(failed_documents)} failed items out of"
+                f" {len(docs_batch)}."
             )
             logger.error(f"Failed items in batch {batch_count}: {failed_documents}")
         else:
             logger.info(f"Batch {batch_count} successfully processed with {success_count} documents.")
-    
+
     if ingestion_failures:
         return Failed(message="Some documents failed ingestion. Please see error log.")
 
@@ -59,7 +61,7 @@ def get_config() -> dict[str, JsonType]:
     return {
         "volunteering_with_classification": variable_value("volunteering_with_classification"),
         "typesense_config": {
-            "api_key": secret_value("typesense-api-key"),
+            "api_key": secret_value("typesense-admin-api-key"),
             "host": variable_value("typesense_host"),
             "port": variable_value("typesense_port"),
             "protocol": variable_value("typesense_protocol"),
@@ -69,7 +71,7 @@ def get_config() -> dict[str, JsonType]:
 
 
 # TODO configure flow via annotation
-# TODO configure task so that they can be tried 
+# TODO configure task so that they can be tried
 @flow()
 def volunteering_to_typesense_etl() -> None:
     """Orchestrates the ETL pipeline to move volunteering data from BigQuery to Typesense."""
@@ -78,10 +80,11 @@ def volunteering_to_typesense_etl() -> None:
     transformed_data = transform_data(raw_data)
     load_data(transformed_data, typesense_client, config["schema_path"])
 
+
 def setup_pipeline():
     config = get_config()
     typesense_client = TypesenseClient(config["typesense_config"])
-    return config,typesense_client
+    return config, typesense_client
 
 
 if __name__ == "__main__":

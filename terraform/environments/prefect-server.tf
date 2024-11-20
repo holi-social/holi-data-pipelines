@@ -71,7 +71,6 @@ resource "google_compute_instance" "prefect_server_green" {
   metadata = {
     startup-script = templatefile("prefect-server-setup.tftpl", {
       json_key           = base64decode(google_service_account_key.data_pipeline.private_key),
-      domain             = local.prefect_dns_domain
       internal_domain    = local.prefect_internal_domain
       internal_port      = local.prefect_internal_port
       allowed_cidr_range = data.google_compute_subnetwork.default-region.ip_cidr_range
@@ -89,18 +88,14 @@ resource "google_compute_instance" "prefect_server_green" {
   }
 }
 
-resource "google_dns_record_set" "prefect_data_holi_social" {
-  name         = "${local.prefect_dns_domain}."
-  type         = "A"
-  ttl          = 300
-  managed_zone = data.terraform_remote_state.holi_data_pipeline_common_state.outputs.dns_prefect_domain_name
-  rrdatas      = [google_compute_instance.prefect_server_green.network_interface[0].access_config[0].nat_ip]
-}
-
 resource "google_dns_record_set" "prefect_server_holi_internal" {
   name         = "${local.prefect_internal_domain}."
   type         = "A"
   ttl          = 300
   managed_zone = data.terraform_remote_state.holi_infra_state.outputs.dns_internal_zone_name
   rrdatas      = [google_compute_instance.prefect_server_green.network_interface[0].network_ip]
+}
+
+output "prefect_server_url" {
+  value = local.prefect_server_url
 }

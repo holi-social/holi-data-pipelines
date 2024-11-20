@@ -1,4 +1,5 @@
 .idea
 .venv
+.direnv
 .envrc.local
 *.pyc

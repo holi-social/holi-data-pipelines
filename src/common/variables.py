@@ -5,7 +5,6 @@ from typing import Dict, List, Optional, Union
 from prefect.variables import Variable
 from prefect_gcp.secret_manager import GcpSecret
 
-gcpsecret_block = GcpSecret.load("typesense-api-key")
 # TODO maybe use pydantic.JsonType instead?
 JsonType = Union[None, int, str, bool, List["JsonType"], Dict[str, "JsonType"]]
 

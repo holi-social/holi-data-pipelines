@@ -52,16 +52,6 @@ resource "prefect_variable" "typesense_protocol" {
   value = "https"
 }
 
-# TODO is this block needed? seems to work with direct embedding in depending resources
-# resource "prefect_block" "application_default_credentials" {
-#   name      = "application-default-credentials"
-#   type_slug = "gcp-credentials"
-#   data = jsonencode({
-#     "project" = "holi-shared"
-#   })
-#   depends_on = [null_resource.prefect_server_available]
-# }
-
 resource "prefect_block" "typesense_admin_api_key" {
   name      = "typesense-admin-api-key"
   type_slug = "gcpsecret"
