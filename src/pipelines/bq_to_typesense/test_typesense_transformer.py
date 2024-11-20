@@ -110,9 +110,32 @@ def test_returns_none_for_invalid_lng(row):
 
     assert result["location_lat_lng"] is None
 
-def test_tolerates_missing_values():
-    # TODO
-    pass
+def test_tolerates_missing_values(row):
+
+    row_with_missing_values = {
+        "id": row["id"],
+        "title": None,
+        "description": None,
+        "location": None,
+        "latitude": None,
+        "longitude": None,
+        "image": None,
+        "link": None,
+    }
+
+    result = transform_row(row_with_missing_values)
+
+    assert result["type"] == "volunteering"
+    assert result["volunteering_id"] == row_with_missing_values["id"]
+    assert result["title_de"] is None
+    assert result["title_en"] is None
+    assert result["description_de"] is None
+    assert result["description_en"] is None
+    assert result["location"] is None
+    assert result["location_lat_lng"] is None
+    assert result["image_url"] is None
+    assert result["link_locators"] == {"volunteering": row_with_missing_values["id"]}
+
 
 def test_falls_back_to_german_if_language_detection_on_title_fails(row):
     row["title"] = "lkajdclvoju9p3845798)&"

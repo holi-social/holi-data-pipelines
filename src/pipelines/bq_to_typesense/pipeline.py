@@ -69,9 +69,10 @@ def get_config() -> dict[str, JsonType]:
 
 
 # TODO configure flow via annotation
+# TODO configure task so that they can be tried 
 @flow()
 def volunteering_to_typesense_etl() -> None:
-    """Orchestrates the ETL pipeline to move data from BigQuery to Typesense."""
+    """Orchestrates the ETL pipeline to move volunteering data from BigQuery to Typesense."""
     config, typesense_client = setup_pipeline()
     raw_data = extract_data(config["volunteering_with_classification"])
     transformed_data = transform_data(raw_data)
