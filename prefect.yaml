@@ -29,6 +29,7 @@ pull:
     directory: /opt/prefect/holi-data-pipelines
 
 # the deployments section allows you to provide configuration for deploying flows
+# TODO create an example hello world entry with documentation/comments for specific properties
 deployments:
 - name: bigquery-test-deploy
   version:
@@ -46,6 +47,7 @@ deployments:
     work_queue_name: default
     job_variables:
       image: '{{ build_image.image }}'
+      timeout_execution: '86400'
   concurrency_limit:
   parameters: {}
   enforce_parameter_schema: true
@@ -65,7 +67,6 @@ deployments:
     job_variables:
       image: '{{ build_image.image }}'
       memory: '4096Mi'
-      timeout_execution: '86400'
   concurrency_limit:
   parameters: {}
   enforce_parameter_schema: true

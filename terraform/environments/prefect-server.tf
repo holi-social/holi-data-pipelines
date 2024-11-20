@@ -38,6 +38,7 @@ data "google_secret_manager_secret_version_access" "prefect_database_password" {
   secret = local.environment == "production" ? "PREFECT_DB_PASSWORD_PRODUCTION" : "PREFECT_DB_PASSWORD_DEVELOPMENT"
 }
 
+# TODO private network
 # TODO green/blue
 # TODO green/blue certificate replication
 resource "google_compute_instance" "prefect_server_green" {
