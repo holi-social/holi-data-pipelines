@@ -12,15 +12,17 @@ def _key_for_lang(key: str, lang: str) -> str:
     return f"{key}_en" if lang == "en" else f"{key}_de"
 
 
-def _lang_for(value: str, id: str) -> str:
+def _lang_for(value: str, doc_id: str) -> str:
     """Helper to detect language and assign to appropriate field."""
     try:
         if value:
             return detect(value)
         else:
-            logger.warning(f"No text provided for language detection in document id:'{id}', returning default 'de'")
+            logger.warning(
+                f"No text provided for language detection in document id:'{doc_id}', returning default 'de'"
+            )
     except LangDetectException:
-        logger.warning(f"Language detection failed in document id:'{id}', returning default 'de'")
+        logger.warning(f"Language detection failed in document id:'{doc_id}', returning default 'de'")
 
     return "de"
 
@@ -30,17 +32,20 @@ def transform_row(row: Dict[str, Optional[str]]) -> Dict[str, Optional[str]]:
     if row.get("id") is None:
         raise ValueError("id is mandatory")
 
-    def decimal_or_none(value: any) -> Decimal | None:
+    def decimal_as_str_or_none(value: any) -> str | None:
         if value is None:
             return None
         try:
-            return Decimal(value)
+            return str(Decimal(value))
         except (ValueError, decimal.InvalidOperation):
+            logger.warning(
+                f"Could not convert value '{value}' to str via Decimal for document with id '{row.get("id")}'."
+            )
             return None
 
     # Compute latitude and longitude as decimals or None
-    latitude = decimal_or_none(row.get("latitude"))
-    longitude = decimal_or_none(row.get("longitude"))
+    latitude = decimal_as_str_or_none(row.get("latitude"))
+    longitude = decimal_as_str_or_none(row.get("longitude"))
 
     # initialize title_* and description_* with default values (will be filled below with real values)
     doc: Dict[str, Optional[str]] = {

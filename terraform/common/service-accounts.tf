@@ -9,7 +9,7 @@ resource "google_project_iam_member" "data_pipeline" {
     "roles/iam.serviceAccountUser",
     "roles/run.developer",
     "roles/bigquery.user",
-    "roles/bigquery.dataEditor", # might be unneeded
+    "roles/bigquery.dataEditor", # TODO try to replace with a more specific role
     "roles/secretmanager.secretAccessor",
   ])
   role   = each.key

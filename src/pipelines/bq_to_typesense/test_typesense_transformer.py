@@ -1,3 +1,5 @@
+import json
+
 import pytest
 from faker import Faker
 
@@ -14,8 +16,8 @@ def row():
         "title": fake.text(max_nb_chars=100),
         "description": fake.text(),
         "location": fake.city(),
-        "latitude": fake.latitude(),
-        "longitude": fake.longitude(),
+        "latitude": str(fake.latitude()),
+        "longitude": str(fake.longitude()),
         "image": fake.image_url(),
         "link": fake.url(),
     }
@@ -78,16 +80,20 @@ def test_only_lat_lng_if_both_fields_set(row):
     result = transform_row(row)
     assert result["location_lat_lng"] == [row["latitude"], row["longitude"]]
 
-    row["latitude"] = fake.latitude()
+    row["latitude"] = str(fake.latitude())
     row["longitude"] = None
     result = transform_row(row)
     assert result["location_lat_lng"] is None
 
     # AND
     row["latitude"] = None
-    row["longitude"] = fake.longitude()
+    row["longitude"] = str(fake.longitude())
     result = transform_row(row)
     assert result["location_lat_lng"] is None
+
+
+def test_serializability_of_row(row):
+    json.dumps(transform_row(row))
 
 
 # noinspection PyTypedDict
@@ -107,6 +113,7 @@ def test_returns_none_for_invalid_lat(row):
     result = transform_row(row)
 
     assert result["location_lat_lng"] is None
+
 
 # noinspection PyTypedDict
 def test_returns_none_for_invalid_lng(row):

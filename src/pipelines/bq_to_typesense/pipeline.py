@@ -41,7 +41,7 @@ def load_data(documents: List[Dict[str, Any]], typesense_client, schema_path: st
     ingestion_failures = False
     for docs_batch, batch_count in batches(documents, 100):
         failed_documents, success_count = index_documents_in_batches(
-            typesense_client, docs_batch, batch_count, collection_name
+            typesense_client.client, docs_batch, batch_count, collection_name
         )
         if failed_documents:
             ingestion_failures = True
@@ -78,7 +78,7 @@ def volunteering_to_typesense_etl() -> None:
     config, typesense_client = setup_pipeline()
     raw_data = extract_data(config["volunteering_with_classification"])
     transformed_data = transform_data(raw_data)
-    load_data(transformed_data, typesense_client.client, config["schema_path"])
+    load_data(transformed_data, typesense_client, config["schema_path"])
 
 
 def setup_pipeline():
