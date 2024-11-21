@@ -78,7 +78,7 @@ def volunteering_to_typesense_etl() -> None:
     config, typesense_client = setup_pipeline()
     raw_data = extract_data(config["volunteering_with_classification"])
     transformed_data = transform_data(raw_data)
-    load_data(transformed_data, typesense_client, config["schema_path"])
+    load_data(transformed_data, typesense_client.client, config["schema_path"])
 
 
 def setup_pipeline():

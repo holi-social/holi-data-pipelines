@@ -9,6 +9,8 @@ resource "google_project_iam_member" "data_pipeline" {
     "roles/iam.serviceAccountUser",
     "roles/run.developer",
     "roles/bigquery.user",
+    "roles/bigquery.dataEditor", # might be unneeded
+    "roles/secretmanager.secretAccessor",
   ])
   role   = each.key
   member = "serviceAccount:${google_service_account.data_pipeline.email}"

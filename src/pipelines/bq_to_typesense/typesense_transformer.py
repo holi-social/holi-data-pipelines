@@ -12,15 +12,15 @@ def _key_for_lang(key: str, lang: str) -> str:
     return f"{key}_en" if lang == "en" else f"{key}_de"
 
 
-def _lang_for(value: str) -> str:
+def _lang_for(value: str, id: str) -> str:
     """Helper to detect language and assign to appropriate field."""
     try:
         if value:
             return detect(value)
         else:
-            logger.warning(f"No text provided for language detection in document")
+            logger.warning(f"No text provided for language detection in document id:'{id}', returning default 'de'")
     except LangDetectException:
-        logger.warning(f"Language detection failed")
+        logger.warning(f"Language detection failed in document id:'{id}', returning default 'de'")
 
     return "de"
 
@@ -56,8 +56,8 @@ def transform_row(row: Dict[str, Optional[str]]) -> Dict[str, Optional[str]]:
         "link_locators": {"volunteering": row.get("id")},
     }
 
-    title_lang = _lang_for(row.get("title"))
-    description_lang = _lang_for(row.get("description"))
+    title_lang = _lang_for(row.get("title"), row.get("id"))
+    description_lang = _lang_for(row.get("description"), row.get("id"))
 
     doc[_key_for_lang("title", title_lang)] = row.get("title")
     doc[_key_for_lang("description", description_lang)] = row.get("description")
