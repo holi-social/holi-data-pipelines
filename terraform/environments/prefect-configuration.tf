@@ -67,9 +67,10 @@ resource "prefect_block" "typesense_admin_api_key" {
     "gcp_credentials" = {
       "project" = "holi-shared"
     }
-    "secret_name"    = "TYPESENSE_ADMIN_API_KEY"
+    "secret_name"    = local.environment == "production" ? "TYPESENSE_CLOUD_ADMIN_API_KEY_PRODUCTION" : "TYPESENSE_CLOUD_ADMIN_API_KEY_STAGING"
     "secret_version" = "latest"
   })
+  depends_on = [null_resource.prefect_server_available]
 }
 
 resource "prefect_block" "bigquery_warehouse" {
@@ -85,11 +86,11 @@ resource "prefect_block" "bigquery_warehouse" {
 }
 
 resource "prefect_work_pool" "cloud_run" {
-  name   = "cloud-run"
-  type   = "cloud-run"
-  paused = false
-  #base_job_template = file("./cloud-run-work-pool-base-job-template.json")
-  depends_on = [null_resource.prefect_server_available]
+  name              = "cloud-run-v2"
+  type              = "cloud-run-v2"
+  paused            = false
+  base_job_template = file("./cloud-run-work-pool-base-job-template.json")
+  depends_on        = [null_resource.prefect_server_available]
 }
 
 resource "google_cloud_run_v2_service" "work_pool_cloud_run_worker" {
@@ -101,7 +102,7 @@ resource "google_cloud_run_v2_service" "work_pool_cloud_run_worker" {
     service_account = data.terraform_remote_state.holi_data_pipeline_common_state.outputs.data_pipeline_service_account_email
     containers {
       image = "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3-latest"
-      args  = ["prefect", "worker", "start", "--install-policy", "always", "--with-healthcheck", "-p", "cloud-run", "-t", "cloud-run"]
+      args  = ["prefect", "worker", "start", "--install-policy", "always", "--with-healthcheck", "-p", "${prefect_work_pool.cloud_run.name}", "-t", "${prefect_work_pool.cloud_run.type}"]
       env {
         name  = "PREFECT_API_URL"
         value = "http://${local.prefect_internal_domain}:${local.prefect_internal_port}/api"

@@ -42,7 +42,7 @@ deployments:
     day_or: true
     active: true
   work_pool:
-    name: cloud-run
+    name: cloud-run-v2
     work_queue_name: default
     job_variables:
       image: '{{ build_image.image }}'
@@ -61,7 +61,7 @@ deployments:
     day_or: true
     active: true
   work_pool:
-    name: cloud-run
+    name: cloud-run-v2
     work_queue_name: default
     job_variables:
       image: '{{ build_image.image }}'
