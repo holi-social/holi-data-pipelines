@@ -57,6 +57,8 @@ resource "prefect_variable" "prefect_environment" {
   value = local.environment
 }
 
+# create one: create the GCP secret in the ui console
+# create a block that references it.
 resource "prefect_block" "typesense_admin_api_key" {
   name      = "typesense-admin-api-key"
   type_slug = "gcpsecret"
@@ -83,11 +85,11 @@ resource "prefect_block" "bigquery_warehouse" {
 }
 
 resource "prefect_work_pool" "cloud_run" {
-  name              = "cloud-run"
-  type              = "cloud-run"
-  paused            = false
-  base_job_template = file("./cloud-run-work-pool-base-job-template.json")
-  depends_on        = [null_resource.prefect_server_available]
+  name   = "cloud-run"
+  type   = "cloud-run"
+  paused = false
+  #base_job_template = file("./cloud-run-work-pool-base-job-template.json")
+  depends_on = [null_resource.prefect_server_available]
 }
 
 resource "google_cloud_run_v2_service" "work_pool_cloud_run_worker" {
