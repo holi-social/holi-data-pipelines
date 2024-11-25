@@ -1,5 +1,6 @@
 import json
 import os
+from datetime import datetime
 from typing import Dict, List, Optional, Union
 
 from prefect.variables import Variable
@@ -13,9 +14,15 @@ def _env_key_from_prefect_key(key: str) -> str:
     # environment variables shall be uppercase and delimited with underscores instead of hyphens
     return key.upper().replace("-", "_")
 
-
 def _getenv_case_insensitive(key: str, default: str = None) -> JsonType:
     return os.getenv(_env_key_from_prefect_key(key), default)
+
+# TODO: make it generic
+def update_last_successful_ingestion(last_successful_ingestion: datetime):
+    """
+    Store the last successful ingestion time in Prefect as a string formatted "YYYY-MM-DD".
+    """
+    Variable.set("last_ingestion_timestamp", last_successful_ingestion.strftime("%Y-%m-%d %H:%M:%S"))
 
 
 def variable_value(key: str, default: Optional[JsonType] = None) -> JsonType:

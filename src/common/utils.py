@@ -6,3 +6,4 @@ def batches(iterable: Iterable, batch_size=1) -> Generator[Iterable, None, None]
     length = len(iterable)
     for index in range(0, length, batch_size):
         yield iterable[index : min(index + batch_size, length)], index / batch_size
+

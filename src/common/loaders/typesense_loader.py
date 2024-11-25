@@ -1,15 +1,8 @@
 import json
-import logging
 from typing import List, Dict
-from typesense.exceptions import TypesenseClientError
 import prefect
 
-# from common.logging_setup import initialize_logging
-
-# Initialize logging from logging_setup
-# initialize_logging()
 logger = prefect.logging.get_logger()
-
 
 def index_documents_in_batches(
     client: object, docs: List[Dict[str, object]], batch_num: int, index_name: str
