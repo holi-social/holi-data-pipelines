@@ -2,6 +2,8 @@ from typing import Dict
 
 import prefect.logging
 from prefect_gcp import BigQueryWarehouse
+from datetime import datetime
+from src.common.constants import VIEW_PARTITION_COLUMN_NAME
 
 logger = prefect.logging.get_logger()
 
@@ -35,33 +37,48 @@ def extract_data_from_bigquery(
         return dict_list
 
 def extract_latest_partition_timestamp_from_bigquery(
-    table_name: str, partitiontime_column_name: str
-) -> list[Dict]:
+    table_name: str,
+) -> datetime:
     """
     Extracts the latest partition timestamp from a BigQuery table.
 
     Args:
         table_name (str): The name of the BigQuery table.
-        partitiontime_column_name (str): The name of the partition time column in the table.
 
     Returns:
         list[Dict]: A list containing a single dictionary with the latest partition timestamp.
     """
     query = (
-        f"SELECT MAX(`{partitiontime_column_name}`) AS `{partitiontime_column_name}` "
+        f"SELECT MAX(`{VIEW_PARTITION_COLUMN_NAME}`) AS `{VIEW_PARTITION_COLUMN_NAME}` "
         f"FROM `{table_name}`"
     )
-    return extract_data_from_bigquery(query)
+    result = extract_data_from_bigquery(query)
+    if not result:
+        raise ValueError("No data returned from the query.")
 
-def detect_changes_in_partitions(view_name: str, last_ingestion_timestamp: str) -> list[Dict]:
+    latest_partition_timestamp = result[0].get(VIEW_PARTITION_COLUMN_NAME)
+
+    if latest_partition_timestamp is None:
+        raise ValueError(f"Partition column `{VIEW_PARTITION_COLUMN_NAME}` returned no value.")
+
+    formatted_latest_partition_timestamp = datetime.strptime(latest_partition_timestamp, "%Y-%m-%d %H:%M:%S %Z")
+
+    return formatted_latest_partition_timestamp
+
+def extract_changes_in_partitions(
+        table_name: str,
+        new_partition_timestamp: str,
+        old_partition_timestamp: str = None
+) -> list[Dict]:
     """
-    Detects changes (new, updated, or deleted records) in a BigQuery table by comparing
-    the latest partition with the last successful ingestion timestamp.
+    Extracts (new, updated, or deleted records) in a BigQuery table by comparing
+    the old partition with the new partition timestamp. It requires the table to have a hash
+    column which is used for the comparison of rows.
 
     Args:
-        view_name (str): The BigQuery view or table name to query.
-        last_ingestion_timestamp (str): The timestamp of the last successful ingestion
-                                         in the format "%Y-%m-%d".
+        table_name (str): The BigQuery view or table name to query.
+        new_partition_timestamp (str): The timestamp of the newer partition (format "%Y-%m-%d")
+        old_partition_timestamp (str): The timestamp of the older partition (format "%Y-%m-%d")
 
     Returns:
         list[Dict]: A list of dictionaries, where each dictionary represents a record
@@ -69,59 +86,40 @@ def detect_changes_in_partitions(view_name: str, last_ingestion_timestamp: str) 
                     "new_or_updated" or "deleted".
     """
 
-    if not last_ingestion_timestamp:
-        query = f"""
-        WITH latest_partition AS (
-        SELECT *
-        FROM `{view_name}`
-        WHERE
-            partitiontime = (
-                SELECT MAX(partitiontime)
-                FROM `{view_name}`
-                )
-        )
-        SELECT 'new_or_updated' AS change_type
-            ,*
-        FROM latest_partition;
-        """
-        return extract_data_from_bigquery(query)
-
     query = f"""
-    WITH last_successful_partition AS (
+    WITH old_partition AS (
         SELECT *
-        FROM `{view_name}`
-        WHERE TIMESTAMP_TRUNC(partitiontime, DAY) = TIMESTAMP('{last_ingestion_timestamp}')
+        FROM `{table_name}`
+        WHERE TIMESTAMP_TRUNC(partitiontime, DAY) = TIMESTAMP('{old_partition_timestamp or "1970-01-01"}')
     ),
-    latest_partition AS (
+    new_partition AS (
         SELECT *
-        FROM `{view_name}`
-        WHERE
-            partitiontime = (
-                SELECT MAX(partitiontime)
-                FROM `{view_name}`
-                )
-        ),
+        FROM `{table_name}`
+        WHERE partitiontime = TIMESTAMP('{new_partition_timestamp}')
+    ),
     new_or_updated_records AS (
         SELECT *
-        FROM latest_partition
+        FROM new_partition
         WHERE `hash` NOT IN (
-                SELECT `hash`
-                FROM last_successful_partition
-                )
-        ),
+            SELECT `hash`
+            FROM old_partition
+        )
+    ),
     deleted_records AS (
         SELECT *
-        FROM last_successful_partition
+        FROM old_partition
         WHERE `hash` NOT IN (
-                SELECT `hash`
-                FROM latest_partition
-                )
+            SELECT `hash`
+            FROM new_partition
         )
-    SELECT 'new_or_updated' AS change_type
+    )
+    SELECT
+        'new_or_updated' AS change_type
         ,*
     FROM new_or_updated_records
     UNION ALL
-    SELECT 'deleted' AS change_type
+    SELECT
+        'deleted' AS change_type
         ,*
     FROM deleted_records;
     """

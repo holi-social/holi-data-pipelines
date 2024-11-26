@@ -1,0 +1,1 @@
+VIEW_PARTITION_COLUMN_NAME = "partitiontime"
