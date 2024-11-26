@@ -3,12 +3,13 @@ from typing import List, Dict, Any, Union
 import prefect.logging
 from prefect import task, flow, State
 from prefect.states import Failed
+from prefect.types import StrictVariableValue
 
 from src.common.extractors.bq_extractor import extract_data_from_bigquery_table
 from src.common.loaders.typesense_loader import index_documents_in_batches
 from src.pipelines.bq_to_typesense.typesense_transformer import transform_row
 from src.common.typesense_client import TypesenseClient
-from src.common.variables import variable_value, JsonType, secret_value
+from src.common.variables import variable_value, secret_value
 from src.common.utils import batches
 
 # Initialize logging
@@ -47,7 +48,7 @@ def load_data(documents: List[Dict[str, Any]], typesense_client, schema_path: st
             ingestion_failures = True
             logger.error(
                 f"Batch {batch_count} processed with failures: {len(failed_documents)} failed items out of"
-                f" {len(docs_batch)}."
+                f" {success_count + len(failed_documents)}."
             )
             logger.error(f"Failed items in batch {batch_count}: {failed_documents}")
         else:
@@ -55,9 +56,11 @@ def load_data(documents: List[Dict[str, Any]], typesense_client, schema_path: st
 
     if ingestion_failures:
         return Failed(message="Some documents failed ingestion. Please see error log.")
+    else:
+        return None
 
 
-def get_config() -> dict[str, JsonType]:
+def get_config() -> dict[str, StrictVariableValue]:
     return {
         "volunteering_with_classification": variable_value("volunteering_with_classification"),
         "typesense_config": {

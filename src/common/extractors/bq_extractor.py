@@ -1,7 +1,7 @@
 from typing import Dict
 
 import prefect.logging
-from prefect_gcp import BigQueryWarehouse
+from prefect_gcp import BigQueryWarehouse  # type: ignore
 
 logger = prefect.logging.get_logger()
 

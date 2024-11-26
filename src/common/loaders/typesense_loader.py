@@ -1,8 +1,7 @@
 import json
-import logging
-from typing import List, Dict
-from typesense.exceptions import TypesenseClientError
+from typing import Iterable, Dict, Tuple, List
 import prefect
+from typesense.client import Client  # type: ignore
 
 # from common.logging_setup import initialize_logging
 
@@ -12,13 +11,13 @@ logger = prefect.logging.get_logger()
 
 
 def index_documents_in_batches(
-    client: object, docs: List[Dict[str, object]], batch_num: int, index_name: str
-) -> List[Dict[str, object]]:
+    client: Client, docs: Iterable[Dict[str, object]], batch_num: int, index_name: str
+) -> Tuple[List[Dict[str, object]], int]:
     """
     Index a batch of documents into Typesense using the upsert action.
 
     Args:
-        client (object): The Typesense client instance used to interact with the Typesense API.
+        client (Client): The Typesense client instance used to interact with the Typesense API.
         docs (List[Dict[str, object]]): A list of dictionaries representing documents to be indexed.
                                         Each document is expected to have key-value pairs where keys are strings
                                         and values can be of any type (e.g., string, number, etc.).

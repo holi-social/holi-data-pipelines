@@ -1,12 +1,10 @@
-import json
+import json  # type: ignore
 import os
-from typing import Dict, List, Optional, Union
+from typing import Optional
+from prefect.types import StrictVariableValue
 
 from prefect.variables import Variable
-from prefect_gcp.secret_manager import GcpSecret
-
-# TODO maybe use pydantic.JsonType instead?
-JsonType = Union[None, int, str, bool, List["JsonType"], Dict[str, "JsonType"]]
+from prefect_gcp.secret_manager import GcpSecret  # type: ignore
 
 
 def _env_key_from_prefect_key(key: str) -> str:
@@ -14,11 +12,11 @@ def _env_key_from_prefect_key(key: str) -> str:
     return key.upper().replace("-", "_")
 
 
-def _getenv_case_insensitive(key: str, default: str = None) -> JsonType:
+def _getenv_case_insensitive(key: str, default: Optional[str] = None) -> str | None:
     return os.getenv(_env_key_from_prefect_key(key), default)
 
 
-def variable_value(key: str, default: Optional[JsonType] = None) -> JsonType:
+def variable_value(key: str, default: Optional[StrictVariableValue] = None) -> StrictVariableValue:
     """
     Resolves the value for a given key by first attempting to retrieve it from
     Prefect variables. If not found, it falls back to searching the environment
@@ -35,14 +33,14 @@ def variable_value(key: str, default: Optional[JsonType] = None) -> JsonType:
     """
     prefect_var = Variable.get(key)
     if not prefect_var:
-        environment_var_or_default = _getenv_case_insensitive(key, default)
-        if not environment_var_or_default:
+        environment_var = _getenv_case_insensitive(key)
+        if not environment_var or default:
             raise ValueError(
                 f"Variable '{key}' can't be found, neither as prefect variable, nor as environment variable (key"
                 f" '{_env_key_from_prefect_key(key)}')"
             )
         else:
-            return json.loads(environment_var_or_default)
+            return json.loads(environment_var) or default
     else:
         return prefect_var
 

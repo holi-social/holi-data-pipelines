@@ -2,6 +2,8 @@ import json
 import typesense
 from typing import Dict
 import prefect
+from typesense.client import Client  # type: ignore
+from typesense.exceptions import ObjectNotFound  # type: ignore
 
 # Initialize logging
 logger = prefect.logging.get_logger()
@@ -22,7 +24,7 @@ class TypesenseClient:
         typesense_port = config["port"]
         typesense_protocol = config["protocol"]
         # Create the client
-        self.client = typesense.Client(
+        self.client = Client(
             {
                 "api_key": typesense_api_key,
                 "nodes": [
@@ -59,7 +61,7 @@ class TypesenseClient:
         try:
             self.client.collections[collection_name].delete()
             logger.info(f"Typesense collection '{collection_name}' deleted.")
-        except typesense.exceptions.ObjectNotFound:
+        except ObjectNotFound:
             logger.debug("Couldn't find collection. Proceeding....")
 
         # Create the collection with the new schema
