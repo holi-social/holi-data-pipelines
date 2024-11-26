@@ -46,7 +46,7 @@ deployments:
     work_queue_name: default
     job_variables:
       image: '{{ build_image.image }}'
-      timeout_execution: 86400
+      timeout: 86400
   concurrency_limit:
   parameters: {}
   enforce_parameter_schema: true
@@ -66,7 +66,7 @@ deployments:
     job_variables:
       image: '{{ build_image.image }}'
       memory: '4096Mi'
-      timeout_execution: 86400
+      timeout: 86400
   concurrency_limit:
   parameters: {}
   enforce_parameter_schema: true
