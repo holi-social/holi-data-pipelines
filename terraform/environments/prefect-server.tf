@@ -35,10 +35,7 @@ resource "google_compute_instance" "prefect_server_green" {
 
   network_interface {
     network = data.terraform_remote_state.holi_infra_state.outputs.google_compute_network_default_name
-
-    access_config {
-      // Ephemeral public IP
-    }
+    # we want to only be reachable via the vpc - leaving out the access_config block here will avoid a public IP being assigned
   }
 
   metadata = {
