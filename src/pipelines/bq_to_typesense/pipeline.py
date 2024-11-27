@@ -18,7 +18,6 @@ from datetime import datetime
 
 TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
 
-
 # Initialize logging
 logger = prefect.logging.get_logger()
 
@@ -33,9 +32,7 @@ def extract_changed_rows(table_name: str, last_ingestion_timestamp: str, latest_
 
 
 @task
-def transform_data(
-    rows: List[Dict[str, Any]], latest_partition_timestamp: str, last_ingestion_timestamp: str
-) -> List[Dict[str, Any]]:
+def transform_data(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """Transform raw data by processing each row."""
     transformed = [transform_row(row) for row in rows]
     logger.info(f"Transformed {len(rows)} rows of data")
