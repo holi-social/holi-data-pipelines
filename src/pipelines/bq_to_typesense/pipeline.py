@@ -10,7 +10,7 @@ from src.common.extractors.bq_extractor import (
     extract_latest_partition_timestamp_from_bigquery,
     extract_changes_in_partitions,
 )
-from src.common.loaders.typesense_loader import index_documents_in_batches
+from src.common.loaders.typesense_loader import upsert_documents_in_batches
 from src.pipelines.bq_to_typesense.typesense_transformer import transform_row
 from src.common.typesense_client import TypesenseClient
 from src.common.variables import variable_value, secret_value
@@ -39,13 +39,15 @@ def transform_data(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     logger.info(f"Transformed {len(rows)} rows of data")
     return transformed
 
-# TODO use failed state instead of boolean
 @task
 def upsert_typesense_documents(typesense_client, typesense_collection_name, new_or_updated_documents) -> bool:
     ingestion_succeeded = True
     for docs_batch, batch_count in batches(new_or_updated_documents, 100):
-        failed_documents, success_count = index_documents_in_batches(
-            typesense_client.client, docs_batch, batch_count, typesense_collection_name
+        failed_documents, success_count = upsert_documents_in_batches(
+            client=typesense_client.client,
+            docs=docs_batch,
+            batch_num=batch_count,
+            index_name=typesense_collection_name
         )
         if failed_documents:
             ingestion_succeeded = False
@@ -57,7 +59,6 @@ def upsert_typesense_documents(typesense_client, typesense_collection_name, new_
             logger.info(f"Batch {batch_count} successfully processed with {success_count} documents.")
     return ingestion_succeeded
 
-# TODO use failed state instead of boolean
 @task
 def delete_typesense_documents(typesense_client, typesense_collection_name, document_ids_to_delete) -> bool:
     """
