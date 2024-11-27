@@ -2,12 +2,12 @@ from prefect import flow, task
 
 
 @task(log_prints=True)
-def say_hello(name: str):
+def say_hello(name: str) -> None:
     print(f"Hello, {name}!")
 
 
 @flow
-def hello_universe():
+def hello_universe() -> None:
     for name in ["Marvin", "Trillian", "Ford"]:
         say_hello(name)
 

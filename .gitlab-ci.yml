@@ -9,20 +9,26 @@ default:
     - 1cpu-4gb
 
 variables:
-  API_DOMAIN_PATH: '$CI_PROJECT_DIR/api_domain'
+  API_DOMAIN_PATH: "$CI_PROJECT_DIR/api_domain"
+
+cache:
+  key: $CI_COMMIT_REF_SLUG # using requirements.txt hash led to too many cache files
+  paths:
+    - .cache/pip
+    - venv/
 
 .deploy:
   image:
-    name: 'europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/hashicorp/terraform:1.9.8'
-    entrypoint: ['/bin/sh', '-c']
+    name: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/hashicorp/terraform:1.9.8"
+    entrypoint: ["/bin/sh", "-c"]
   variables:
     ENVIRONMENT_ID: $CI_ENVIRONMENT_SLUG
   artifacts:
     paths:
-      - 'terraform/environments/crash.log'
-      - 'terraform/environments/terraform-*.log'
+      - "terraform/environments/crash.log"
+      - "terraform/environments/terraform-*.log"
       - $API_DOMAIN_PATH
-    name: '${CI_JOB_NAME}_${CI_JOB_ID}'
+    name: "${CI_JOB_NAME}_${CI_JOB_ID}"
     expire_in: 1 month
   script:
     - terraform/environments/scripts/create-or-update-env.sh $ENVIRONMENT_ID $CI_COMMIT_SHA
@@ -31,17 +37,32 @@ variables:
   interruptible: false
 
 .smoketest:
-  image: 'europe-north1-docker.pkg.dev/holi-shared/docker/holi-docker/holi-k6-builder'
+  image: "europe-north1-docker.pkg.dev/holi-shared/docker/holi-docker/holi-k6-builder"
   script:
     - API_DOMAIN=$(cat $API_DOMAIN_PATH)
     - terraform/environments/scripts/wait-for-ssl.sh "https://${API_DOMAIN}"
     - BASE_URL="https://${API_DOMAIN}" k6 run smoketest/main.js
     # TODO should/could we roll back the service to the last working revision on test failure?
 
+install_dependencies:
+  image: "europe-north1-docker.pkg.dev/holi-shared/docker/holi-docker/holi-okuna-builder"
+  stage: "setup"
+  script:
+    - python3 -m venv venv
+    - source venv/bin/activate
+    - pip install -r requirements.txt --exists-action s
+    - pip install -r dev-requirements.txt --exists-action s
+
+validate:
+  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/python:3.12"
+  script:
+    - source venv/bin/activate
+    - mypy
+
 ## staging environment
 staging_deploy:
   extends: .deploy
-  needs: ['build_docker']
+  needs: ["build_docker"]
   environment:
     name: staging
     deployment_tier: staging
@@ -53,15 +74,15 @@ staging_deploy:
 
 staging_smoketest:
   extends: .smoketest
-  needs: ['staging_deploy']
+  needs: ["staging_deploy"]
   only:
     - main
 
 staging_trigger_unified-api_redeployment:
-  needs: ['staging_smoketest']
+  needs: ["staging_smoketest"]
   trigger:
-    project: 'app/holi-unified-api'
-    branch: 'main'
+    project: "app/holi-unified-api"
+    branch: "main"
   only:
     - main
   resource_group: unified-api-staging
@@ -70,7 +91,7 @@ staging_trigger_unified-api_redeployment:
 
 production_deploy:
   extends: .deploy
-  needs: ['build_docker']
+  needs: ["build_docker"]
   allow_failure: false
   environment:
     name: production
@@ -83,15 +104,15 @@ production_deploy:
 
 production_smoketest:
   extends: .smoketest
-  needs: ['production_deploy']
+  needs: ["production_deploy"]
   only:
     - production
 
 production_trigger_unified-api_redeployment:
-  needs: ['production_smoketest']
+  needs: ["production_smoketest"]
   trigger:
-    project: 'app/holi-unified-api'
-    branch: 'production'
+    project: "app/holi-unified-api"
+    branch: "production"
   only:
     - production
   resource_group: unified-api-production

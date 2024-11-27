@@ -1,14 +1,14 @@
-from typing import Dict
+from typing import Dict, Any
 
 import prefect.logging
-from prefect_gcp import BigQueryWarehouse  # type: ignore
+from prefect_gcp import BigQueryWarehouse
 
 logger = prefect.logging.get_logger()
 
 
 def extract_data_from_bigquery(
     query: str,
-) -> list[Dict]:
+) -> list[Dict[str, Any]]:
     """
     Extracts data from BigQuery based on a SQL query using the initialized BigQuery client.
 
@@ -35,7 +35,7 @@ def extract_data_from_bigquery(
         return dict_list
 
 
-def extract_data_from_bigquery_table(table_name: str) -> list[Dict]:
+def extract_data_from_bigquery_table(table_name: str) -> list[Dict[str, Any]]:
     """
     Extracts data from BigQuery based on a table name (select * from ...) using the initialized BigQuery client.
 
