@@ -61,9 +61,7 @@ def extract_latest_partition_timestamp_from_bigquery(
     if latest_partition_timestamp is None:
         raise ValueError(f"Partition column `{VIEW_PARTITION_TIME_COLUMN_NAME}` returned no value.")
 
-    formatted_latest_partition_timestamp = datetime.strptime(latest_partition_timestamp, "%Y-%m-%d %H:%M:%S %Z")
-
-    return formatted_latest_partition_timestamp
+    return latest_partition_timestamp
 
 def extract_changes_in_partitions(
         table_name: str,
