@@ -56,7 +56,8 @@ def upsert_typesense_documents(typesense_client, typesense_collection_name, new_
                 f" {success_count + len(failed_documents)}. Failed items in batch {batch_count}: {failed_documents}"
             )
         else:
-            logger.info(f"Batch {batch_count} successfully processed with {success_count} documents.")
+            logger.info(f"Batch {batch_count} successfully upserted {success_count} documents.")
+            logger.debug(f"Batch {batch_count} upserted document IDs: {[doc["id"] for doc in docs_batch]}")
     return ingestion_succeeded
 
 @task
