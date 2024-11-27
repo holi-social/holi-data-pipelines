@@ -67,8 +67,8 @@ def extract_latest_partition_timestamp_from_bigquery(
 
 def extract_changes_in_partitions(
         table_name: str,
-        new_partition_timestamp: str,
-        old_partition_timestamp: str = None
+        new_partition_date: date,
+        old_partition_date: date = None
 ) -> list[Dict]:
     """
     Extracts (new, updated, or deleted records) in a BigQuery table by comparing
@@ -77,8 +77,8 @@ def extract_changes_in_partitions(
 
     Args:
         table_name (str): The BigQuery view or table name to query.
-        new_partition_timestamp (str): The timestamp of the newer partition (format "%Y-%m-%d")
-        old_partition_timestamp (str): The timestamp of the older partition (format "%Y-%m-%d")
+        new_partition_date (date): The date of the newer partition
+        old_partition_date (date): The date of the older partition
 
     Returns:
         list[Dict]: A list of dictionaries, where each dictionary represents a record
@@ -90,12 +90,12 @@ def extract_changes_in_partitions(
     WITH old_partition AS (
         SELECT *
         FROM `{table_name}`
-        WHERE TIMESTAMP_TRUNC(partitiontime, DAY) = TIMESTAMP('{old_partition_timestamp or "1970-01-01"}')
+        WHERE TIMESTAMP_TRUNC(partitiontime, DAY) = TIMESTAMP('{old_partition_date.strftime("%Y-%m-%d") or "1970-01-01"}')
     ),
     new_partition AS (
         SELECT *
         FROM `{table_name}`
-        WHERE partitiontime = TIMESTAMP('{new_partition_timestamp}')
+        WHERE partitiontime = TIMESTAMP('{new_partition_date.strftime("%Y-%m-%d")}')
     ),
     new_or_updated_records AS (
         SELECT *

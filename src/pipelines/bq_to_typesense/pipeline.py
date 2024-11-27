@@ -14,16 +14,20 @@ from src.pipelines.bq_to_typesense.typesense_transformer import transform_row
 from src.common.typesense_client import TypesenseClient
 from src.common.variables import variable_value, JsonType, secret_value, update_last_successful_ingestion
 from src.common.utils import batches
-from datetime import datetime
+from datetime import datetime, date
 
 # Initialize logging
 logger = prefect.logging.get_logger()
 
 @task
-def extract_changed_rows(table_name: str, last_complete_ingestion_timestamp: str, latest_partition_timestamp: str) -> List[Dict[str, Any]]:
+def extract_changed_rows(table_name: str, last_complete_ingestion_date: date, latest_partition_date: date) -> List[Dict[str, Any]]:
     """Extract changed data from BigQuery."""
     logger.info(f"Extracting changed data from table: {table_name}")
-    data = extract_changes_in_partitions(table_name=table_name, new_partition_timestamp=latest_partition_timestamp, old_partition_timestamp=last_complete_ingestion_timestamp)
+    data = extract_changes_in_partitions(
+        table_name=table_name,
+        new_partition_date=latest_partition_date,
+        old_partition_date=last_complete_ingestion_date
+    )
     logger.info(f"Detected {len(data)} changed records from BigQuery")
     return data
 
@@ -106,8 +110,8 @@ def volunteering_to_typesense_etl() -> None | State:
 
     change_data = extract_changed_rows(
         config.get("volunteering_raw_deduped"),
-        last_complete_ingestion_timestamp.strftime("%Y-%m-%d"),
-        latest_partition_timestamp.strftime("%Y-%m-%d"),
+        last_complete_ingestion_timestamp,
+        latest_partition_timestamp,
     )
 
     new_or_updated_records = [record for record in change_data if record["change_type"] == "new_or_updated"]
