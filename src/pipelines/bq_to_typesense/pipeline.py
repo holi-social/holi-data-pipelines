@@ -108,16 +108,16 @@ def volunteering_to_typesense_etl() -> None | State:
         logger.info(f"Last ingestion @ {last_complete_ingestion_timestamp} !< {latest_partition_timestamp}. Skipping ingestion.")
         return
 
-    change_data = extract_changed_rows(
+    changed_rows = extract_changed_rows(
         config.get("volunteering_raw_deduped"),
         last_complete_ingestion_timestamp,
         latest_partition_timestamp,
     )
 
-    new_or_updated_records = [record for record in change_data if record["change_type"] == "new_or_updated"]
-    document_ids_to_delete = [record["id"] for record in change_data if record["change_type"] == "deleted"]
+    new_or_updated_rows = [record for record in changed_rows if record["change_type"] == "new_or_updated"]
+    document_ids_to_delete = [record["id"] for record in changed_rows if record["change_type"] == "deleted"]
 
-    new_or_updated_documents = transform_data(new_or_updated_records)
+    new_or_updated_documents = transform_data(new_or_updated_rows)
 
     typesense_collection_name = extract_collection_name_from_schema(config["schema_path"])
     recreate_collection = last_complete_ingestion_timestamp is None
