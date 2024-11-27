@@ -58,13 +58,18 @@ def upsert_data(typesense_client, typesense_collection_name, new_or_updated_docu
     return ingestion_failures
 
 @task
-def delete_data(typesense_client, typesense_collection_name, document_ids_to_delete):
-    # TODO error handling
+def delete_data(typesense_client, typesense_collection_name, document_ids_to_delete) -> bool:
     # TODO performance considerations https://typesense.org/docs/27.1/api/documents.html#delete-documents (batch size)
-    typesense_client.client.collections[typesense_collection_name].documents.delete(
-        {"filter_by": f"id:={','.join(document_ids_to_delete)}"}
-    )
-    logger.info(f"Deleted {len(document_ids_to_delete)} documents from Typesense.")
+    try:
+        typesense_client.client.collections[typesense_collection_name].documents.delete(
+            {"filter_by": f"id:={','.join(document_ids_to_delete)}"}
+        )
+        logger.info(f"Deleted {len(document_ids_to_delete)} documents from Typesense.")
+        return false
+    except e:
+        logger.error(f"Error deleting {len(document_ids_to_delete)} documents from Typesense: " + e.message + "\nFailed document ids: " + ','.join(document_ids_to_delete))
+        return true
+
 
 def extract_collection_name_from_schema(schema_path: str) -> str:
     with open(schema_path, "r") as file:
@@ -105,7 +110,7 @@ def volunteering_to_typesense_etl() -> None | State:
 
     # volunteering data is partitioned by day so we compare days only
     if last_complete_ingestion_timestamp and last_complete_ingestion_timestamp.date() >= latest_partition_timestamp.date():
-        logger.info(f"Last ingestion @ {last_complete_ingestion_timestamp} !< {latest_partition_timestamp}. Skipping ingestion.")
+        logger.info(f"Last complete ingestion ({last_complete_ingestion_timestamp}) ran on the same day as the newest partition ({latest_partition_timestamp}). Skipping ingestion.")
         return
 
     changed_rows = extract_changed_rows(
@@ -126,13 +131,13 @@ def volunteering_to_typesense_etl() -> None | State:
 
     upsert_failures = upsert_data(typesense_client, typesense_collection_name, new_or_updated_documents)
 
+    deletion_failures = false
     if document_ids_to_delete:
-        delete_data(typesense_client, typesense_collection_name, document_ids_to_delete)
+        deletion_failures = delete_data(typesense_client, typesense_collection_name, document_ids_to_delete)
 
-    if not upsert_failures:
+    if not upsert_failures and not deletion_failures:
         store_last_complete_ingestion_timestamp(datetime.now())
-
-    if upsert_failures:
+    else:
         return Failed(message="Some documents failed ingestion. Please see error log.")
 
 def setup_pipeline():
