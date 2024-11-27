@@ -2,7 +2,7 @@ from typing import Dict
 
 import prefect.logging
 from prefect_gcp import BigQueryWarehouse
-from datetime import datetime
+from datetime import datetime, date
 from src.common.constants import VIEW_PARTITION_TIME_COLUMN_NAME
 
 logger = prefect.logging.get_logger()

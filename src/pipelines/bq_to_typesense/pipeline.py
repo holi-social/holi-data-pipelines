@@ -12,7 +12,7 @@ from src.common.extractors.bq_extractor import (
 from src.common.loaders.typesense_loader import index_documents_in_batches
 from src.pipelines.bq_to_typesense.typesense_transformer import transform_row
 from src.common.typesense_client import TypesenseClient
-from src.common.variables import variable_value, JsonType, secret_value, update_last_successful_ingestion
+from src.common.variables import variable_value, JsonType, secret_value
 from src.common.utils import batches
 from datetime import datetime, date
 
