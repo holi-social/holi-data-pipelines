@@ -21,15 +21,13 @@ TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
 # Initialize logging
 logger = prefect.logging.get_logger()
 
-
 @task
-def extract_changed_rows(table_name: str, last_ingestion_timestamp: str, latest_partition_timestamp: str) -> List[Dict[str, Any]]:
+def extract_changed_rows(table_name: str, last_complete_ingestion_timestamp: str, latest_partition_timestamp: str) -> List[Dict[str, Any]]:
     """Extract changed data from BigQuery."""
     logger.info(f"Extracting changed data from table: {table_name}")
-    data = extract_changes_in_partitions(table_name=table_name, new_partition_timestamp=latest_partition_timestamp, old_partition_timestamp=last_ingestion_timestamp)
+    data = extract_changes_in_partitions(table_name=table_name, new_partition_timestamp=latest_partition_timestamp, old_partition_timestamp=last_complete_ingestion_timestamp)
     logger.info(f"Detected {len(data)} changed records from BigQuery")
     return data
-
 
 @task
 def transform_data(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -94,26 +92,26 @@ def get_config() -> dict[str, JsonType]:
 # TODO configure flow via annotation
 # TODO configure task so that they can be tried
 @flow()
-def volunteering_to_typesense_etl() -> None:
+def volunteering_to_typesense_etl() -> None | State:
     """Orchestrates the ETL pipeline to move volunteering data from BigQuery to Typesense."""
     config, typesense_client = setup_pipeline()
     state = config.get("state")
 
-    last_ingestion_timestamp = None
-    if last_ingestion_timestamp:
-        last_ingestion_timestamp = datetime.strptime(state.get("last_ingestion_timestamp"), TIMESTAMP_FORMAT).date()
+    last_complete_ingestion_timestamp = None
+    if last_complete_ingestion_timestamp:
+        last_complete_ingestion_timestamp = datetime.strptime(state.get("last_complete_ingestion_timestamp"), TIMESTAMP_FORMAT).date()
 
     latest_partition_timestamp = extract_latest_partition_timestamp_from_bigquery(
         config.get("volunteering_raw_deduped")
     ).date()
 
-    if last_ingestion_timestamp and last_ingestion_timestamp >= latest_partition_timestamp:
-        logger.info(f"Last ingestion @ {last_ingestion_timestamp} !< {latest_partition_timestamp}. Skipping ingestion.")
+    if last_complete_ingestion_timestamp and last_complete_ingestion_timestamp >= latest_partition_timestamp:
+        logger.info(f"Last ingestion @ {last_complete_ingestion_timestamp} !< {latest_partition_timestamp}. Skipping ingestion.")
         return
 
     change_data = extract_changed_rows(
         config.get("volunteering_raw_deduped"),
-        last_ingestion_timestamp.strftime("%Y-%m-%d"),
+        last_complete_ingestion_timestamp.strftime("%Y-%m-%d"),
         latest_partition_timestamp.strftime("%Y-%m-%d"),
     )
 
@@ -123,7 +121,7 @@ def volunteering_to_typesense_etl() -> None:
     new_or_updated_documents = transform_data(new_or_updated_records)
 
     typesense_collection_name = extract_collection_name_from_schema(config["schema_path"])
-    recreate_collection = last_ingestion_timestamp is None
+    recreate_collection = last_complete_ingestion_timestamp is None
     if recreate_collection:
         typesense_client.drop_and_create_collection(config["schema_path"])
 

@@ -24,7 +24,7 @@ def update_last_successful_ingestion(last_successful_ingestion: datetime):
     """
     Store the last successful ingestion time in Prefect as a string formatted "YYYY-MM-DD".
     """
-    Variable.set("last_ingestion_timestamp", last_successful_ingestion.strftime(TIMESTAMP_FORMAT))
+    Variable.set("last_complete_ingestion_timestamp", last_successful_ingestion.strftime(TIMESTAMP_FORMAT))
 
 
 def variable_value(key: str, default: Optional[JsonType] = None) -> JsonType:
