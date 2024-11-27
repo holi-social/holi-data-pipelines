@@ -93,7 +93,7 @@ def extract_changes_in_partitions(
     new_partition AS (
         SELECT *
         FROM `{table_name}`
-        WHERE {VIEW_PARTITION_TIME_COLUMN_NAME} = TIMESTAMP('{new_partition_date.strftime("%Y-%m-%d")}')
+        WHERE TIMESTAMP_TRUNC({VIEW_PARTITION_TIME_COLUMN_NAME}, DAY) = TIMESTAMP('{new_partition_date.strftime("%Y-%m-%d")}')
     ),
     new_or_updated_records AS (
         SELECT *
