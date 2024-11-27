@@ -61,7 +61,7 @@ def extract_latest_partition_timestamp_from_bigquery(
     if latest_partition_timestamp is None:
         raise ValueError(f"Partition column `{VIEW_PARTITION_TIME_COLUMN_NAME}` returned no value.")
 
-    formatted_latest_partition_timestamp = datetime.strptime(latest_partition_timestamp, "%Y-%m-%d %H:%M:%S")
+    formatted_latest_partition_timestamp = datetime.strptime(latest_partition_timestamp, "%Y-%m-%d %H:%M:%S %Z")
 
     return formatted_latest_partition_timestamp
 
@@ -90,7 +90,7 @@ def extract_changes_in_partitions(
     WITH old_partition AS (
         SELECT *
         FROM `{table_name}`
-        WHERE TIMESTAMP_TRUNC({VIEW_PARTITION_TIME_COLUMN_NAME}, DAY) = TIMESTAMP('{old_partition_date.strftime("%Y-%m-%d") or "1970-01-01"}')
+        WHERE TIMESTAMP_TRUNC({VIEW_PARTITION_TIME_COLUMN_NAME}, DAY) = TIMESTAMP('{old_partition_date.strftime("%Y-%m-%d") if old_partition_date else "1970-01-01"}')
     ),
     new_partition AS (
         SELECT *
