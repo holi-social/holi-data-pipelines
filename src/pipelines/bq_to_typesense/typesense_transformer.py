@@ -49,8 +49,8 @@ def transform_row(row: Dict[str, Optional[str]]) -> Dict[str, Optional[str]]:
 
     # initialize title_* and description_* with default values (will be filled below with real values)
     doc: Dict[str, Optional[str]] = {
+        "id": str(row.get("id")),
         "type": "volunteering",
-        "volunteering_id": row.get("id"),
         "title_de": None,
         "title_en": None,
         "description_de": None,

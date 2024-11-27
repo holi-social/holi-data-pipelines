@@ -2,13 +2,8 @@
     "name": "staging_all",
     "enable_nested_fields": true,
     "fields": [
+        {"name": "id", "type": "string"},
         {"name": "type", "type": "string", "facet": true},
-        {
-            "name": "volunteering_id",
-            "type": "string",
-            "comment": "added for debugging, not indexed. id -> volunteering_id. Collection schema cannot contain a field with name id.",
-            "index": false
-        },
         {
             "name": "title_de",
             "type": "string",
