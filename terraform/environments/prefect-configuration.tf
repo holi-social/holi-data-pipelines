@@ -44,7 +44,7 @@ resource "prefect_variable" "volunteering_voltastics_raw_deduped" {
 
 resource "prefect_variable" "bq_to_typesense_state" {
   name  = "bq_to_typesense_state"
-  value = "null"
+  value = {}
 }
 
 resource "prefect_variable" "typesense_host" {
