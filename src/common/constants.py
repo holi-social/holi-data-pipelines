@@ -1,1 +1,1 @@
-VIEW_PARTITION_COLUMN_NAME = "partitiontime"
+VIEW_PARTITION_TIME_COLUMN_NAME = "partitiontime"

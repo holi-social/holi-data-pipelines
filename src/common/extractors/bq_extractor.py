@@ -3,7 +3,7 @@ from typing import Dict
 import prefect.logging
 from prefect_gcp import BigQueryWarehouse
 from datetime import datetime
-from src.common.constants import VIEW_PARTITION_COLUMN_NAME
+from src.common.constants import VIEW_PARTITION_TIME_COLUMN_NAME
 
 logger = prefect.logging.get_logger()
 
@@ -49,19 +49,19 @@ def extract_latest_partition_timestamp_from_bigquery(
         list[Dict]: A list containing a single dictionary with the latest partition timestamp.
     """
     query = (
-        f"SELECT MAX(`{VIEW_PARTITION_COLUMN_NAME}`) AS `{VIEW_PARTITION_COLUMN_NAME}` "
+        f"SELECT MAX(`{VIEW_PARTITION_TIME_COLUMN_NAME}`) AS `{VIEW_PARTITION_TIME_COLUMN_NAME}` "
         f"FROM `{table_name}`"
     )
     result = extract_data_from_bigquery(query)
     if not result:
         raise ValueError("No data returned from the query.")
 
-    latest_partition_timestamp = result[0].get(VIEW_PARTITION_COLUMN_NAME)
+    latest_partition_timestamp = result[0].get(VIEW_PARTITION_TIME_COLUMN_NAME)
 
     if latest_partition_timestamp is None:
-        raise ValueError(f"Partition column `{VIEW_PARTITION_COLUMN_NAME}` returned no value.")
+        raise ValueError(f"Partition column `{VIEW_PARTITION_TIME_COLUMN_NAME}` returned no value.")
 
-    formatted_latest_partition_timestamp = datetime.strptime(latest_partition_timestamp, "%Y-%m-%d %H:%M:%S %Z")
+    formatted_latest_partition_timestamp = datetime.strptime(latest_partition_timestamp, "%Y-%m-%d %H:%M:%S")
 
     return formatted_latest_partition_timestamp
 

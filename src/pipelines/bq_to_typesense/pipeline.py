@@ -16,8 +16,6 @@ from src.common.variables import variable_value, JsonType, secret_value, update_
 from src.common.utils import batches
 from datetime import datetime
 
-TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
-
 # Initialize logging
 logger = prefect.logging.get_logger()
 
@@ -78,7 +76,6 @@ def get_config() -> dict[str, JsonType]:
     return {
         "volunteering_with_classification": variable_value("volunteering_with_classification"),
         "volunteering_raw_deduped": variable_value("volunteering_voltastics_raw_deduped"),
-        "state": variable_value("bq_to_typesense_state"),
         "typesense_config": {
             "api_key": secret_value("typesense-admin-api-key"),
             "host": variable_value("typesense_host"),
@@ -95,17 +92,15 @@ def get_config() -> dict[str, JsonType]:
 def volunteering_to_typesense_etl() -> None | State:
     """Orchestrates the ETL pipeline to move volunteering data from BigQuery to Typesense."""
     config, typesense_client = setup_pipeline()
-    state = config.get("state")
 
-    last_complete_ingestion_timestamp = None
-    if last_complete_ingestion_timestamp:
-        last_complete_ingestion_timestamp = datetime.strptime(state.get("last_complete_ingestion_timestamp"), TIMESTAMP_FORMAT).date()
+    last_complete_ingestion_timestamp = load_last_complete_ingestion_timestamp()
 
     latest_partition_timestamp = extract_latest_partition_timestamp_from_bigquery(
         config.get("volunteering_raw_deduped")
-    ).date()
+    )
 
-    if last_complete_ingestion_timestamp and last_complete_ingestion_timestamp >= latest_partition_timestamp:
+    # volunteering data is partitioned by day so we compare days only
+    if last_complete_ingestion_timestamp and last_complete_ingestion_timestamp.date() >= latest_partition_timestamp.date():
         logger.info(f"Last ingestion @ {last_complete_ingestion_timestamp} !< {latest_partition_timestamp}. Skipping ingestion.")
         return
 
@@ -131,7 +126,7 @@ def volunteering_to_typesense_etl() -> None | State:
         delete_data(typesense_client, typesense_collection_name, document_ids_to_delete)
 
     if not upsert_failures:
-        update_last_successful_ingestion(datetime.now())
+        store_last_complete_ingestion_timestamp(datetime.now())
 
     if upsert_failures:
         return Failed(message="Some documents failed ingestion. Please see error log.")
@@ -141,6 +136,21 @@ def setup_pipeline():
     typesense_client = TypesenseClient(config["typesense_config"])
     return config, typesense_client
 
+def load_last_complete_ingestion_timestamp() -> datetime | None:
+    state = variable_value("bq_to_typesense_state")
+    timestamp_str = state.get("last_complete_ingestion_timestamp")
+    if not timestamp_str:
+        return None
+    else:
+        return datetime.fromisoformat(timestamp_str)
+
+def store_last_complete_ingestion_timestamp(timestamp: datetime) -> None:
+    """
+    Store the last successful ingestion time in Prefect as a ISO 8601 string.
+    """
+    state = variable_value("bq_to_typesense_state")
+    state.set("last_complete_ingestion_timestamp", timestamp.isoformat())
+    Variable.set("bq_to_typesense_state", state)
 
 if __name__ == "__main__":
     volunteering_to_typesense_etl()
