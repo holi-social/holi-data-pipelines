@@ -27,13 +27,13 @@ def upsert_documents_in_batches(
 
     # see https://typesense.org/docs/27.1/api/documents.html#index-multiple-documents
     # with the default batch_size of 40 we saw 99% CPU usage over multiple hours during which search requests took
-    # multiple seconds. a lower value should result in search requests being served with lower latency.
-    server_side_batch_size = 5
+    # multiple seconds. a lower value results in search requests being served with lower latency.
+    batch_size = 3
 
     response = client.collections[index_name].documents.import_(
         documents=docs,
         params={"action": "upsert", "dirty_values": "coerce_or_reject"},
-        batch_size=server_side_batch_size,
+        batch_size=batch_size
     )
 
     # Parse and filter results
