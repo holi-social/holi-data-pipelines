@@ -90,12 +90,12 @@ def extract_changes_in_partitions(
     WITH old_partition AS (
         SELECT *
         FROM `{table_name}`
-        WHERE TIMESTAMP_TRUNC(partitiontime, DAY) = TIMESTAMP('{old_partition_date.strftime("%Y-%m-%d") or "1970-01-01"}')
+        WHERE TIMESTAMP_TRUNC({VIEW_PARTITION_TIME_COLUMN_NAME}, DAY) = TIMESTAMP('{old_partition_date.strftime("%Y-%m-%d") or "1970-01-01"}')
     ),
     new_partition AS (
         SELECT *
         FROM `{table_name}`
-        WHERE partitiontime = TIMESTAMP('{new_partition_date.strftime("%Y-%m-%d")}')
+        WHERE {VIEW_PARTITION_TIME_COLUMN_NAME} = TIMESTAMP('{new_partition_date.strftime("%Y-%m-%d")}')
     ),
     new_or_updated_records AS (
         SELECT *
