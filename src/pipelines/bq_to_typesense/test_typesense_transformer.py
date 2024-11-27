@@ -29,7 +29,7 @@ def test_german_all_fields(row):
 
     result = transform_row(row)
 
-    assert result["id"] == row["id"]
+    assert result["id"] == f"volunteering_{row["id"]}"
     assert result["type"] == "volunteering"
     assert result["title_de"] == row["title"]
     assert result["description_de"] == row["description"]
@@ -139,7 +139,7 @@ def test_tolerates_missing_values(row):
 
     result = transform_row(row_with_missing_values)
 
-    assert result["id"] == row_with_missing_values["id"]
+    assert result["id"] == f"volunteering_{row_with_missing_values["id"]}"
     assert result["type"] == "volunteering"
     assert result["title_de"] is None
     assert result["title_en"] is None
