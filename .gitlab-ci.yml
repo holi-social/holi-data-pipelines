@@ -82,11 +82,19 @@ install_dependencies:
     - source venv/bin/activate
     - pip install -r requirements.txt --exists-action s
     - pip install -r dev-requirements.txt --exists-action s
+  rules:
+    - if: $CI_COMMIT_BRANCH
+      changes:
+        - requirements.txt
+        - dev-requirements.txt
+        - .gitlab-ci.yml
 
 validate:
   image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/python:3.12-slim"
   stage: "test"
-  needs: ["install_dependencies"]
+  needs:
+    - job: install_dependencies
+      optional: true
   cache: !reference [.pip_cache_readonly]
   script:
     - source venv/bin/activate
