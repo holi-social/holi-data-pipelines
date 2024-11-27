@@ -1,9 +1,11 @@
-from typing import Iterable, Generator
+from typing import Iterable, Generator, Tuple
+import itertools
 
 
-def batches(iterable: Iterable, batch_size=1) -> Generator[Iterable, None, None]:
+def batches[T](iterable: Iterable[T], batch_size=1) -> Generator[Tuple[Iterable[T], int], None, None]:
     """Generator function yields batches of the original iterable in sizes of batch_size"""
-    length = len(iterable)
-    for index in range(0, length, batch_size):
-        yield iterable[index : min(index + batch_size, length)], index / batch_size
+    batch_number: int = 1
+    for batch in itertools.batched(iterable, batch_size):
+        yield batch, batch_number
+        batch_number += 1
 

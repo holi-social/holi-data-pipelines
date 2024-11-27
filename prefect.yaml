@@ -42,11 +42,11 @@ deployments:
     day_or: true
     active: true
   work_pool:
-    name: cloud-run
+    name: cloud-run-v2
     work_queue_name: default
     job_variables:
       image: '{{ build_image.image }}'
-      timeout_execution: 86400
+      timeout: 86400
   concurrency_limit:
   parameters: {}
   enforce_parameter_schema: true
@@ -61,12 +61,12 @@ deployments:
     day_or: true
     active: true
   work_pool:
-    name: cloud-run
+    name: cloud-run-v2
     work_queue_name: default
     job_variables:
       image: '{{ build_image.image }}'
       memory: '4096Mi'
-      timeout_execution: 86400
+      timeout: 86400
   concurrency_limit:
   parameters: {}
   enforce_parameter_schema: true

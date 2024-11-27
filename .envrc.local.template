@@ -1,3 +1,5 @@
+# https://github.com/direnv/direnv/wiki/Daemonize
+#
 # Usage: daemonize <name> [<command> [...<args>]]
 #
 # Starts the command in the background with an exclusive lock on $name.
@@ -28,7 +30,7 @@ daemonize() {
   mkdir -p "$(direnv_layout_dir)"
 
   # Open pid_file on file descriptor 200
-  exec 200>"$pid_file"
+  exec 200<>"$pid_file"
 
   # Check that we have exclusive access
   if ! flock --nonblock 200; then
@@ -44,7 +46,6 @@ daemonize() {
     # Second fork
     (
       echo "daemonize[$name:$BASHPID]: starting $cmd $*" >&2
-      echo $BASHPID
       # Record the PID for good measure
       echo "$BASHPID" >&200
 
@@ -71,7 +72,7 @@ export TYPESENSE_PORT=
 export TYPESENSE_PROTOCOL=
 export GOOGLE_APPLICATION_CREDENTIALS=../.holi-terraform.key
 
-#export PREFECT_API_URL=http://prefect-server-staging.holi.internal:8421/api
-export PREFECT_API_URL=http://prefect-server-production.holi.internal:8420/api
-daemonize prefect-tunnel-staging gcloud compute ssh --zone "europe-north1-a" prefect-server-staging-green --project "holi-shared" -- -L8421:localhost:8421 sleep 86400
-daemonize prefect-tunnel-production gcloud compute ssh --zone "europe-north1-a" prefect-server-production-green --project "holi-shared" -- -L8420:localhost:8420 sleep 86400
+export PREFECT_API_URL=http://prefect-server-staging.holi.internal:8421/api
+#export PREFECT_API_URL=http://prefect-server-production.holi.internal:8420/api
+daemonize prefect-tunnel-staging gcloud compute ssh --zone "europe-north1-a" prefect-server-staging-green --tunnel-through-iap --project "holi-shared" -- -L8421:localhost:8421 sleep 86400
+daemonize prefect-tunnel-production gcloud compute ssh --zone "europe-north1-a" prefect-server-production-green --tunnel-through-iap --project "holi-shared" -- -L8420:localhost:8420 sleep 86400

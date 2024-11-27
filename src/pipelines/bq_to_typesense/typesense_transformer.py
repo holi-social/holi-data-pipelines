@@ -1,9 +1,9 @@
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 from decimal import Decimal
 import decimal
 
 import prefect
-from langdetect import detect, LangDetectException
+from langdetect import detect, LangDetectException  # type: ignore
 
 logger = prefect.logging.get_logger()
 
@@ -12,7 +12,7 @@ def _key_for_lang(key: str, lang: str) -> str:
     return f"{key}_en" if lang == "en" else f"{key}_de"
 
 
-def _lang_for(value: str, doc_id: str) -> str:
+def _lang_for(value: Optional[str], doc_id: Optional[str]) -> str:
     """Helper to detect language and assign to appropriate field."""
     try:
         if value:
@@ -27,12 +27,12 @@ def _lang_for(value: str, doc_id: str) -> str:
     return "de"
 
 
-def transform_row(row: Dict[str, Optional[str]]) -> Dict[str, Optional[str]]:
+def transform_row(row: Dict[str, Optional[str]]) -> Dict[str, Optional[Any]]:
     """Transform each row, detect language, and format for Typesense."""
     if row.get("id") is None:
         raise ValueError("id is mandatory")
 
-    def decimal_as_str_or_none(value: any) -> str | None:
+    def decimal_as_str_or_none(value: Any) -> str | None:
         if value is None:
             return None
         try:
@@ -48,7 +48,7 @@ def transform_row(row: Dict[str, Optional[str]]) -> Dict[str, Optional[str]]:
     longitude = decimal_as_str_or_none(row.get("longitude"))
 
     # initialize title_* and description_* with default values (will be filled below with real values)
-    doc: Dict[str, Optional[str]] = {
+    doc: Dict[str, Optional[Any]] = {
         "id": str(row.get("id")),
         "type": "volunteering",
         "title_de": None,

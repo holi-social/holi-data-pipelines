@@ -4,6 +4,7 @@ import prefect.logging
 from prefect import task, flow, State
 from prefect.states import Failed
 import json
+from prefect.types import StrictVariableValue
 
 from src.common.extractors.bq_extractor import (
     extract_latest_partition_timestamp_from_bigquery,
@@ -12,7 +13,7 @@ from src.common.extractors.bq_extractor import (
 from src.common.loaders.typesense_loader import index_documents_in_batches
 from src.pipelines.bq_to_typesense.typesense_transformer import transform_row
 from src.common.typesense_client import TypesenseClient
-from src.common.variables import variable_value, JsonType, secret_value
+from src.common.variables import variable_value, secret_value
 from src.common.utils import batches
 from datetime import datetime, date
 
@@ -38,6 +39,7 @@ def transform_data(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     logger.info(f"Transformed {len(rows)} rows of data")
     return transformed
 
+# TODO use failed state instead of boolean
 @task
 def upsert_typesense_documents(typesense_client, typesense_collection_name, new_or_updated_documents) -> bool:
     ingestion_succeeded = True
@@ -49,12 +51,13 @@ def upsert_typesense_documents(typesense_client, typesense_collection_name, new_
             ingestion_succeeded = False
             logger.error(
                 f"Batch {batch_count} processed with failures: {len(failed_documents)} failed items out of"
-                f" {len(docs_batch)}. Failed items in batch {batch_count}: {failed_documents}"
+                f" {success_count + len(failed_documents)}. Failed items in batch {batch_count}: {failed_documents}"
             )
         else:
             logger.info(f"Batch {batch_count} successfully processed with {success_count} documents.")
     return ingestion_succeeded
 
+# TODO use failed state instead of boolean
 @task
 def delete_typesense_documents(typesense_client, typesense_collection_name, document_ids_to_delete) -> bool:
     """
@@ -66,7 +69,7 @@ def delete_typesense_documents(typesense_client, typesense_collection_name, docu
         document_ids_to_delete (list(int)): IDs of documents to delete
 
     Returns:
-        bool: True if deletion was successful
+        bool: True if deletion was successful, False otherwise
     """
     # TODO performance considerations https://typesense.org/docs/27.1/api/documents.html#delete-documents (batch size)
     try:
@@ -90,7 +93,7 @@ def extract_collection_name_from_schema(schema_path: str) -> str:
 
     return collection_name
 
-def get_config() -> dict[str, JsonType]:
+def get_config() -> dict[str, StrictVariableValue]:
     return {
         "volunteering_with_classification": variable_value("volunteering_with_classification"),
         "volunteering_raw_deduped": variable_value("volunteering_voltastics_raw_deduped"),

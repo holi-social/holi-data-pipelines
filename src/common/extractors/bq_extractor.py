@@ -1,7 +1,7 @@
 from typing import Dict
 
 import prefect.logging
-from prefect_gcp import BigQueryWarehouse
+from prefect_gcp import BigQueryWarehouse  # type: ignore
 from datetime import datetime, date
 from src.common.constants import VIEW_PARTITION_TIME_COLUMN_NAME
 
