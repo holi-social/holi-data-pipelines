@@ -173,7 +173,7 @@ def store_last_complete_ingestion_timestamp(timestamp: datetime) -> None:
     """
     state = variable_value("bq_to_typesense_state")
     state["last_complete_ingestion_timestamp"] = timestamp.isoformat()
-    Variable.set("bq_to_typesense_state", state)
+    Variable.set("bq_to_typesense_state", state, overwrite=True)
 
 if __name__ == "__main__":
     volunteering_to_typesense_etl()
