@@ -18,7 +18,7 @@ from src.common.utils import batches
 from datetime import datetime, date
 
 # Initialize logging
-logger = prefect.logging.get_run_logger()
+logger = prefect.logging.get_logger()
 
 @task
 def extract_changed_records(table_name: str, last_complete_ingestion_date: date, latest_partition_date: date) -> List[Dict[str, Any]]:
