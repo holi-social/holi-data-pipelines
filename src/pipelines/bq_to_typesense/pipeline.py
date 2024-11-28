@@ -18,7 +18,7 @@ from src.common.utils import batches
 from datetime import datetime, date
 
 # Initialize logging
-logger = prefect.logging.get_logger()
+logger = prefect.logging.get_run_logger()
 
 @task
 def extract_changed_records(table_name: str, last_complete_ingestion_date: date, latest_partition_date: date) -> List[Dict[str, Any]]:
@@ -73,10 +73,9 @@ def delete_typesense_documents(typesense_client, typesense_collection_name, docu
     Returns:
         bool: True if deletion was successful, False otherwise
     """
-    # TODO performance considerations https://typesense.org/docs/27.1/api/documents.html#delete-documents (batch size)
     try:
         typesense_client.client.collections[typesense_collection_name].documents.delete(
-            {"filter_by": f"id:={','.join(document_ids_to_delete)}"}
+            {"filter_by": f"id:={','.join([str(doc_id) for doc_id in document_ids_to_delete])}"}
         )
         logger.info(f"Deleted {len(document_ids_to_delete)} documents from Typesense.")
         return True
