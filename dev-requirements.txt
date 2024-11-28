@@ -1,4 +1,4 @@
 black[d]==24.10.0
 pytest==8.3.3
-Faker==33.0.0
+Faker==33.1.0
 mypy==1.13.0
