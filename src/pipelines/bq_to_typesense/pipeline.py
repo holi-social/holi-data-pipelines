@@ -172,7 +172,7 @@ def store_last_complete_ingestion_timestamp(timestamp: datetime) -> None:
     Store the last successful ingestion time in Prefect as a ISO 8601 string.
     """
     state = variable_value("bq_to_typesense_state")
-    state.set("last_complete_ingestion_timestamp", timestamp.isoformat())
+    state["last_complete_ingestion_timestamp"] = timestamp.isoformat()
     Variable.set("bq_to_typesense_state", state)
 
 if __name__ == "__main__":
