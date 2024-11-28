@@ -2,6 +2,7 @@ from pickle import GLOBAL
 from typing import List, Dict, Any
 import prefect.logging
 from prefect import task, flow, State
+from prefect.variables import Variable
 from prefect.states import Failed
 import json
 from prefect.types import StrictVariableValue
