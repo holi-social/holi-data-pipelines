@@ -31,7 +31,7 @@ variables:
     - .cache/pip
     - venv/
 
-.deploy_infra:
+.terraform_deploy:
   image:
     name: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/hashicorp/terraform:1.9.8"
     entrypoint: ["/bin/sh", "-c"]
@@ -51,9 +51,9 @@ variables:
   resource_group: $ENVIRONMENT_ID
   interruptible: false
 
-.deploy_prefect:
+.prefect_deploy:
   image:
-    name: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/python:3.12-slim"
+    name: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.1.4-python3.12"
   stage: "deploy"
   variables:
     ENVIRONMENT_ID: $CI_ENVIRONMENT_SLUG
@@ -64,7 +64,7 @@ variables:
   resource_group: $ENVIRONMENT_ID
 
 .smoketest:
-  image: "europe-north1-docker.pkg.dev/holi-shared/docker/holi-docker/holi-k6-builder"
+  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.1.4-python3.12"
   stage: ".post"
   cache: !reference [.pip_cache_readonly]
   script:
@@ -102,8 +102,8 @@ validate:
     - pytest .
 
 ## staging environment
-deploy_infra_staging:
-  extends: .deploy_infra
+terraform_deploy_staging:
+  extends: .terraform_deploy
   needs: ["validate"]
   variables:
     ENVIRONMENT_ID: staging
@@ -111,9 +111,9 @@ deploy_infra_staging:
     - if: $CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"
       when: on_success
 
-deploy_prefect_staging:
-  extends: .deploy_prefect
-  needs: ["deploy_infra_staging"]
+prefect_deploy_staging:
+  extends: .prefect_deploy
+  needs: ["terraform_deploy_staging"]
   variables:
     ENVIRONMENT_ID: staging
   rules:
@@ -122,14 +122,14 @@ deploy_prefect_staging:
 
 smoketest_staging:
   extends: .smoketest
-  needs: ["deploy_prefect_staging"]
+  needs: ["prefect_deploy_staging"]
   rules:
     - if: $CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"
       when: on_success
 
 ## production environment
-deploy_infra_production:
-  extends: .deploy_infra
+terraform_deploy_production:
+  extends: .terraform_deploy
   needs: ["validate"]
   variables:
     ENVIRONMENT_ID: production
@@ -137,9 +137,9 @@ deploy_infra_production:
     - if: $CI_COMMIT_BRANCH == "production" && $CI_PIPELINE_SOURCE == "push"
       when: on_success
 
-deploy_prefect_production:
-  extends: .deploy_prefect
-  needs: ["deploy_infra_production"]
+prefect_deploy_production:
+  extends: .prefect_deploy
+  needs: ["terraform_deploy_production"]
   variables:
     ENVIRONMENT_ID: production
   rules:
@@ -148,7 +148,7 @@ deploy_prefect_production:
 
 smoketest_production:
   extends: .smoketest
-  needs: ["deploy_prefect_production"]
+  needs: ["prefect_deploy_production"]
   rules:
     - if: $CI_COMMIT_BRANCH == "production" && $CI_PIPELINE_SOURCE == "push"
       when: on_success
