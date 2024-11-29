@@ -105,7 +105,7 @@
       "keep_job": {
         "type": "boolean",
         "title": "Keep Job After Completion",
-        "default": true,
+        "default": false,
         "description": "Keep the completed Cloud run job on Google Cloud Platform."
       },
       "credentials": {
@@ -273,7 +273,7 @@
   },
   "job_configuration": {
     "env": "{{ env }}",
-    "name": "{{ name }}",
+    "name": "${name_prefix}-{{ name }}",
     "labels": "{{ labels }}",
     "region": "{{ region }}",
     "command": "{{ command }}",

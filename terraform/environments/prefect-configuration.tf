@@ -86,11 +86,16 @@ resource "prefect_block" "bigquery_warehouse" {
 }
 
 resource "prefect_work_pool" "cloud_run" {
-  name              = "cloud-run-v2"
-  type              = "cloud-run-v2"
-  paused            = false
-  base_job_template = file("./cloud-run-work-pool-base-job-template.json")
-  depends_on        = [null_resource.prefect_server_available]
+  name   = "cloud-run-v2"
+  type   = "cloud-run-v2"
+  paused = false
+  base_job_template = templatefile(
+    "./cloud-run-work-pool-base-job-template.json",
+    {
+      name_prefix = "match-${substr(local.environment_name, 0, 1)}"
+    }
+  )
+  depends_on = [null_resource.prefect_server_available]
 }
 
 resource "google_cloud_run_v2_service" "work_pool_cloud_run_worker" {
