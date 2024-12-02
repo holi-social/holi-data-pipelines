@@ -3,7 +3,7 @@ from decimal import Decimal
 import decimal
 
 import prefect
-from langdetect import detect, LangDetectException  # type: ignore
+from langdetect import detect, LangDetectException
 
 logger = prefect.logging.get_logger()
 

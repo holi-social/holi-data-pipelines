@@ -1,4 +1,4 @@
-from typing import List, Dict, Any, Union
+from typing import List, Dict, Any, cast, Tuple
 
 import prefect.logging
 from prefect import task, flow, State
@@ -34,7 +34,7 @@ def transform_data(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
 
 @task
-def load_data(documents: List[Dict[str, Any]], typesense_client, schema_path: str) -> None | State:
+def load_data(documents: List[Dict[str, Any]], typesense_client: TypesenseClient, schema_path: str) -> None | State:
     """Load transformed data into Typesense in batches."""
 
     collection_name = typesense_client.drop_and_create_collection(schema_path)
@@ -79,14 +79,14 @@ def get_config() -> dict[str, StrictVariableValue]:
 def volunteering_to_typesense_etl() -> None:
     """Orchestrates the ETL pipeline to move volunteering data from BigQuery to Typesense."""
     config, typesense_client = setup_pipeline()
-    raw_data = extract_data(config["volunteering_with_classification"])
+    raw_data = extract_data(cast(str, config["volunteering_with_classification"]))
     transformed_data = transform_data(raw_data)
-    load_data(transformed_data, typesense_client, config["schema_path"])
+    load_data(transformed_data, typesense_client, cast(str, config["schema_path"]))
 
 
-def setup_pipeline():
+def setup_pipeline() -> Tuple[dict[str, StrictVariableValue], TypesenseClient]:
     config = get_config()
-    typesense_client = TypesenseClient(config["typesense_config"])
+    typesense_client = TypesenseClient(cast(Dict[str, str], config["typesense_config"]))
     return config, typesense_client
 
 

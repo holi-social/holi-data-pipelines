@@ -2,8 +2,8 @@ import json
 import typesense
 from typing import Dict
 import prefect
-from typesense.client import Client  # type: ignore
-from typesense.exceptions import ObjectNotFound  # type: ignore
+from typesense.client import Client
+from typesense.exceptions import ObjectNotFound
 
 # Initialize logging
 logger = prefect.logging.get_logger()
