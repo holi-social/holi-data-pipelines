@@ -63,7 +63,7 @@ variables:
   cache: !reference [.pip_cache_readonly]
   script:
     - source venv/bin/activate
-    - DOCKER_HOST='tcp://docker:2375' PREFECT_API_URL="$(cat $PREFECT_SERVER_URL_PATH)/api" prefect deploy --all
+    - DOCKER_HOST='tcp://docker:2375' PREFECT_API_URL="$(cat $PREFECT_SERVER_URL_PATH)/api" venv/bin/prefect deploy --all
   resource_group: $ENVIRONMENT_ID
 
 .smoketest:
