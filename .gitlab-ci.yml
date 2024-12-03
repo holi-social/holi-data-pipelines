@@ -53,7 +53,7 @@ variables:
 
 .prefect_deploy:
   image:
-    name: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.1.5-python3.12"
+    name: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/docker:27"
   services:
     - name: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/docker:27-dind"
       alias: "docker"
@@ -63,10 +63,7 @@ variables:
   cache: !reference [.pip_cache_readonly]
   script:
     - source venv/bin/activate
-    - docker info
-    - DOCKER_HOST='tcp://docker:2375' docker info
-    - export DOCKER_HOST='tcp://docker:2375'
-    - PREFECT_API_URL="$(cat $PREFECT_SERVER_URL_PATH)/api" prefect deploy --all
+    - DOCKER_HOST='tcp://docker:2375' PREFECT_API_URL="$(cat $PREFECT_SERVER_URL_PATH)/api" prefect deploy --all
   resource_group: $ENVIRONMENT_ID
 
 .smoketest:
