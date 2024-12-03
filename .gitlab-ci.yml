@@ -53,7 +53,7 @@ variables:
 
 .prefect_deploy:
   image:
-    name: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.1.4-python3.12"
+    name: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.1.5-python3.12"
   services:
     - name: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/docker:27-dind"
       alias: "docker"
@@ -68,7 +68,7 @@ variables:
   resource_group: $ENVIRONMENT_ID
 
 .smoketest:
-  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.1.4-python3.12"
+  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.1.5-python3.12"
   stage: ".post"
   cache: !reference [.pip_cache_readonly]
   script:
