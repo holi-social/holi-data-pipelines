@@ -65,6 +65,7 @@ variables:
     - source venv/bin/activate
     - ls -al venv
     - ls -al venv/bin
+    - cat venv/bin/prefect
     - DOCKER_HOST='tcp://docker:2375' PREFECT_API_URL="$(cat $PREFECT_SERVER_URL_PATH)/api" venv/bin/prefect deploy --all
   resource_group: $ENVIRONMENT_ID
 
