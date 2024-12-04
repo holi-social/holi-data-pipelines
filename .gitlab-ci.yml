@@ -62,11 +62,14 @@ variables:
     ENVIRONMENT_ID: $CI_ENVIRONMENT_SLUG
   cache: !reference [.pip_cache_readonly]
   script:
+    - apk add --update --no-cache python3
+    - for version in "" 3 3.12; do ln -s /usr/bin/python3 /usr/local/bin/python${version}; done
+    - echo $DOCKER_HOST
     - source venv/bin/activate
-    - ls -al venv
-    - ls -al venv/bin
-    - cat venv/bin/prefect
-    - DOCKER_HOST='tcp://docker:2375' PREFECT_API_URL="$(cat $PREFECT_SERVER_URL_PATH)/api" venv/bin/prefect deploy --all
+    - python3 --version
+    - python3 venv/bin/prefect --version
+    - prefect --version
+    - DOCKER_HOST='tcp://docker:2375' PREFECT_API_URL="$(cat $PREFECT_SERVER_URL_PATH)/api" prefect deploy --all
   resource_group: $ENVIRONMENT_ID
 
 .smoketest:
