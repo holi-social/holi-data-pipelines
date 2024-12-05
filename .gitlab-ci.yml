@@ -52,28 +52,18 @@ variables:
   interruptible: false
 
 .prefect_deploy:
-  image:
-    name: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/docker:27"
-  services:
-    - name: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/docker:27-dind"
-      alias: "docker"
+  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.1.4-python3.12"
   stage: "deploy"
   variables:
     ENVIRONMENT_ID: $CI_ENVIRONMENT_SLUG
   cache: !reference [.pip_cache_readonly]
   script:
-    - apk add --update --no-cache python3
-    - for version in "" 3 3.12; do ln -s /usr/bin/python3 /usr/local/bin/python${version}; done
-    - echo $DOCKER_HOST
     - source venv/bin/activate
-    - python3 --version
-    - python3 venv/bin/prefect --version
-    - prefect --version
-    - DOCKER_HOST='tcp://docker:2375' PREFECT_API_URL="$(cat $PREFECT_SERVER_URL_PATH)/api" prefect deploy --all
+    - PREFECT_API_URL="$(cat $PREFECT_SERVER_URL_PATH)/api" prefect deploy --all
   resource_group: $ENVIRONMENT_ID
 
 .smoketest:
-  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.1.5-python3.12"
+  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.1.4-python3.12"
   stage: ".post"
   cache: !reference [.pip_cache_readonly]
   script:
@@ -81,6 +71,29 @@ variables:
     - PREFECT_API_URL="$(cat $PREFECT_SERVER_URL_PATH)/api" prefect shell watch "echo smoketesting"
     - PREFECT_API_URL="$(cat $PREFECT_SERVER_URL_PATH)/api" prefect deployment run hello-universe/example-deploy --watch
     # TODO should/could we roll back the service to the last working revision on test failure?
+
+build_docker_pipeline_image:
+  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/docker:27"
+  services:
+    - name: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/docker:27-dind"
+      alias: "docker"
+  variables:
+    # this could be fetched via terraform output ("gcr_location" in infra project), but then we would need an extra job for terraform
+    GCR_IMAGE_PREFIX: europe-north1-docker.pkg.dev/holi-shared/docker/data-pipeline-job
+  script:
+    # set the environment suffix to production for branch production and staging for branch main
+    - ENVIRONMENT_SUFFIX=$(if [ "$CI_COMMIT_REF_SLUG" == "main" ]; then echo "staging"; else echo "production"; fi)
+    - GCR_IMAGE=${GCR_IMAGE_PREFIX}-${ENVIRONMENT_SUFFIX}
+    - docker pull "$GCR_IMAGE" || true # Allows us to use --cache-from, we need to tag with latest in the next command for this to work
+    - docker build --cache-from "$GCR_IMAGE" -t "$GCR_IMAGE":latest -t "$GCR_IMAGE":"$CI_COMMIT_SHA" -t "$GCR_IMAGE":"$CI_COMMIT_REF_SLUG" .
+    - docker push "$GCR_IMAGE":"$CI_COMMIT_SHA" # we use latest in prefect, this is just extra information for humans.
+    - docker push "$GCR_IMAGE":latest # for caching the build and for use by prefect pipelines
+  rules:
+    - if: $CI_COMMIT_BRANCH =~ /^main$|^production$/ && $CI_PIPELINE_SOURCE == "push"
+      changes:
+        - requirements.txt
+        - dev-requirements.txt
+        - .gitlab-ci.yml
 
 install_dependencies:
   image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/python:3.12-slim"
