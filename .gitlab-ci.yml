@@ -75,8 +75,8 @@ stages:
   cache: !reference [.pip_cache_readonly]
   script:
     - source venv/bin/activate
-    - PREFECT_API_URL="$(cat $PREFECT_SERVER_URL_PATH)/api" prefect shell watch "echo smoketesting"
-    - PREFECT_API_URL="$(cat $PREFECT_SERVER_URL_PATH)/api" prefect deployment run hello-universe/example-deploy --watch
+    - PREFECT_API_URL="$(cat $PREFECT_SERVER_URL_PATH)/api" prefect shell watch --flow-run-name ci-test-$CI_PIPELINE_IID --tag ci-test "echo smoketesting"
+    - PREFECT_API_URL="$(cat $PREFECT_SERVER_URL_PATH)/api" prefect deployment run --tag ci-test --watch hello-universe/example-deploy
     # TODO should/could we roll back the service to the last working revision on test failure?
 
 build_docker_pipeline_image:
