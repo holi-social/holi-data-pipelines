@@ -10,7 +10,7 @@ build:
   - prefect.deployments.steps.run_shell_script:
       id: get_environment_docker_image
       # extract the prefect api url environment part
-      script: sh get_prefect_environment.sh
+      script: sh scripts/get_prefect_environment.sh
       stream_output: false
 
 # push section allows you to manage if and how this project is uploaded to remote locations
