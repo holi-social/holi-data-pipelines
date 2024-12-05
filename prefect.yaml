@@ -10,10 +10,7 @@ build:
   - prefect.deployments.steps.run_shell_script:
       id: get_environment_docker_image
       # extract the prefect api url environment part
-      script: |
-        echo -n europe-north1-docker.pkg.dev/holi-shared/docker/data-pipeline-job
-        echo -n $PREFECT_API_URL |sed 's/^.*prefect-server-\([^.]*\).holi.internal.*$/\1/g'
-        echo :latest
+      script: sh get_prefect_environment.sh
       stream_output: false
 
 # push section allows you to manage if and how this project is uploaded to remote locations
