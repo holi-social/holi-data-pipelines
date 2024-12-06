@@ -42,7 +42,7 @@ deployments:
     concurrency_limit:
     parameters: {}
     enforce_parameter_schema: true
-  - name: bq-to-typesense
+  - name: volunteering-to-typesense
     version:
     tags: []
     description: "Orchestrates the ETL pipeline to move volunteering data from BigQuery to Typesense."
