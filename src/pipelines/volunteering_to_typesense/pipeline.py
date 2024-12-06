@@ -7,7 +7,7 @@ from prefect.types import StrictVariableValue
 
 from src.common.extractors.bq_extractor import extract_data_from_bigquery_table
 from src.common.loaders.typesense_loader import index_documents_in_batches
-from src.pipelines.bq_to_typesense.typesense_transformer import transform_row
+from src.pipelines.volunteering_to_typesense.typesense_transformer import transform_row
 from src.common.typesense_client import TypesenseClient
 from src.common.variables import variable_value, secret_value
 from src.common.utils import batches
@@ -69,7 +69,7 @@ def get_config() -> dict[str, StrictVariableValue]:
             "port": variable_value("typesense_port"),
             "protocol": variable_value("typesense_protocol"),
         },
-        "schema_path": f"typesense/{variable_value("prefect_environment")}_all.json",
+        "schema_path": f"src/typesense/{variable_value("prefect_environment")}_all.json",
     }
 
 
