@@ -24,3 +24,11 @@ First run, please execute:
 Afterwards, the server is available and you can provision the prefect specific resources with a simple
 
 `terraform apply`
+
+If you want to redeploy/re-setup the prefect server, please do
+
+* `terraform destroy -target=google_compute_instance.prefect_server_green`
+* `terraform apply -target=google_compute_instance.prefect_server_green -target=google_dns_record_set.prefect_server_holi_internal`
+* `terraform apply -target=null_resource.prefect_server_available` (repeat once if this fails)
+* you probably will need to execute `direnv reload` now in the project root for re-enabling the ssh tunnels
+* `terraform apply`
