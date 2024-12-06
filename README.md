@@ -21,8 +21,13 @@ This project contains code and infrastructure definitions for all data pipelines
 
 You need some tools installed: pyenv, direnv. See holi-meta/README.md for more information.
 
+Since (prefect)[#prefect] is nut publically available, but only via the GCP VPC, in order to execute terraform, we can make use of an SSH tunnel by following these steps (work for staging and production):
+
+* Add the following line to your `etc/hosts`:
+  `127.0.0.1 prefect-server-staging.holi.internal prefect-server-production.holi.internal`
+
 Make sure you have this project checked out directly in a checkout of holi-meta. Executing `direnv allow` and
-`direnv reload` should lead to no errors. If you run into errors, see the troubleshooting section.
+`direnv reload` should lead to no errors and establish the ssh tunnels. If you run into errors, see the troubleshooting section.
 
 Let's run an example pipeline:
 
