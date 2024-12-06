@@ -3,7 +3,7 @@ import json
 import pytest
 from faker import Faker
 
-from src.pipelines.bq_to_typesense.typesense_transformer import transform_row
+from src.pipelines.volunteering_to_typesense.typesense_transformer import transform_row
 
 fake = Faker()
 
