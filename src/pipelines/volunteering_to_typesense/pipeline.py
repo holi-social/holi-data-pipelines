@@ -7,7 +7,7 @@ from prefect.types import StrictVariableValue
 
 from src.common.extractors.bq_extractor import extract_data_from_bigquery_table
 from src.common.loaders.typesense_loader import index_documents_in_batches
-from src.pipelines.bq_to_typesense.typesense_transformer import transform_row
+from src.pipelines.volunteering_to_typesense.typesense_transformer import transform_row
 from src.common.typesense_client import TypesenseClient
 from src.common.variables import variable_value, secret_value
 from src.common.utils import batches

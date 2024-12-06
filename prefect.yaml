@@ -45,8 +45,8 @@ deployments:
   - name: bq-to-typesense
     version:
     tags: []
-    description: "Orchestrates the ETL pipeline to move data from BigQuery to Typesense."
-    entrypoint: src/pipelines/bq_to_typesense/pipeline.py:volunteering_to_typesense_etl
+    description: "Orchestrates the ETL pipeline to move volunteering data from BigQuery to Typesense."
+    entrypoint: src/pipelines/volunteering_to_typesense/pipeline.py:volunteering_to_typesense_etl
     schedules:
       - cron: 30 6 * * * # run every day at 06:30 (classification job runs from 04:40 to ~ 06:00)
         timezone: "Europe/Berlin"
