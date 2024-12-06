@@ -85,6 +85,26 @@ resource "prefect_block" "bigquery_warehouse" {
   depends_on = [null_resource.prefect_server_available]
 }
 
+resource "prefect_block" "rocketchat_alert" {
+  name      = "rocketchat-alert"
+  type_slug = "custom-webhook"
+
+  data = jsonencode({
+    "name" : "Prefect Alert", # Shows up as sender of the alert in Rocket.Chat
+    "method" : "POST",
+    "url" : "https://projectholi.rocket.chat/hooks/6751e64714a4b1e7ecdb0eb8/KDnELf9iki8Emm8Gvwh46TcTfSTXxiWaZ2zuxtmChYRdnGs4?channel=${local.environment == "production" ? "66fd2e1cfd9d814af0fb30d0" : "66fd2e46fd9d814af0fb30d3"}",
+    "json_data" : {
+      "subject" : "{{subject}}",
+      "name" : "{{name}}",
+      "body" : "{{body}}",
+    },
+    "headers" : {
+      "Content-Type" : "application/json"
+    }
+  })
+  depends_on = [null_resource.prefect_server_available]
+}
+
 resource "prefect_work_pool" "cloud_run" {
   name   = "cloud-run-v2"
   type   = "cloud-run-v2"

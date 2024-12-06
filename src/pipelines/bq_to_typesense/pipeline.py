@@ -1,3 +1,4 @@
+import functools
 from typing import List, Dict, Any, cast, Tuple
 
 import prefect.logging
@@ -7,6 +8,7 @@ from prefect.types import StrictVariableValue
 
 from src.common.extractors.bq_extractor import extract_data_from_bigquery_table
 from src.common.loaders.typesense_loader import index_documents_in_batches
+from src.common.monitoring.alerting import alert
 from src.pipelines.bq_to_typesense.typesense_transformer import transform_row
 from src.common.typesense_client import TypesenseClient
 from src.common.variables import variable_value, secret_value
@@ -60,22 +62,30 @@ def load_data(documents: List[Dict[str, Any]], typesense_client: TypesenseClient
         return None
 
 
-def get_config() -> dict[str, StrictVariableValue]:
-    return {
-        "volunteering_with_classification": variable_value("volunteering_with_classification"),
-        "typesense_config": {
-            "api_key": secret_value("typesense-admin-api-key"),
-            "host": variable_value("typesense_host"),
-            "port": variable_value("typesense_port"),
-            "protocol": variable_value("typesense_protocol"),
-        },
-        "schema_path": f"typesense/{variable_value("prefect_environment")}_all.json",
+_NONSECRET_CONFIG: dict[str, StrictVariableValue] = {
+    "volunteering_with_classification": variable_value("volunteering_with_classification"),
+    "typesense_config": {
+        "host": variable_value("typesense_host"),
+        "port": variable_value("typesense_port"),
+        "protocol": variable_value("typesense_protocol"),
+    },
+    "schema_path": f"typesense/{variable_value("prefect_environment")}_all.json",
+}
+_SECRET_CONFIG: dict[str, StrictVariableValue] = {
+    "typesense_config": {
+        "api_key": secret_value("typesense-admin-api-key"),
     }
+}
+_CONFIG: dict[str, StrictVariableValue] = _NONSECRET_CONFIG | _SECRET_CONFIG
 
 
 # TODO configure flow via annotation
 # TODO configure task so that they can be tried
-@flow()
+@flow(
+    on_failure=[functools.partial(alert, _NONSECRET_CONFIG)],
+    on_crashed=[functools.partial(alert, _NONSECRET_CONFIG)],
+    on_cancellation=[functools.partial(alert, _NONSECRET_CONFIG)],
+)
 def volunteering_to_typesense_etl() -> None:
     """Orchestrates the ETL pipeline to move volunteering data from BigQuery to Typesense."""
     config, typesense_client = setup_pipeline()
@@ -85,7 +95,7 @@ def volunteering_to_typesense_etl() -> None:
 
 
 def setup_pipeline() -> Tuple[dict[str, StrictVariableValue], TypesenseClient]:
-    config = get_config()
+    config = _CONFIG
     typesense_client = TypesenseClient(cast(Dict[str, str], config["typesense_config"]))
     return config, typesense_client
 
