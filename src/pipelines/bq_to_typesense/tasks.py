@@ -1,12 +1,14 @@
 from typing import List, Dict, Any
-from prefect import task
+
+from prefect import task, State
+from prefect.states import Failed, Completed
 from src.common.extractors.bq_extractor import (
     extract_changes_in_partitions,
 )
 from src.common.loaders.typesense_loader import upsert_documents_in_batches
 from src.pipelines.bq_to_typesense.typesense_transformer import transform_row
 from src.common.typesense_client import TypesenseClient
-from src.common.utils import batches
+from src.pipelines.bq_to_typesense.utils import batches
 from datetime import date
 import prefect.logging
 
@@ -85,3 +87,20 @@ def delete_typesense_documents(typesense_client, typesense_collection_name, docu
             + ",".join(document_ids_to_delete)
         )
         return False
+
+@task
+def validate_collection(typesense_client, collection_name: str, expected_count: int) -> State:
+    """Validate the new collection before switching the alias."""
+    # test a sample search
+    sample_search = typesense_client.collections[collection_name].documents.search(
+        {
+            "q": "*",
+            "query_by": "type",
+            "page": 1,
+            "per_page": 1,
+        }
+    )
+    if not sample_search["hits"]:
+        return Failed(message=f"No documents found for {collection_name}")
+
+    return Completed()

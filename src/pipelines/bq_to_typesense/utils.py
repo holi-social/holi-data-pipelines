@@ -7,6 +7,7 @@ from prefect.types import StrictVariableValue
 from src.common.typesense_client import TypesenseClient
 from src.common.variables import variable_value, secret_value
 from datetime import datetime, date
+from tasks import delete_typesense_documents, upsert_typesense_documents, transform_data, extract_changed_records, validate_collection
 
 
 def batches[T](iterable: Iterable[T], batch_size=1) -> Generator[Tuple[Iterable[T], int], None, None]:
@@ -67,29 +68,38 @@ def store_last_complete_ingestion_timestamp(timestamp: datetime) -> None:
 
 
 def get_active_collection(typesense_client, alias_name: str) -> str:
-    """Retrieve the current active collection for the alias."""
-    alias_info = typesense_client.aliases[alias_name].retrieve()
-    return alias_info["collection_name"]
+    """Retrieve the current active collection for the given alias name.
 
+    Args:
+        typesense_client: The Typesense client instance.
+        alias_name (str): The name of the alias to look up.
 
-def validate_collection(typesense_client, collection_name: str, expected_count: int) -> bool:
-    """Validate the new collection before switching the alias."""
-    collection_info = typesense_client.collections[collection_name].retrieve()
-    actual_count = collection_info["num_documents"]
+    Returns:
+        str: The name of the collection associated with the alias, or an empty string if the alias does not exist.
+    """
+    try:
+        alias_info = typesense_client.aliases[alias_name].retrieve()
+        return alias_info.get("collection_name", "")
+    except Exception as e:
+        return ""
 
-    if actual_count < expected_count:
-        return False
+def diff_ingest(config, last_complete_ingestion_timestamp, latest_partition_timestamp, typesense_client,
+                typesense_collection_name):
 
-    # Additional health checks, e.g., test a sample search
-    sample_search = typesense_client.collections[collection_name].documents.search(
-        {
-            "q": "*",
-            "query_by": "type",
-            "page": 1,
-            "per_page": 1,
-        }
+    changed_records = extract_changed_records(
+        config.get("volunteering_raw_deduped"),
+        last_complete_ingestion_timestamp,
+        latest_partition_timestamp,
     )
-    if not sample_search["hits"]:
-        return False
-
-    return True
+    new_or_updated_records = [record for record in changed_records if record["change_type"] == "new_or_updated"]
+    document_ids_to_delete = [record["id"] for record in changed_records if record["change_type"] == "deleted"]
+    new_or_updated_documents = transform_data(new_or_updated_records)
+    upsert_succeeded = upsert_typesense_documents(
+        typesense_client, typesense_collection_name, new_or_updated_documents
+    )
+    deletion_succeeded = True
+    if document_ids_to_delete:
+        deletion_succeeded = delete_typesense_documents(
+            typesense_client, typesense_collection_name, document_ids_to_delete
+        )
+    return deletion_succeeded, upsert_succeeded

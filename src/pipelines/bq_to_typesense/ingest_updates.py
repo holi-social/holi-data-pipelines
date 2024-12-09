@@ -6,14 +6,15 @@ from src.common.constants import TYPESENSE_ALIAS_NAME
 from src.common.extractors.bq_extractor import (
     extract_latest_partition_timestamp_from_bigquery,
 )
-from src.common.utils import (
+from src.pipelines.bq_to_typesense.utils import (
     setup_pipeline,
     load_last_complete_ingestion_timestamp,
     store_last_complete_ingestion_timestamp,
     get_active_collection,
+    diff_ingest
 )
 from datetime import datetime
-from tasks import delete_typesense_documents, upsert_typesense_documents, transform_data, extract_changed_records
+from tasks import validate_collection
 
 # Initialize logging
 logger = prefect.logging.get_logger()
@@ -42,33 +43,23 @@ def volunteering_to_typesense_etl() -> None | State:
         )
         return
 
-    changed_records = extract_changed_records(
-        config.get("volunteering_raw_deduped"),
-        last_complete_ingestion_timestamp,
-        latest_partition_timestamp,
-    )
-
-    new_or_updated_records = [record for record in changed_records if record["change_type"] == "new_or_updated"]
-    document_ids_to_delete = [record["id"] for record in changed_records if record["change_type"] == "deleted"]
-
-    new_or_updated_documents = transform_data(new_or_updated_records)
-
     typesense_collection_name = get_active_collection(typesense_client, TYPESENSE_ALIAS_NAME)
 
-    upsert_succeeded = upsert_typesense_documents(
-        typesense_client, typesense_collection_name, new_or_updated_documents
-    )
-
-    deletion_succeeded = True
-    if document_ids_to_delete:
-        deletion_succeeded = delete_typesense_documents(
-            typesense_client, typesense_collection_name, document_ids_to_delete
-        )
+    deletion_succeeded, upsert_succeeded = diff_ingest(config, last_complete_ingestion_timestamp,
+                                                       latest_partition_timestamp, typesense_client,
+                                                       typesense_collection_name)
 
     if upsert_succeeded and deletion_succeeded:
-        store_last_complete_ingestion_timestamp(datetime.now())
+        validation_result = validate_collection(typesense_client, typesense_collection_name)
+        if validation_result.is_failed():
+            return validation_result
+        else:
+            store_last_complete_ingestion_timestamp(datetime.now())
     else:
         return Failed(message="Some documents failed ingestion. Please see error log.")
+
+
+
 
 
 if __name__ == "__main__":
