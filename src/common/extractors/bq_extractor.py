@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 import prefect.logging
 from prefect_gcp import BigQueryWarehouse
@@ -66,8 +66,8 @@ def extract_latest_partition_timestamp_from_bigquery(
 def extract_changes_in_partitions(
         table_name: str,
         new_partition_date: date,
-        old_partition_date: date = None
-) -> list[Dict]:
+        old_partition_date: Optional[date] = None
+) -> list[Dict[str, Any]]:
     """
     Extracts (new, updated, or deleted records) in a BigQuery table by comparing
     the old partition with the new partition timestamp. It requires the table to have a hash

@@ -1,23 +1,21 @@
-from typing import List, Dict, Any, cast, Tuple
+from typing import List, Dict, Any, cast, Tuple, Optional
 
 from pickle import GLOBAL
 from typing import List, Dict, Any
 import prefect.logging
 from prefect import task, flow, State
 from prefect.variables import Variable
-from prefect.states import Failed
+from prefect.states import Failed, Completed
 import json
 from prefect.types import StrictVariableValue
 
 from src.common.extractors.bq_extractor import extract_data_from_bigquery_table
-from src.common.loaders.typesense_loader import index_documents_in_batches
 from src.pipelines.volunteering_to_typesense.typesense_transformer import transform_row
 from src.common.extractors.bq_extractor import (
     extract_latest_partition_timestamp_from_bigquery,
     extract_changes_in_partitions,
 )
 from src.common.loaders.typesense_loader import upsert_documents_in_batches
-from src.pipelines.bq_to_typesense.typesense_transformer import transform_row
 from src.common.typesense_client import TypesenseClient
 from src.common.variables import variable_value, secret_value
 from src.common.utils import batches
@@ -27,7 +25,7 @@ from datetime import datetime, date
 logger = prefect.logging.get_logger()
 
 @task
-def extract_changed_records(table_name: str, last_complete_ingestion_date: date, latest_partition_date: date) -> List[Dict[str, Any]]:
+def extract_changed_records(table_name: str, last_complete_ingestion_date: Optional[date], latest_partition_date: date) -> List[Dict[str, Any]]:
     """Extract changed data from BigQuery."""
     logger.info(f"Extracting changed data from table: {table_name}")
     data = extract_changes_in_partitions(
@@ -46,7 +44,7 @@ def transform_data(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return transformed
 
 @task
-def upsert_typesense_documents(typesense_client, typesense_collection_name, new_or_updated_documents) -> bool:
+def upsert_typesense_documents(typesense_client: TypesenseClient, typesense_collection_name: str, new_or_updated_documents: List[Dict[str, Any]]) -> bool:
     ingestion_succeeded = True
     for docs_batch, batch_count in batches(new_or_updated_documents, 100):
         failed_documents, success_count = upsert_documents_in_batches(
@@ -67,7 +65,7 @@ def upsert_typesense_documents(typesense_client, typesense_collection_name, new_
     return ingestion_succeeded
 
 @task
-def delete_typesense_documents(typesense_client, typesense_collection_name, document_ids_to_delete) -> bool:
+def delete_typesense_documents(typesense_client: TypesenseClient, typesense_collection_name: str, document_ids_to_delete: list[str]) -> bool:
     """
     Deletes documents with the given IDs from the Typesense collection.
 
@@ -85,8 +83,8 @@ def delete_typesense_documents(typesense_client, typesense_collection_name, docu
         )
         logger.info(f"Deleted {len(document_ids_to_delete)} documents from Typesense.")
         return True
-    except e:
-        logger.error(f"Error deleting {len(document_ids_to_delete)} documents from Typesense: " + e.message + "\nFailed document ids: " + ','.join(document_ids_to_delete))
+    except Exception as e:
+        logger.error(f"Error deleting {len(document_ids_to_delete)} documents from Typesense: " + str(e) + "\nFailed document ids: " + ','.join(document_ids_to_delete))
         return False
 
 
@@ -123,17 +121,17 @@ def volunteering_to_typesense_etl() -> None | State:
     last_complete_ingestion_timestamp = load_last_complete_ingestion_timestamp()
 
     latest_partition_timestamp = extract_latest_partition_timestamp_from_bigquery(
-        config.get("volunteering_raw_deduped")
+        cast(str, config.get("volunteering_raw_deduped"))
     )
 
     # volunteering data is partitioned by day so we compare days only
     if last_complete_ingestion_timestamp and last_complete_ingestion_timestamp.date() >= latest_partition_timestamp.date():
         logger.info(f"Last complete ingestion ({last_complete_ingestion_timestamp}) ran on the same day as the newest partition ({latest_partition_timestamp}). Skipping ingestion.")
-        return
+        return Completed()
 
     changed_records = extract_changed_records(
-        config.get("volunteering_raw_deduped"),
-        last_complete_ingestion_timestamp,
+        cast(str, config.get("volunteering_raw_deduped")),
+        last_complete_ingestion_timestamp.date() if last_complete_ingestion_timestamp is not None else None,
         latest_partition_timestamp,
     )
 
@@ -142,10 +140,10 @@ def volunteering_to_typesense_etl() -> None | State:
 
     new_or_updated_documents = transform_data(new_or_updated_records)
 
-    typesense_collection_name = extract_collection_name_from_schema(config["schema_path"])
+    typesense_collection_name = extract_collection_name_from_schema(cast(str, config["schema_path"]))
     recreate_collection = last_complete_ingestion_timestamp is None
     if recreate_collection:
-        typesense_client.drop_and_create_collection(config["schema_path"])
+        typesense_client.drop_and_create_collection(cast(str, config["schema_path"]))
 
     upsert_succeeded = upsert_typesense_documents(typesense_client, typesense_collection_name, new_or_updated_documents)
 
@@ -155,6 +153,7 @@ def volunteering_to_typesense_etl() -> None | State:
 
     if upsert_succeeded and deletion_succeeded:
         store_last_complete_ingestion_timestamp(datetime.now())
+        return Completed()
     else:
         return Failed(message="Some documents failed ingestion. Please see error log.")
 
@@ -164,7 +163,7 @@ def setup_pipeline() -> Tuple[dict[str, StrictVariableValue], TypesenseClient]:
     return config, typesense_client
 
 def load_last_complete_ingestion_timestamp() -> datetime | None:
-    state = variable_value("bq_to_typesense_state")
+    state = cast(dict[str, Any], variable_value("volunteering_to_typesense_state"))
     timestamp_str = state.get("last_complete_ingestion_timestamp")
     if not timestamp_str:
         return None
@@ -175,9 +174,9 @@ def store_last_complete_ingestion_timestamp(timestamp: datetime) -> None:
     """
     Store the last successful ingestion time in Prefect as a ISO 8601 string.
     """
-    state = variable_value("bq_to_typesense_state")
+    state = cast(dict[str, Any], variable_value("volunteering_to_typesense_state"))
     state["last_complete_ingestion_timestamp"] = timestamp.isoformat()
-    Variable.set("bq_to_typesense_state", state, overwrite=True)
+    Variable.set("volunteering_to_typesense_state", state, overwrite=True)
 
 if __name__ == "__main__":
     volunteering_to_typesense_etl()

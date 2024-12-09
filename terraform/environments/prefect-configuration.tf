@@ -42,8 +42,8 @@ resource "prefect_variable" "volunteering_voltastics_raw_deduped" {
   value = local.environment == "production" ? "holi-shared.datalake_production.volunteering_voltastics_raw_deduped" : "holi-shared.datalake_development.volunteering_voltastics_raw_deduped"
 }
 
-resource "prefect_variable" "bq_to_typesense_state" {
-  name  = "bq_to_typesense_state"
+resource "prefect_variable" "volunteering_to_typesense_state" {
+  name  = "volunteering_to_typesense_state"
   value = {}
 }
 
