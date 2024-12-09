@@ -27,13 +27,13 @@ logger = prefect.logging.get_logger()
 @task
 def extract_changed_records(table_name: str, last_complete_ingestion_date: Optional[date], latest_partition_date: date) -> List[Dict[str, Any]]:
     """Extract changed data from BigQuery."""
-    logger.info(f"Extracting changed data from table: {table_name}")
+    logger.info(f"Extracting changed records (table_name={table_name}, last_complete_ingestion_date={last_complete_ingestion_date}, latest_partition_date={latest_partition_date}).")
     data = extract_changes_in_partitions(
         table_name=table_name,
         new_partition_date=latest_partition_date,
         old_partition_date=last_complete_ingestion_date
     )
-    logger.info(f"Detected {len(data)} changed records from BigQuery")
+    logger.info(f"Extracted {len(data)} changed records")
     return data
 
 @task
