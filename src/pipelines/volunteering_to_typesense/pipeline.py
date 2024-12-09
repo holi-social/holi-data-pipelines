@@ -141,9 +141,10 @@ def volunteering_to_typesense_etl() -> None | State:
     new_or_updated_documents = transform_data(new_or_updated_records)
 
     typesense_collection_name = extract_collection_name_from_schema(cast(str, config["schema_path"]))
-    recreate_collection = last_complete_ingestion_timestamp is None
-    if recreate_collection:
-        typesense_client.drop_and_create_collection(cast(str, config["schema_path"]))
+
+    #recreate_collection = last_complete_ingestion_timestamp is None
+    #if recreate_collection:
+    #    typesense_client.drop_and_create_collection(cast(str, config["schema_path"]))
 
     upsert_succeeded = upsert_typesense_documents(typesense_client, typesense_collection_name, new_or_updated_documents)
 
