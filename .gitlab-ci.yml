@@ -100,7 +100,6 @@ build_docker_pipeline_image:
     - if: $CI_COMMIT_BRANCH =~ /^main$|^production$/ && $CI_PIPELINE_SOURCE == "push"
       changes:
         - requirements.txt
-        - dev-requirements.txt
         - .gitlab-ci.yml
 
 install_dependencies:
