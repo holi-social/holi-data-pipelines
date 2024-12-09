@@ -1,3 +1,5 @@
+from typing import List, Dict, Any, cast, Tuple
+
 from pickle import GLOBAL
 from typing import List, Dict, Any
 import prefect.logging
@@ -7,6 +9,9 @@ from prefect.states import Failed
 import json
 from prefect.types import StrictVariableValue
 
+from src.common.extractors.bq_extractor import extract_data_from_bigquery_table
+from src.common.loaders.typesense_loader import index_documents_in_batches
+from src.pipelines.volunteering_to_typesense.typesense_transformer import transform_row
 from src.common.extractors.bq_extractor import (
     extract_latest_partition_timestamp_from_bigquery,
     extract_changes_in_partitions,
@@ -105,7 +110,7 @@ def get_config() -> dict[str, StrictVariableValue]:
             "port": variable_value("typesense_port"),
             "protocol": variable_value("typesense_protocol"),
         },
-        "schema_path": f"typesense/{variable_value("prefect_environment")}_all.json",
+        "schema_path": f"src/typesense/{variable_value("prefect_environment")}_all.json",
     }
 
 
@@ -115,7 +120,6 @@ def get_config() -> dict[str, StrictVariableValue]:
 def volunteering_to_typesense_etl() -> None | State:
     """Orchestrates the ETL pipeline to move volunteering data from BigQuery to Typesense."""
     config, typesense_client = setup_pipeline()
-
     last_complete_ingestion_timestamp = load_last_complete_ingestion_timestamp()
 
     latest_partition_timestamp = extract_latest_partition_timestamp_from_bigquery(
@@ -154,9 +158,9 @@ def volunteering_to_typesense_etl() -> None | State:
     else:
         return Failed(message="Some documents failed ingestion. Please see error log.")
 
-def setup_pipeline():
+def setup_pipeline() -> Tuple[dict[str, StrictVariableValue], TypesenseClient]:
     config = get_config()
-    typesense_client = TypesenseClient(config["typesense_config"])
+    typesense_client = TypesenseClient(cast(Dict[str, str], config["typesense_config"]))
     return config, typesense_client
 
 def load_last_complete_ingestion_timestamp() -> datetime | None:

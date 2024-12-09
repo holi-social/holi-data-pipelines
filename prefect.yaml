@@ -4,69 +4,62 @@
 
 # Generic metadata about this project
 name: holi-data-pipelines
-prefect-version: 3.1.2
 
 # build section allows you to manage and build docker images
 build:
-- prefect_docker.deployments.steps.build_docker_image:
-    id: build_image
-    requires: prefect-docker>=0.3.1
-    image_name: europe-north1-docker.pkg.dev/holi-shared/docker/data-pipeline-job
-    tag: latest
-    dockerfile: Dockerfile
-    platform: linux/amd64
+  - prefect.deployments.steps.run_shell_script:
+      id: get_environment_docker_image
+      # extract the prefect api url environment part
+      script: sh scripts/get_prefect_environment.sh
+      stream_output: false
 
 # push section allows you to manage if and how this project is uploaded to remote locations
-push:
-- prefect_docker.deployments.steps.push_docker_image:
-    requires: prefect-docker>=0.3.1
-    image_name: '{{ build_image.image_name }}'
-    tag: '{{ build_image.tag }}'
+push: null
 
 # pull section allows you to provide instructions for cloning this project in remote locations
 pull:
-- prefect.deployments.steps.set_working_directory:
-    directory: /opt/prefect/holi-data-pipelines
+  - prefect.deployments.steps.set_working_directory:
+      directory: /opt/prefect/holi-data-pipelines
 
 # the deployments section allows you to provide configuration for deploying flows
-# TODO create an example hello world entry with documentation/comments for specific properties
 deployments:
-- name: example-deploy
-  version:
-  tags: []
-  description:
-  entrypoint: src/pipelines/example/pipeline.py:hello_universe
-  schedules:
-  - cron: 0 5 29 2 * 0 2020/10
-    timezone:
-    day_or: true
-    active: true
-  work_pool:
-    name: cloud-run-v2
-    work_queue_name: default
-    job_variables:
-      image: '{{ build_image.image }}'
-      timeout: 86400
-  concurrency_limit:
-  parameters: {}
-  enforce_parameter_schema: true
-- name: bq-to-typesense
-  version:
-  tags: []
-  description: "Orchestrates the ETL pipeline to move data from BigQuery to Typesense."
-  entrypoint: src/pipelines/bq_to_typesense/pipeline.py:volunteering_to_typesense_etl
-  schedules:
-  - cron: 0 5 29 2 * 0 2020/10
-    timezone:
-    day_or: true
-    active: true
-  work_pool:
-    name: cloud-run-v2
-    work_queue_name: default
-    job_variables:
-      image: '{{ build_image.image }}'
-      memory: '4096Mi'
-      timeout: 86400
-  concurrency_limit:
-  parameters: {}
-  enforce_parameter_schema: true
+  - name: example-deploy
+    version:
+    tags: []
+    description:
+    entrypoint: src/pipelines/example/pipeline.py:hello_universe
+    schedules:
+      - cron: 0 5 29 2 * 0 2020/10
+        timezone:
+        day_or: true
+        active: true
+    work_pool:
+      name: cloud-run-v2
+      work_queue_name: default
+      job_variables:
+        image: "{{ get_environment_docker_image.stdout }}"
+        name: "example"
+    concurrency_limit:
+    parameters: {}
+    enforce_parameter_schema: true
+  - name: volunteering-to-typesense
+    version:
+    tags: []
+    description: "Orchestrates the ETL pipeline to move volunteering data from BigQuery to Typesense."
+    entrypoint: src/pipelines/volunteering_to_typesense/pipeline.py:volunteering_to_typesense_etl
+    schedules:
+      - cron: 30 6 * * * # run every day at 06:30 (classification job runs from 04:40 to ~ 06:00)
+        timezone: "Europe/Berlin"
+        day_or: true
+        active: true
+    work_pool:
+      name: cloud-run-v2
+      work_queue_name: default
+      job_variables:
+        image: "{{ get_environment_docker_image.stdout }}"
+        memory: "4096Mi"
+        timeout: 86400
+        name: "srch-etl-volunteering"
+    concurrency_limit:
+    parameters: {}
+    enforce_parameter_schema: true
