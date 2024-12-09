@@ -8,3 +8,4 @@ def batches[T](iterable: Iterable[T], batch_size: int = 1) -> Generator[Tuple[It
     for batch in itertools.batched(iterable, batch_size):
         yield batch, batch_number
         batch_number += 1
+

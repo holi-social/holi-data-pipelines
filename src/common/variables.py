@@ -32,7 +32,7 @@ def variable_value(key: str, default: Optional[StrictVariableValue] = None) -> S
 
     """
     prefect_var = Variable.get(key)
-    if not prefect_var:
+    if prefect_var is None:
         environment_var = _getenv_case_insensitive(key)
         if not environment_var or default:
             raise ValueError(

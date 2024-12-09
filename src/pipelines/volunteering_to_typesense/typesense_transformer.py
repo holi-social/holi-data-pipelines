@@ -47,10 +47,11 @@ def transform_row(row: Dict[str, Optional[str]]) -> Dict[str, Optional[Any]]:
     latitude = decimal_as_str_or_none(row.get("latitude"))
     longitude = decimal_as_str_or_none(row.get("longitude"))
 
+    # prefix id with 'volunteering_' to avoid collisions with other document types later on
     # initialize title_* and description_* with default values (will be filled below with real values)
     doc: Dict[str, Optional[Any]] = {
+        "id": f"volunteering_{str(row.get("id"))}",
         "type": "volunteering",
-        "volunteering_id": row.get("id"),
         "title_de": None,
         "title_en": None,
         "description_de": None,

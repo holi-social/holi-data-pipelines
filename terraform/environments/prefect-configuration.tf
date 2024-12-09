@@ -37,6 +37,16 @@ resource "prefect_variable" "volunteering_with_classification" {
   value = local.environment == "production" ? "holi-shared.datapool_production.volunteering_voltastics_with_classification_enriched" : "holi-shared.datapool_development.volunteering_voltastics_with_classification_enriched"
 }
 
+resource "prefect_variable" "volunteering_voltastics_raw_deduped" {
+  name  = "volunteering_voltastics_raw_deduped"
+  value = local.environment == "production" ? "holi-shared.datalake_production.volunteering_voltastics_raw_deduped" : "holi-shared.datalake_development.volunteering_voltastics_raw_deduped"
+}
+
+resource "prefect_variable" "volunteering_to_typesense_state" {
+  name  = "volunteering_to_typesense_state"
+  value = {}
+}
+
 resource "prefect_variable" "typesense_host" {
   name  = "typesense_host"
   value = "t9vemwkibxajcorqp-1.a1.typesense.net"
