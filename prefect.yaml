@@ -35,7 +35,7 @@ deployments:
   version:
   tags: []
   description:
-  entrypoint: src/pipelines/example/pipeline.py:hello_universe
+  entrypoint: src/pipelines/example/ingest_updates.py:hello_universe
   schedules:
   - cron: 0 5 29 2 * 0 2020/10
     timezone:
@@ -50,11 +50,28 @@ deployments:
   concurrency_limit:
   parameters: {}
   enforce_parameter_schema: true
-- name: bq-to-typesense
+- name: bq-to-typesense-from-scratch
   version:
   tags: []
-  description: "Orchestrates the ETL pipeline to move data from BigQuery to Typesense."
-  entrypoint: src/pipelines/bq_to_typesense/pipeline.py:volunteering_to_typesense_etl
+  description: "Orchestrates the ETL pipeline to ingest complete data from BigQuery to Typesense."
+  entrypoint: src/pipelines/bq_to_typesense/ingest_from_scratch.py:volunteering_to_typesense_etl
+  schedules:
+  - cron: 0 5 29 2 * 0 2020/10
+    timezone:
+    day_or: true
+    active: true
+  work_pool:
+    name: cloud-run-v2
+    work_queue_name: default
+    job_variables:
+      image: '{{ build_image.image }}'
+      memory: '4096Mi'
+      timeout: 86400
+- name: bq-to-typesense-updates-only
+  version:
+  tags: []
+  description: "Orchestrates the ETL pipeline to move updates from BigQuery to Typesense."
+  entrypoint: src/pipelines/bq_to_typesense/ingest_updates.py:volunteering_to_typesense_etl
   schedules:
   - cron: 0 5 29 2 * 0 2020/10
     timezone:

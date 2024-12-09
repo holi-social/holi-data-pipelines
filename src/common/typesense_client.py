@@ -40,7 +40,15 @@ class TypesenseClient:
 
         logger.debug("Typesense client successfully initialized.")
 
-    def drop_and_create_collection(self, schema_file_path: str) -> str:
+    def drop_collection(self, collection_name: str):
+        # Try deleting the existing collection if it exists
+        try:
+            self.client.collections[collection_name].delete()
+            logger.info(f"Typesense collection '{collection_name}' deleted.")
+        except ObjectNotFound:
+            logger.debug("Couldn't find collection. Proceeding....")
+
+    def create_collection(self, schema_file_path: str, collection_name: str):
         """
         Create or update the Typesense schema from an external JSON file.
 
@@ -53,16 +61,10 @@ class TypesenseClient:
         with open(schema_file_path, "r") as file:
             schema = json.load(file)
 
-        collection_name = schema.get("name")
         if not collection_name:
-            raise ValueError("Schema is missing a 'name' field.")
+            raise ValueError("Missing 'collection_name' field.")
 
-        # Try deleting the existing collection if it exists
-        try:
-            self.client.collections[collection_name].delete()
-            logger.info(f"Typesense collection '{collection_name}' deleted.")
-        except ObjectNotFound:
-            logger.debug("Couldn't find collection. Proceeding....")
+        schema.set("name", collection_name)
 
         # Create the collection with the new schema
         self.client.collections.create(schema)
