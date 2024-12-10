@@ -38,6 +38,11 @@ stages:
   - "deploy"
   - "smoketest"
 
+.rule_templates:
+  only_main:
+    - if: $CI_COMMIT_BRANCH == 'main' && $CI_PIPELINE_SOURCE == "push"
+      when: on_success
+
 .terraform_deploy:
   image:
     name: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/hashicorp/terraform:1.9.8"
@@ -79,7 +84,7 @@ stages:
     - PREFECT_API_URL="$(cat $PREFECT_SERVER_URL_PATH)/api" prefect deployment run --tag ci-test --watch hello-universe/example-deploy
     # TODO should/could we roll back the service to the last working revision on test failure?
 
-build_prefect_flow_docker_image:
+.build_prefect_flow_docker_image:
   image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/docker:27"
   stage: "build"
   services:
@@ -88,16 +93,15 @@ build_prefect_flow_docker_image:
   variables:
     # this could be fetched via terraform output ("gcr_location" in infra project), but then we would need an extra job for terraform
     GCR_IMAGE_PREFIX: europe-north1-docker.pkg.dev/holi-shared/docker/data-pipeline-job
+    ENVIRONMENT_SUFFIX: staging
   script:
-    # set the environment suffix to production for branch production and staging for branch main
-    - ENVIRONMENT_SUFFIX=$(if [ "$CI_COMMIT_REF_SLUG" == "main" ]; then echo "staging"; else echo "production"; fi)
     - GCR_IMAGE=${GCR_IMAGE_PREFIX}-${ENVIRONMENT_SUFFIX}
     - docker pull "$GCR_IMAGE" || true # Allows us to use --cache-from, we need to tag with latest in the next command for this to work
-    - docker build --cache-from "$GCR_IMAGE" -t "$GCR_IMAGE":latest -t "$GCR_IMAGE":"$CI_COMMIT_SHA" -t "$GCR_IMAGE":"$CI_COMMIT_REF_SLUG" .
+    - docker build --cache-from "$GCR_IMAGE" -t "$GCR_IMAGE":latest -t "$GCR_IMAGE":"$CI_COMMIT_SHA" .
     - docker push "$GCR_IMAGE":"$CI_COMMIT_SHA" # we use latest in prefect, this is just extra information for humans.
     - docker push "$GCR_IMAGE":latest # for caching the build and for use by prefect pipelines
   rules:
-    - if: $CI_COMMIT_BRANCH =~ /^main$|^production$/ && $CI_PIPELINE_SOURCE == "push"
+    - if: $CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"
       changes:
         - requirements.txt
         - src
@@ -131,6 +135,12 @@ validate:
     - mypy src
     - pytest .
 
+build_prefect_flow_docker_image_staging:
+  extends: .build_prefect_flow_docker_image
+  needs: ["validate"]
+  variables:
+    ENVIRONMENT_SUFFIX: staging
+
 ## staging environment
 terraform_deploy_staging:
   extends: .terraform_deploy
@@ -138,47 +148,53 @@ terraform_deploy_staging:
   variables:
     ENVIRONMENT_ID: staging
   rules:
-    - if: $CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"
-      when: on_success
+    - !reference [.rule_templates only_main]
 
 prefect_deploy_staging:
   extends: .prefect_deploy
-  needs: ["terraform_deploy_staging"]
+  needs:
+    - job: "terraform_deploy_staging"
+    - job: "build_prefect_flow_docker_image_staging"
+      optional: true
   variables:
     ENVIRONMENT_ID: staging
   rules:
-    - if: $CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"
-      when: on_success
+    - !reference [.rule_templates only_main]
 
 smoketest_staging:
   extends: .smoketest
   needs: ["terraform_deploy_staging", "prefect_deploy_staging"]
   rules:
-    - if: $CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"
-      when: on_success
+    - !reference [.rule_templates only_main]
 
 ## production environment
+build_prefect_flow_docker_image_production:
+  extends: .build_prefect_flow_docker_image
+  needs: ["smoketest_staging"]
+  variables:
+    ENVIRONMENT_SUFFIX: production
+
 terraform_deploy_production:
   extends: .terraform_deploy
-  needs: ["validate"]
+  needs: ["smoketest_staging"]
   variables:
     ENVIRONMENT_ID: production
   rules:
-    - if: $CI_COMMIT_BRANCH == "production" && $CI_PIPELINE_SOURCE == "push"
-      when: on_success
+    - !reference [.rule_templates only_main]
 
 prefect_deploy_production:
   extends: .prefect_deploy
-  needs: ["terraform_deploy_production"]
+  needs:
+    - job: "terraform_deploy_production"
+    - job: "build_prefect_flow_docker_image_production"
+      optional: true
   variables:
     ENVIRONMENT_ID: production
   rules:
-    - if: $CI_COMMIT_BRANCH == "production" && $CI_PIPELINE_SOURCE == "push"
-      when: on_success
+    - !reference [.rule_templates only_main]
 
 smoketest_production:
   extends: .smoketest
   needs: ["terraform_deploy_production", "prefect_deploy_production"]
   rules:
-    - if: $CI_COMMIT_BRANCH == "production" && $CI_PIPELINE_SOURCE == "push"
-      when: on_success
+    - !reference [.rule_templates only_main]
