@@ -36,7 +36,7 @@ stages:
   - "build"
   - "test"
   - "deploy"
-  - "smoketest"
+  - "deploy_production"
 
 .rule_templates:
   only_main:
@@ -76,7 +76,7 @@ stages:
 
 .smoketest:
   image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.1.5-python3.12"
-  stage: "smoketest"
+  stage: "deploy"
   cache: !reference [.pip_cache_readonly]
   script:
     - source venv/bin/activate
@@ -125,7 +125,7 @@ install_dependencies:
 
 validate:
   image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/python:3.12-slim"
-  stage: "test"
+  stage: "prepare"
   needs:
     - job: install_dependencies
       optional: true
@@ -148,7 +148,7 @@ terraform_deploy_staging:
   variables:
     ENVIRONMENT_ID: staging
   rules:
-    - !reference [.rule_templates only_main]
+    - !reference [.rule_templates, only_main]
 
 prefect_deploy_staging:
   extends: .prefect_deploy
@@ -159,28 +159,30 @@ prefect_deploy_staging:
   variables:
     ENVIRONMENT_ID: staging
   rules:
-    - !reference [.rule_templates only_main]
+    - !reference [.rule_templates, only_main]
 
 smoketest_staging:
   extends: .smoketest
   needs: ["terraform_deploy_staging", "prefect_deploy_staging"]
   rules:
-    - !reference [.rule_templates only_main]
+    - !reference [.rule_templates, only_main]
 
 ## production environment
 build_prefect_flow_docker_image_production:
   extends: .build_prefect_flow_docker_image
   needs: ["smoketest_staging"]
+  stage: deploy_production
   variables:
     ENVIRONMENT_SUFFIX: production
 
 terraform_deploy_production:
   extends: .terraform_deploy
   needs: ["smoketest_staging"]
+  stage: deploy_production
   variables:
     ENVIRONMENT_ID: production
   rules:
-    - !reference [.rule_templates only_main]
+    - !reference [.rule_templates, only_main]
 
 prefect_deploy_production:
   extends: .prefect_deploy
@@ -188,13 +190,15 @@ prefect_deploy_production:
     - job: "terraform_deploy_production"
     - job: "build_prefect_flow_docker_image_production"
       optional: true
+  stage: deploy_production
   variables:
     ENVIRONMENT_ID: production
   rules:
-    - !reference [.rule_templates only_main]
+    - !reference [.rule_templates, only_main]
 
 smoketest_production:
   extends: .smoketest
   needs: ["terraform_deploy_production", "prefect_deploy_production"]
+  stage: deploy_production
   rules:
-    - !reference [.rule_templates only_main]
+    - !reference [.rule_templates, only_main]
