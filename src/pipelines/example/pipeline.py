@@ -11,7 +11,6 @@ from src.common.monitoring.alerting import alert
 @task(log_prints=True)
 def say_hello(name: str) -> None:
     print(f"Hello, {name}!")
-    raise Exception("poof")
 
 
 _CONFIG: dict[str, StrictVariableValue] = {"names": ["Marvin", "Trillian", "Ford"]}
