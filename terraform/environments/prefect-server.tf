@@ -52,10 +52,16 @@ resource "google_compute_instance" "prefect_server_green" {
 
   service_account {
     # Google recommends custom service accounts that have cloud-platform scope and permissions granted via IAM Roles.
-    email  = data.terraform_remote_state.holi_data_pipeline_common_state.outputs.data_pipeline_service_account_email
-    scopes = ["compute-rw"]
+    email = data.terraform_remote_state.holi_data_pipeline_common_state.outputs.data_pipeline_service_account_email
+    scopes = [
+      "compute-rw",
+      "logging-write",
+      "monitoring-write",
+    ]
   }
 }
+
+
 
 resource "google_dns_record_set" "prefect_server_holi_internal" {
   name         = "${local.prefect_internal_domain}."

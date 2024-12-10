@@ -11,6 +11,8 @@ resource "google_project_iam_member" "data_pipeline" {
     "roles/bigquery.user",
     "roles/bigquery.dataEditor", # TODO try to replace with a more specific role
     "roles/secretmanager.secretAccessor",
+    "roles/logging.logWriter",
+    "roles/monitoring.metricWriter",
   ])
   role   = each.key
   member = "serviceAccount:${google_service_account.data_pipeline.email}"

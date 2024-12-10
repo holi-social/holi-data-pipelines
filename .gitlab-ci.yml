@@ -79,7 +79,7 @@ stages:
     - PREFECT_API_URL="$(cat $PREFECT_SERVER_URL_PATH)/api" prefect deployment run --tag ci-test --watch hello-universe/example-deploy
     # TODO should/could we roll back the service to the last working revision on test failure?
 
-build_docker_pipeline_image:
+build_prefect_flow_docker_image:
   image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/docker:27"
   stage: "build"
   services:

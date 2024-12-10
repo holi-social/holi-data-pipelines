@@ -1,0 +1,3 @@
+log_id("cloudaudit.googleapis.com/system_event") AND 
+operation.producer = "compute.instances.hostError" AND 
+resource.labels.instance_id = "${instance_id}"
