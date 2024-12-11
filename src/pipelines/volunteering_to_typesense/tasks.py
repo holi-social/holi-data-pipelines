@@ -5,9 +5,9 @@ from src.common.extractors.bq_extractor import (
     extract_changes_in_partitions,
 )
 from src.common.loaders.typesense_loader import upsert_documents_in_batches
-from src.pipelines.bq_to_typesense.typesense_transformer import transform_row
+from src.pipelines.volunteering_to_typesense.typesense_transformer import transform_row
 from src.common.typesense_client import TypesenseClient
-from src.pipelines.bq_to_typesense.utils import batches
+from src.pipelines.volunteering_to_typesense.utils import batches
 from datetime import date
 import prefect.logging
 

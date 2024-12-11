@@ -12,6 +12,13 @@
   ],
   "packageRules": [
     {
+      "matchJsonata": [
+        "$match(depName,/prefect$/)"
+      ],
+      "groupName": "prefect",
+      "automerge": false
+    },
+    {
       "matchSourceUrls": [
         "https://github.com/hashicorp/terraform"
       ],

@@ -1,10 +1,10 @@
-import json  # type: ignore
+import json
 import os
 from typing import Optional
 from prefect.types import StrictVariableValue
 
 from prefect.variables import Variable
-from prefect_gcp.secret_manager import GcpSecret  # type: ignore
+from prefect_gcp.secret_manager import GcpSecret
 
 
 def _env_key_from_prefect_key(key: str) -> str:

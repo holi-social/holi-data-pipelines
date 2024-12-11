@@ -1,7 +1,7 @@
-from typing import Dict
+from typing import Dict, Any, Optional
 
 import prefect.logging
-from prefect_gcp import BigQueryWarehouse  # type: ignore
+from prefect_gcp import BigQueryWarehouse
 from datetime import datetime, date
 from src.common.constants import VIEW_PARTITION_TIME_COLUMN_NAME
 
@@ -10,7 +10,7 @@ logger = prefect.logging.get_logger()
 
 def extract_data_from_bigquery(
     query: str,
-) -> list[Dict]:
+) -> list[Dict[str, Any]]:
     """
     Extracts data from BigQuery based on a SQL query using the initialized BigQuery client.
 
@@ -66,8 +66,8 @@ def extract_latest_partition_timestamp_from_bigquery(
 def extract_changes_in_partitions(
         table_name: str,
         new_partition_date: date,
-        old_partition_date: date = None
-) -> list[Dict]:
+        old_partition_date: Optional[date] = None
+) -> list[Dict[str, Any]]:
     """
     Extracts (new, updated, or deleted records) in a BigQuery table by comparing
     the old partition with the new partition timestamp. It requires the table to have a hash
@@ -124,7 +124,7 @@ def extract_changes_in_partitions(
     return extract_data_from_bigquery(query)
 
 
-def extract_data_from_bigquery_table(table_name: str) -> list[Dict]:
+def extract_data_from_bigquery_table(table_name: str) -> list[Dict[str, Any]]:
     """
     Extracts data from BigQuery based on a table name (select * from ...) using the initialized BigQuery client.
 

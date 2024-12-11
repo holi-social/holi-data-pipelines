@@ -6,10 +6,10 @@ from src.common.constants import TYPESENSE_ALIAS_NAME
 from src.common.extractors.bq_extractor import (
     extract_latest_partition_timestamp_from_bigquery,
 )
-from src.pipelines.bq_to_typesense.utils import (
+from src.pipelines.volunteering_to_typesense.utils import (
     setup_pipeline,
+    load_last_complete_ingestion_timestamp,
     store_last_complete_ingestion_timestamp,
-    extract_collection_name_from_schema,
     diff_ingest
 )
 from datetime import datetime
@@ -26,33 +26,34 @@ def volunteering_to_typesense_etl() -> None | State:
     """Orchestrates the ETL pipeline to move volunteering data from BigQuery to Typesense."""
     config, typesense_client = setup_pipeline()
 
+    last_complete_ingestion_timestamp = load_last_complete_ingestion_timestamp()
+
     latest_partition_timestamp = extract_latest_partition_timestamp_from_bigquery(
         config.get("volunteering_raw_deduped")
     )
 
-    current_collection = typesense_client.get_active_collection(TYPESENSE_ALIAS_NAME)
-
-    typesense_collection_name = extract_collection_name_from_schema(config["schema_path"])
-    next_collection = f"{typesense_collection_name}_{datetime.now().isoformat()}"
-
-    typesense_client.drop_collection(next_collection)
-    typesense_client.create_collection(config["schema_path"], next_collection)
-
-    deletion_succeeded, upsert_succeeded = diff_ingest(config, None,
-                                                       latest_partition_timestamp, typesense_client,
-                                                       next_collection)
+    # volunteering data is partitioned by day so we compare days only
     if (
-        upsert_succeeded
-        and deletion_succeeded
+        last_complete_ingestion_timestamp
+        and last_complete_ingestion_timestamp.date() >= latest_partition_timestamp.date()
     ):
-        validation_result = validate_collection(typesense_client, next_collection)
+        logger.info(
+            f"Last complete ingestion ({last_complete_ingestion_timestamp}) ran on the same day as the newest partition ({latest_partition_timestamp}). Skipping ingestion."
+        )
+        return
+
+    typesense_collection_name = typesense_client.get_active_collection(TYPESENSE_ALIAS_NAME)
+
+    deletion_succeeded, upsert_succeeded = diff_ingest(config, last_complete_ingestion_timestamp,
+                                                       latest_partition_timestamp, typesense_client,
+                                                       typesense_collection_name)
+
+    if upsert_succeeded and deletion_succeeded:
+        validation_result = validate_collection(typesense_client, typesense_collection_name)
         if validation_result.is_failed():
             return validation_result
         else:
-            typesense_client.aliases[TYPESENSE_ALIAS_NAME].upsert({"collection_name": next_collection})
-            logger.info(f"Alias {TYPESENSE_ALIAS_NAME} now points to {next_collection}.")
             store_last_complete_ingestion_timestamp(datetime.now())
-            typesense_client.drop_collection(current_collection)
     else:
         return Failed(message="Some documents failed ingestion. Please see error log.")
 

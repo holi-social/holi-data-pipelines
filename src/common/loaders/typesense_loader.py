@@ -1,7 +1,7 @@
 import json
 from typing import Iterable, Dict, Tuple, List
 import prefect
-from typesense.client import Client  # type: ignore
+from typesense.client import Client
 
 logger = prefect.logging.get_logger()
 
