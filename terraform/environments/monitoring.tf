@@ -55,7 +55,7 @@ resource "google_monitoring_alert_policy" "prefect_cpu_utilization" {
       threshold_value = 0.8
 
       aggregations {
-        alignment_period   = "300s"
+        alignment_period   = "600s" # 300s is too short, alert triggers on setup of VM
         per_series_aligner = "ALIGN_MEAN"
       }
       trigger {
