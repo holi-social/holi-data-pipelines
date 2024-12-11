@@ -83,6 +83,20 @@ resource "prefect_block" "typesense_admin_api_key" {
   depends_on = [null_resource.prefect_server_available]
 }
 
+resource "prefect_block" "voltastics_api_key" {
+  name      = "voltastics-api-key"
+  type_slug = "gcpsecret"
+
+  data = jsonencode({
+    "gcp_credentials" = {
+      "project" = "holi-shared"
+    }
+    "secret_name"    = "VOLUNTEERING_VOLTASTICS_API_KEY"
+    "secret_version" = "latest"
+  })
+  depends_on = [null_resource.prefect_server_available]
+}
+
 resource "prefect_block" "bigquery_warehouse" {
   name      = "bigquery-warehouse"
   type_slug = "bigquery-warehouse"
