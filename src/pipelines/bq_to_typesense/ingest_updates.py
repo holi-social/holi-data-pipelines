@@ -10,7 +10,6 @@ from src.pipelines.bq_to_typesense.utils import (
     setup_pipeline,
     load_last_complete_ingestion_timestamp,
     store_last_complete_ingestion_timestamp,
-    get_active_collection,
     diff_ingest
 )
 from datetime import datetime
@@ -43,7 +42,7 @@ def volunteering_to_typesense_etl() -> None | State:
         )
         return
 
-    typesense_collection_name = get_active_collection(typesense_client, TYPESENSE_ALIAS_NAME)
+    typesense_collection_name = typesense_client.get_active_collection(TYPESENSE_ALIAS_NAME)
 
     deletion_succeeded, upsert_succeeded = diff_ingest(config, last_complete_ingestion_timestamp,
                                                        latest_partition_timestamp, typesense_client,
@@ -57,9 +56,6 @@ def volunteering_to_typesense_etl() -> None | State:
             store_last_complete_ingestion_timestamp(datetime.now())
     else:
         return Failed(message="Some documents failed ingestion. Please see error log.")
-
-
-
 
 
 if __name__ == "__main__":

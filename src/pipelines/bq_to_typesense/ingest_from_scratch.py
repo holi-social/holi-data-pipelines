@@ -10,8 +10,7 @@ from src.pipelines.bq_to_typesense.utils import (
     setup_pipeline,
     store_last_complete_ingestion_timestamp,
     extract_collection_name_from_schema,
-    diff_ingest,
-    get_active_collection
+    diff_ingest
 )
 from datetime import datetime
 from tasks import validate_collection
@@ -31,9 +30,9 @@ def volunteering_to_typesense_etl() -> None | State:
         config.get("volunteering_raw_deduped")
     )
 
-    typesense_collection_name = extract_collection_name_from_schema(config["schema_path"])
+    current_collection = typesense_client.get_active_collection(TYPESENSE_ALIAS_NAME)
 
-    current_collection = get_active_collection(typesense_client, TYPESENSE_ALIAS_NAME)
+    typesense_collection_name = extract_collection_name_from_schema(config["schema_path"])
     next_collection = f"{typesense_collection_name}_{datetime.now().isoformat()}"
 
     typesense_client.drop_collection(next_collection)
@@ -42,9 +41,6 @@ def volunteering_to_typesense_etl() -> None | State:
     deletion_succeeded, upsert_succeeded = diff_ingest(config, None,
                                                        latest_partition_timestamp, typesense_client,
                                                        next_collection)
-
-    # TODO: add another return value chnaged_records
-    # Switch the alias to the next collection if the ingestion succeeded
     if (
         upsert_succeeded
         and deletion_succeeded

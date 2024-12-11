@@ -1,5 +1,4 @@
 from typing import List, Dict, Any
-
 from prefect import task, State
 from prefect.states import Failed, Completed
 from src.common.extractors.bq_extractor import (
@@ -89,10 +88,10 @@ def delete_typesense_documents(typesense_client, typesense_collection_name, docu
         return False
 
 @task
-def validate_collection(typesense_client, collection_name: str, expected_count: int) -> State:
+def validate_collection(typesense_client: TypesenseClient, collection_name: str) -> State:
     """Validate the new collection before switching the alias."""
     # test a sample search
-    sample_search = typesense_client.collections[collection_name].documents.search(
+    sample_search = typesense_client.client.collections[collection_name].documents.search(
         {
             "q": "*",
             "query_by": "type",

@@ -41,12 +41,20 @@ class TypesenseClient:
         logger.debug("Typesense client successfully initialized.")
 
     def drop_collection(self, collection_name: str):
-        # Try deleting the existing collection if it exists
+        """
+        Deletes a Typesense collection if it exists.
+
+        This method attempts to delete a specified collection from the Typesense client.
+        If the collection does not exist, it logs a debug message and continues.
+
+        Args:
+            collection_name (str): The name of the Typesense collection to delete.
+        """
         try:
             self.client.collections[collection_name].delete()
-            logger.info(f"Typesense collection '{collection_name}' deleted.")
+            logger.info(f"Typesense collection '{collection_name}' successfully deleted.")
         except ObjectNotFound:
-            logger.debug("Couldn't find collection. Proceeding....")
+            logger.debug(f"Collection '{collection_name}' not found. Skipping deletion.")
 
     def create_collection(self, schema_file_path: str, collection_name: str):
         """
@@ -71,3 +79,18 @@ class TypesenseClient:
         logger.info(f"Typesense collection '{collection_name}' created/updated.")
 
         return collection_name
+
+    def get_active_collection(self, alias_name: str) -> str:
+        """Retrieve the current active collection for the given alias name.
+
+        Args:
+            alias_name (str): The name of the alias to look up.
+
+        Returns:
+            str: The name of the collection associated with the alias, or an empty string if the alias does not exist.
+        """
+        try:
+            alias_info = self.client.aliases[alias_name].retrieve()
+            return alias_info.get("collection_name", "")
+        except Exception as e:
+            return ""
