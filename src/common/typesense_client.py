@@ -40,7 +40,7 @@ class TypesenseClient:
 
         logger.debug("Typesense client successfully initialized.")
 
-    def drop_collection(self, collection_name: str):
+    def drop_collection(self, collection_name: str) -> None:
         """
         Deletes a Typesense collection if it exists.
 
@@ -56,7 +56,7 @@ class TypesenseClient:
         except ObjectNotFound:
             logger.debug(f"Collection '{collection_name}' not found. Skipping deletion.")
 
-    def create_collection(self, schema_file_path: str, collection_name: str):
+    def create_collection(self, schema_file_path: str, collection_name: str) -> None:
         """
         Create or update the Typesense schema from an external JSON file.
 

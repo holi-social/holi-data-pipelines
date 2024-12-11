@@ -1,4 +1,4 @@
-from typing import Iterable, Generator, Tuple
+from typing import Iterable, Generator, Dict, cast, Tuple, Any, Optional
 import itertools
 from prefect.variables import Variable
 import json
@@ -7,16 +7,15 @@ from prefect.types import StrictVariableValue
 from src.common.typesense_client import TypesenseClient
 from src.common.variables import variable_value, secret_value
 from datetime import datetime, date
-from tasks import delete_typesense_documents, upsert_typesense_documents, transform_data, extract_changed_records
+from src.pipelines.volunteering_to_typesense.tasks import delete_typesense_documents, upsert_typesense_documents, transform_data, extract_changed_records
 
 
-def batches[T](iterable: Iterable[T], batch_size=1) -> Generator[Tuple[Iterable[T], int], None, None]:
+def batches[T](iterable: Iterable[T], batch_size: int = 1) -> Generator[Tuple[Iterable[T], int], None, None]:
     """Generator function yields batches of the original iterable in sizes of batch_size"""
     batch_number: int = 1
     for batch in itertools.batched(iterable, batch_size):
         yield batch, batch_number
         batch_number += 1
-
 
 def extract_collection_name_from_schema(schema_path: str) -> str:
     with open(schema_path, "r") as file:
@@ -43,14 +42,14 @@ def get_config() -> dict[str, StrictVariableValue]:
     }
 
 
-def setup_pipeline():
+def setup_pipeline() -> Tuple[dict[str, StrictVariableValue], TypesenseClient]:
     config = get_config()
-    typesense_client = TypesenseClient(config["typesense_config"])
+    typesense_client = TypesenseClient(cast(Dict[str, str], config["typesense_config"]))
     return config, typesense_client
 
 
 def load_last_complete_ingestion_timestamp() -> datetime | None:
-    state = variable_value("bq_to_typesense_state")
+    state = cast(dict[str, Any], variable_value("volunteering_to_typesense_state"))
     timestamp_str = state.get("last_complete_ingestion_timestamp")
     if not timestamp_str:
         return None
@@ -62,14 +61,14 @@ def store_last_complete_ingestion_timestamp(timestamp: datetime) -> None:
     """
     Store the last successful ingestion time in Prefect as a ISO 8601 string.
     """
-    state = variable_value("bq_to_typesense_state")
+    state = cast(dict[str, Any], variable_value("volunteering_to_typesense_state"))
     state["last_complete_ingestion_timestamp"] = timestamp.isoformat()
-    Variable.set("bq_to_typesense_state", state, overwrite=True)
+    Variable.set("volunteering_to_typesense_state", state, overwrite=True)
 
 
 def diff_ingest(
     config: dict[str, StrictVariableValue],
-    last_complete_ingestion_timestamp: date,
+    last_complete_ingestion_timestamp: Optional[date],
     latest_partition_timestamp: date,
     typesense_client: TypesenseClient,
     typesense_collection_name: str,
@@ -93,8 +92,8 @@ def diff_ingest(
     """
     # Step 1: Extract changed records
     changed_records = extract_changed_records(
-        config.get("volunteering_raw_deduped"),
-        last_complete_ingestion_timestamp,
+        cast(str, config.get("volunteering_raw_deduped")),
+        last_complete_ingestion_timestamp.date() if last_complete_ingestion_timestamp is not None else None,
         latest_partition_timestamp,
     )
 

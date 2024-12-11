@@ -1,4 +1,4 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from prefect import task, State
 from prefect.states import Failed, Completed
 from src.common.extractors.bq_extractor import (
@@ -15,18 +15,17 @@ logger = prefect.logging.get_logger()
 
 
 @task
-def extract_changed_records(
-    table_name: str, last_complete_ingestion_date: date, latest_partition_date: date
-) -> List[Dict[str, Any]]:
+def extract_changed_records(table_name: str, last_complete_ingestion_date: Optional[date], latest_partition_date: date) -> List[Dict[str, Any]]:
     """Extract changed data from BigQuery."""
-    logger.info(f"Extracting changed data from table: {table_name}")
+    logger.info(f"Extracting changed records (table_name={table_name}, last_complete_ingestion_date={last_complete_ingestion_date}, latest_partition_date={latest_partition_date}).")
     data = extract_changes_in_partitions(
         table_name=table_name,
         new_partition_date=latest_partition_date,
-        old_partition_date=last_complete_ingestion_date,
+        old_partition_date=last_complete_ingestion_date
     )
-    logger.info(f"Detected {len(data)} changed records from BigQuery")
+    logger.info(f"Extracted {len(data)} changed records")
     return data
+
 
 
 @task
@@ -38,14 +37,14 @@ def transform_data(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
 
 @task
-def upsert_typesense_documents(typesense_client, typesense_collection_name, new_or_updated_documents) -> bool:
+def upsert_typesense_documents(typesense_client: TypesenseClient, typesense_collection_name: str, new_or_updated_documents: List[Dict[str, Any]]) -> bool:
     ingestion_succeeded = True
     for docs_batch, batch_count in batches(new_or_updated_documents, 100):
         failed_documents, success_count = upsert_documents_in_batches(
             client=typesense_client.client,
             docs=docs_batch,
             batch_num=batch_count,
-            index_name=typesense_collection_name,
+            index_name=typesense_collection_name
         )
         if failed_documents:
             ingestion_succeeded = False
@@ -60,7 +59,7 @@ def upsert_typesense_documents(typesense_client, typesense_collection_name, new_
 
 
 @task
-def delete_typesense_documents(typesense_client, typesense_collection_name, document_ids_to_delete) -> bool:
+def delete_typesense_documents(typesense_client: TypesenseClient, typesense_collection_name: str, document_ids_to_delete: list[str]) -> bool:
     """
     Deletes documents with the given IDs from the Typesense collection.
 
@@ -79,12 +78,7 @@ def delete_typesense_documents(typesense_client, typesense_collection_name, docu
         logger.info(f"Deleted {len(document_ids_to_delete)} documents from Typesense.")
         return True
     except Exception as e:
-        logger.error(
-            f"Error deleting {len(document_ids_to_delete)} documents from Typesense: "
-            + e.message
-            + "\nFailed document ids: "
-            + ",".join(document_ids_to_delete)
-        )
+        logger.error(f"Error deleting {len(document_ids_to_delete)} documents from Typesense: " + str(e) + "\nFailed document ids: " + ','.join(document_ids_to_delete))
         return False
 
 @task

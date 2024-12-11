@@ -1,6 +1,6 @@
 import prefect.logging
 from prefect import flow, State
-from prefect.states import Failed
+from prefect.states import Failed, Completed
 
 from src.common.constants import TYPESENSE_ALIAS_NAME
 from src.common.extractors.bq_extractor import (
@@ -13,7 +13,9 @@ from src.pipelines.volunteering_to_typesense.utils import (
     diff_ingest
 )
 from datetime import datetime
-from tasks import validate_collection
+from src.pipelines.volunteering_to_typesense.tasks import validate_collection
+from typing import List, Dict, Any, cast, Tuple, Optional
+
 
 # Initialize logging
 logger = prefect.logging.get_logger()
@@ -29,7 +31,7 @@ def volunteering_to_typesense_etl() -> None | State:
     last_complete_ingestion_timestamp = load_last_complete_ingestion_timestamp()
 
     latest_partition_timestamp = extract_latest_partition_timestamp_from_bigquery(
-        config.get("volunteering_raw_deduped")
+        cast(str, config.get("volunteering_raw_deduped"))
     )
 
     # volunteering data is partitioned by day so we compare days only
@@ -40,7 +42,7 @@ def volunteering_to_typesense_etl() -> None | State:
         logger.info(
             f"Last complete ingestion ({last_complete_ingestion_timestamp}) ran on the same day as the newest partition ({latest_partition_timestamp}). Skipping ingestion."
         )
-        return
+        return Completed()
 
     typesense_collection_name = typesense_client.get_active_collection(TYPESENSE_ALIAS_NAME)
 
@@ -54,6 +56,7 @@ def volunteering_to_typesense_etl() -> None | State:
             return validation_result
         else:
             store_last_complete_ingestion_timestamp(datetime.now())
+            return Completed()
     else:
         return Failed(message="Some documents failed ingestion. Please see error log.")
 
