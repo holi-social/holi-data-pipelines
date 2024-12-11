@@ -42,6 +42,8 @@ stages:
   only_main:
     - if: $CI_COMMIT_BRANCH == 'main' && $CI_PIPELINE_SOURCE == "push"
       when: on_success
+    - if: $CI_PIPELINE_SOURCE == "web"
+      when: on_success
 
 .terraform_deploy:
   image:
@@ -124,6 +126,8 @@ install_dependencies:
         - requirements.txt
         - dev-requirements.txt
         - .gitlab-ci.yml
+    - if: $CI_PIPELINE_SOURCE == "web"
+      when: on_success
 
 validate:
   image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/python:3.12-slim"
