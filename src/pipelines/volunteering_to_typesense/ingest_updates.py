@@ -14,7 +14,7 @@ from src.pipelines.volunteering_to_typesense.utils import (
 )
 from datetime import datetime
 from src.pipelines.volunteering_to_typesense.tasks import validate_collection
-from typing import List, Dict, Any, cast, Tuple, Optional
+from typing import cast
 
 
 # Initialize logging

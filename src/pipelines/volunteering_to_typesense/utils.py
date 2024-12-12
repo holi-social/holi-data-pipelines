@@ -68,7 +68,7 @@ def store_last_complete_ingestion_timestamp(timestamp: datetime) -> None:
 
 def diff_ingest(
     config: dict[str, StrictVariableValue],
-    last_complete_ingestion_timestamp: Optional[date],
+    last_complete_ingestion_timestamp: Optional[datetime],
     latest_partition_timestamp: date,
     typesense_client: TypesenseClient,
     typesense_collection_name: str,

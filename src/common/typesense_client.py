@@ -56,7 +56,7 @@ class TypesenseClient:
         except ObjectNotFound:
             logger.debug(f"Collection '{collection_name}' not found. Skipping deletion.")
 
-    def create_collection(self, schema_file_path: str, collection_name: str) -> None:
+    def create_collection(self, schema_file_path: str, collection_name: str) -> str:
         """
         Create or update the Typesense schema from an external JSON file.
 

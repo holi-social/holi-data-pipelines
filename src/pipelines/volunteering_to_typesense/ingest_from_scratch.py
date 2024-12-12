@@ -13,8 +13,8 @@ from src.pipelines.volunteering_to_typesense.utils import (
     diff_ingest
 )
 from datetime import datetime
-from tasks import validate_collection
-from typing import List, Dict, Any, cast, Tuple, Optional
+from src.pipelines.volunteering_to_typesense.tasks import validate_collection
+from typing import cast
 
 # Initialize logging
 logger = prefect.logging.get_logger()
@@ -33,11 +33,11 @@ def volunteering_to_typesense_etl() -> None | State:
 
     current_collection = typesense_client.get_active_collection(TYPESENSE_ALIAS_NAME)
 
-    typesense_collection_name = extract_collection_name_from_schema(config["schema_path"])
+    typesense_collection_name = extract_collection_name_from_schema(cast(str, config["schema_path"]))
     next_collection = f"{typesense_collection_name}_{datetime.now().isoformat()}"
 
     typesense_client.drop_collection(next_collection)
-    typesense_client.create_collection(config["schema_path"], next_collection)
+    typesense_client.create_collection(cast(str, config["schema_path"]), next_collection)
 
     deletion_succeeded, upsert_succeeded = diff_ingest(config, None,
                                                        latest_partition_timestamp, typesense_client,
@@ -50,7 +50,7 @@ def volunteering_to_typesense_etl() -> None | State:
         if validation_result.is_failed():
             return validation_result
         else:
-            typesense_client.aliases[TYPESENSE_ALIAS_NAME].upsert({"collection_name": next_collection})
+            typesense_client.client.aliases[TYPESENSE_ALIAS_NAME].upsert({"collection_name": next_collection})
             logger.info(f"Alias {TYPESENSE_ALIAS_NAME} now points to {next_collection}.")
             store_last_complete_ingestion_timestamp(datetime.now())
             typesense_client.drop_collection(current_collection)
