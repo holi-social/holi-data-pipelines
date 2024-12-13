@@ -48,7 +48,7 @@ deployments:
     description: "Orchestrates the ETL pipeline to move volunteering data from BigQuery to Typesense."
     entrypoint: src/pipelines/volunteering_to_typesense/pipeline.py:volunteering_to_typesense_etl
     schedules:
-      - cron: 30 6 * * * 0 2020/10 # run every day at 06:30 (classification job runs from 04:40 to ~ 06:00)
+      - cron: 30 6 * * * # run every day at 06:30 (classification job runs from 04:40 to ~ 06:00)
         timezone: "Europe/Berlin"
         day_or: true
         active: true
