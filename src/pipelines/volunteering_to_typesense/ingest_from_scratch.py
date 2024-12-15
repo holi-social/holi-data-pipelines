@@ -9,8 +9,8 @@ from typesense.exceptions import ObjectNotFound
 from src.common.extractors.bq_extractor import (
     extract_latest_partition_timestamp_from_bigquery,
 )
-from src.pipelines.volunteering_to_typesense.tasks import validate_collection
-from src.pipelines.volunteering_to_typesense.utils import (
+from src.pipelines.volunteering_to_typesense.tasks import (
+    validate_collection,
     setup_pipeline,
     store_last_complete_ingestion_timestamp,
     extract_collection_name_from_schema,

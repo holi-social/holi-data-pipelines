@@ -8,8 +8,8 @@ from prefect.states import Failed, Completed
 from src.common.extractors.bq_extractor import (
     extract_latest_partition_timestamp_from_bigquery,
 )
-from src.pipelines.volunteering_to_typesense.tasks import validate_collection
-from src.pipelines.volunteering_to_typesense.utils import (
+from src.pipelines.volunteering_to_typesense.tasks import (
+    validate_collection,
     setup_pipeline,
     load_last_complete_ingestion_timestamp,
     store_last_complete_ingestion_timestamp,
