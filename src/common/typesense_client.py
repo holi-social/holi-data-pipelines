@@ -94,7 +94,7 @@ class TypesenseClient:
             ObjectNotFound: If the alias does not exist.
         """
         if not alias_name:
-            raise ValueError("Alias name must not be None or empty.")
+            raise ValueError("alias_name must not be None or empty.")
 
         try:
             alias_info = self.client.aliases[alias_name].retrieve()
@@ -102,3 +102,10 @@ class TypesenseClient:
             logger.warning(f"Alias '{alias_name}' does not exist in Typesense.")
             raise
         return alias_info.get("collection_name", "")
+
+    def set_active_collection(self, alias_name: str, collection_name: str) -> None:
+        if not alias_name:
+            raise ValueError("alias_name must not be None or empty.")
+        if not collection_name:
+            raise ValueError("collection_name must not be None or empty.")
+        self.client.aliases.upsert(alias_name, {"collection_name": collection_name})

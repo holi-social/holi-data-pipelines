@@ -46,7 +46,7 @@ deployments:
   version:
   tags: []
   description: "Orchestrates the ETL pipeline to ingest complete volunteering data from BigQuery to Typesense."
-  entrypoint: src/pipelines/volunteering_to_typesense/ingest_from_scratch.py:volunteering_to_typesense_etl
+  entrypoint: src/pipelines/volunteering_to_typesense/ingest_from_scratch.py:volunteering_to_typesense_ingest_from_scratch
   schedules:
   - cron: 0 5 29 2 * 0 2020/10
     timezone:
@@ -64,7 +64,7 @@ deployments:
   version:
   tags: []
   description: "Orchestrates the ETL pipeline to move volunteering updates from BigQuery to Typesense."
-  entrypoint: src/pipelines/volunteering_to_typesense/ingest_updates.py:volunteering_to_typesense_etl
+  entrypoint: src/pipelines/volunteering_to_typesense/ingest_updates.py:volunteering_to_typesense_ingest_updates
   schedules:
     - cron: 30 6 * * * 0 2020/10 # run every day at 06:30 (classification job runs from 04:40 to ~ 06:00)
       timezone: "Europe/Berlin"
