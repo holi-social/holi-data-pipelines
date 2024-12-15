@@ -1,2 +1,1 @@
 VIEW_PARTITION_TIME_COLUMN_NAME = "partitiontime"
-TYPESENSE_ALIAS_NAME = "global_search"

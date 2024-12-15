@@ -1,8 +1,8 @@
 import prefect.logging
 from prefect import flow, State
 from prefect.states import Failed, Completed
+from typesense.exceptions import ObjectNotFound
 
-from src.common.constants import TYPESENSE_ALIAS_NAME
 from src.common.extractors.bq_extractor import (
     extract_latest_partition_timestamp_from_bigquery,
 )
@@ -31,29 +31,37 @@ def volunteering_to_typesense_etl() -> None | State:
         cast(str, config.get("volunteering_raw_deduped"))
     )
 
-    current_collection = typesense_client.get_active_collection(TYPESENSE_ALIAS_NAME)
+    typesense_alias_name = extract_collection_name_from_schema(cast(str, config["schema_path"]))
 
-    typesense_collection_name = extract_collection_name_from_schema(cast(str, config["schema_path"]))
-    next_collection = f"{typesense_collection_name}_{datetime.now().isoformat()}"
+    try:
+        active_collection = typesense_client.get_active_collection(typesense_alias_name)
+    except ObjectNotFound:
+        # Handle case where alias does not exist
+        logger.warning(f"Alias '{typesense_alias_name}' does not exist while trying to ingest from scratch. Proceeding to create it later.")
+        active_collection = ""
 
-    typesense_client.drop_collection(next_collection)
-    typesense_client.create_collection(cast(str, config["schema_path"]), next_collection)
+    next_collection_name = f"{typesense_alias_name}_{datetime.now().isoformat()}"
+
+    typesense_client.drop_collection(next_collection_name)
+    typesense_client.create_collection(cast(str, config["schema_path"]), next_collection_name)
 
     deletion_succeeded, upsert_succeeded = diff_ingest(config, None,
                                                        latest_partition_timestamp, typesense_client,
-                                                       next_collection)
+                                                       next_collection_name)
     if (
         upsert_succeeded
         and deletion_succeeded
     ):
-        validation_result = validate_collection(typesense_client, next_collection)
+        validation_result = validate_collection(typesense_client, next_collection_name)
         if validation_result.is_failed():
             return validation_result
         else:
-            typesense_client.client.aliases[TYPESENSE_ALIAS_NAME].upsert({"collection_name": next_collection})
-            logger.info(f"Alias {TYPESENSE_ALIAS_NAME} now points to {next_collection}.")
+            # Creates/updates an alias
+            typesense_client.client.aliases.upsert(typesense_alias_name, {"collection_name": next_collection_name})
+            logger.info(f"Alias {typesense_alias_name} now points to {next_collection_name}.")
             store_last_complete_ingestion_timestamp(datetime.now())
-            typesense_client.drop_collection(current_collection)
+            if active_collection:
+                typesense_client.drop_collection(active_collection)
             return Completed()
     else:
         return Failed(message="Some documents failed ingestion. Please see error log.")

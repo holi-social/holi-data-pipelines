@@ -54,7 +54,7 @@ class TypesenseClient:
             self.client.collections[collection_name].delete()
             logger.info(f"Typesense collection '{collection_name}' successfully deleted.")
         except ObjectNotFound:
-            logger.debug(f"Collection '{collection_name}' not found. Skipping deletion.")
+            logger.warning(f"Collection '{collection_name}' not found. Skipping deletion.")
 
     def create_collection(self, schema_file_path: str, collection_name: str) -> str:
         """
@@ -87,10 +87,18 @@ class TypesenseClient:
             alias_name (str): The name of the alias to look up.
 
         Returns:
-            str: The name of the collection associated with the alias, or an empty string if the alias does not exist.
+            str: The name of the collection associated with the alias or an empty string.
+
+        Raises:
+            ValueError: If `alias_name` is None or empty.
+            ObjectNotFound: If the alias does not exist.
         """
+        if not alias_name:
+            raise ValueError("Alias name must not be None or empty.")
+
         try:
             alias_info = self.client.aliases[alias_name].retrieve()
-            return alias_info.get("collection_name", "")
-        except Exception as e:
-            return ""
+        except ObjectNotFound:
+            logger.warning(f"Alias '{alias_name}' does not exist in Typesense.")
+            raise
+        return alias_info.get("collection_name", "")

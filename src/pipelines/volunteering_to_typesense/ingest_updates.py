@@ -2,7 +2,6 @@ import prefect.logging
 from prefect import flow, State
 from prefect.states import Failed, Completed
 
-from src.common.constants import TYPESENSE_ALIAS_NAME
 from src.common.extractors.bq_extractor import (
     extract_latest_partition_timestamp_from_bigquery,
 )
@@ -10,6 +9,7 @@ from src.pipelines.volunteering_to_typesense.utils import (
     setup_pipeline,
     load_last_complete_ingestion_timestamp,
     store_last_complete_ingestion_timestamp,
+    extract_collection_name_from_schema,
     diff_ingest
 )
 from datetime import datetime
@@ -28,6 +28,8 @@ def volunteering_to_typesense_etl() -> None | State:
     """Orchestrates the ETL pipeline to move volunteering data from BigQuery to Typesense."""
     config, typesense_client = setup_pipeline()
 
+    typesense_alias_name = extract_collection_name_from_schema(cast(str, config["schema_path"]))
+
     last_complete_ingestion_timestamp = load_last_complete_ingestion_timestamp()
 
     latest_partition_timestamp = extract_latest_partition_timestamp_from_bigquery(
@@ -44,7 +46,7 @@ def volunteering_to_typesense_etl() -> None | State:
         )
         return Completed()
 
-    typesense_collection_name = typesense_client.get_active_collection(TYPESENSE_ALIAS_NAME)
+    typesense_collection_name = typesense_client.get_active_collection(typesense_alias_name)
 
     deletion_succeeded, upsert_succeeded = diff_ingest(config, last_complete_ingestion_timestamp,
                                                        latest_partition_timestamp, typesense_client,
