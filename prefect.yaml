@@ -23,61 +23,56 @@ pull:
 
 # the deployments section allows you to provide configuration for deploying flows
 deployments:
-- name: example-deploy
-  version:
-  tags: []
-  description:
-  entrypoint: src/pipelines/example/pipeline.py:hello_universe
-  schedules:
-  - cron: 0 5 29 2 * 0 2020/10
-    timezone:
-    day_or: true
-    active: true
-  work_pool:
-    name: cloud-run-v2
-    work_queue_name: default
-    job_variables:
-      image: "{{ get_environment_docker_image.stdout }}"
-      name: "example"
-  concurrency_limit:
-  parameters: {}
-  enforce_parameter_schema: true
-- name: volunteering-to-typesense-from-scratch
-  version:
-  tags: []
-  description: "Orchestrates the ETL pipeline to ingest complete volunteering data from BigQuery to Typesense."
-  entrypoint: src/pipelines/volunteering_to_typesense/ingest_from_scratch.py:volunteering_to_typesense_ingest_from_scratch
-  schedules:
-  - cron: 0 5 29 2 * 0 2020/10
-    timezone:
-    day_or: true
-    active: true
-  work_pool:
-    name: cloud-run-v2
-    work_queue_name: default
-    job_variables:
-      image: "{{ get_environment_docker_image.stdout }}"
-      memory: '4096Mi'
-      timeout: 86400
-      name: "srch-etl-volunteering-scratch"
-- name: volunteering-to-typesense-updates-only
-  version:
-  tags: []
-  description: "Orchestrates the ETL pipeline to move volunteering updates from BigQuery to Typesense."
-  entrypoint: src/pipelines/volunteering_to_typesense/ingest_updates.py:volunteering_to_typesense_ingest_updates
-  schedules:
-    - cron: 30 6 * * * 0 2020/10 # run every day at 06:30 (classification job runs from 04:40 to ~ 06:00)
-      timezone: "Europe/Berlin"
-      day_or: true
-      active: true
-  work_pool:
-    name: cloud-run-v2
-    work_queue_name: default
-    job_variables:
-      image: "{{ get_environment_docker_image.stdout }}"
-      memory: '4096Mi'
-      timeout: 86400
-      name: "srch-etl-volunteering-updates"
-  concurrency_limit:
-  parameters: {}
-  enforce_parameter_schema: true
+  - name: example-deploy
+    version:
+    tags: [ ]
+    description:
+    entrypoint: src/pipelines/example/pipeline.py:hello_universe
+    schedules:
+      - cron: 0 5 29 2 * 0 2020/10
+        timezone:
+        day_or: true
+        active: true
+    work_pool:
+      name: cloud-run-v2
+      work_queue_name: default
+      job_variables:
+        image: "{{ get_environment_docker_image.stdout }}"
+        name: "example"
+    concurrency_limit:
+    parameters: { }
+    enforce_parameter_schema: true
+  - name: volunteering-to-typesense-from-scratch
+    version:
+    tags: [ ]
+    description: "Orchestrates the ETL pipeline to ingest complete volunteering data from BigQuery to Typesense."
+    entrypoint: src/pipelines/volunteering_to_typesense/ingest_from_scratch.py:volunteering_to_typesense_ingest_from_scratch
+    work_pool:
+      name: cloud-run-v2
+      work_queue_name: default
+      job_variables:
+        image: "{{ get_environment_docker_image.stdout }}"
+        memory: '4096Mi'
+        timeout: 86400
+        name: "srch-etl-volunteering-scratch"
+  - name: volunteering-to-typesense-updates-only
+    version:
+    tags: [ ]
+    description: "Orchestrates the ETL pipeline to move volunteering updates from BigQuery to Typesense."
+    entrypoint: src/pipelines/volunteering_to_typesense/ingest_updates.py:volunteering_to_typesense_ingest_updates
+    schedules:
+      - cron: 30 6 * * * # run every day at 06:30 (classification job runs from 04:40 to ~ 06:00)
+        timezone: "Europe/Berlin"
+        day_or: true
+        active: true
+    work_pool:
+      name: cloud-run-v2
+      work_queue_name: default
+      job_variables:
+        image: "{{ get_environment_docker_image.stdout }}"
+        memory: '4096Mi'
+        timeout: 86400
+        name: "srch-etl-volunteering-updates"
+    concurrency_limit:
+    parameters: { }
+    enforce_parameter_schema: true
