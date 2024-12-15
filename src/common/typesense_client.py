@@ -40,7 +40,23 @@ class TypesenseClient:
 
         logger.debug("Typesense client successfully initialized.")
 
-    def drop_and_create_collection(self, schema_file_path: str) -> str:
+    def drop_collection(self, collection_name: str) -> None:
+        """
+        Deletes a Typesense collection if it exists.
+
+        This method attempts to delete a specified collection from the Typesense client.
+        If the collection does not exist, it logs a debug message and continues.
+
+        Args:
+            collection_name (str): The name of the Typesense collection to delete.
+        """
+        try:
+            self.client.collections[collection_name].delete()
+            logger.info(f"Typesense collection '{collection_name}' successfully deleted.")
+        except ObjectNotFound:
+            logger.warning(f"Collection '{collection_name}' not found. Skipping deletion.")
+
+    def create_collection(self, schema_file_path: str, collection_name: str) -> str:
         """
         Create or update the Typesense schema from an external JSON file.
 
@@ -53,19 +69,43 @@ class TypesenseClient:
         with open(schema_file_path, "r") as file:
             schema = json.load(file)
 
-        collection_name = schema.get("name")
         if not collection_name:
-            raise ValueError("Schema is missing a 'name' field.")
+            raise ValueError("Missing 'collection_name' field.")
 
-        # Try deleting the existing collection if it exists
-        try:
-            self.client.collections[collection_name].delete()
-            logger.info(f"Typesense collection '{collection_name}' deleted.")
-        except ObjectNotFound:
-            logger.debug("Couldn't find collection. Proceeding....")
+        schema.set("name", collection_name)
 
         # Create the collection with the new schema
         self.client.collections.create(schema)
         logger.info(f"Typesense collection '{collection_name}' created/updated.")
 
         return collection_name
+
+    def get_active_collection(self, alias_name: str) -> str:
+        """Retrieve the current active collection for the given alias name.
+
+        Args:
+            alias_name (str): The name of the alias to look up.
+
+        Returns:
+            str: The name of the collection associated with the alias or an empty string.
+
+        Raises:
+            ValueError: If `alias_name` is None or empty.
+            ObjectNotFound: If the alias does not exist.
+        """
+        if not alias_name:
+            raise ValueError("alias_name must not be None or empty.")
+
+        try:
+            alias_info = self.client.aliases[alias_name].retrieve()
+        except ObjectNotFound:
+            logger.warning(f"Alias '{alias_name}' does not exist in Typesense.")
+            raise
+        return alias_info.get("collection_name", "")
+
+    def set_active_collection(self, alias_name: str, collection_name: str) -> None:
+        if not alias_name:
+            raise ValueError("alias_name must not be None or empty.")
+        if not collection_name:
+            raise ValueError("collection_name must not be None or empty.")
+        self.client.aliases.upsert(alias_name, {"collection_name": collection_name})

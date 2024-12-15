@@ -25,7 +25,7 @@ pull:
 deployments:
   - name: example-deploy
     version:
-    tags: []
+    tags: [ ]
     description:
     entrypoint: src/pipelines/example/pipeline.py:hello_universe
     schedules:
@@ -40,13 +40,26 @@ deployments:
         image: "{{ get_environment_docker_image.stdout }}"
         name: "example"
     concurrency_limit:
-    parameters: {}
+    parameters: { }
     enforce_parameter_schema: true
-  - name: volunteering-to-typesense
+  - name: volunteering-to-typesense-from-scratch
     version:
-    tags: []
-    description: "Orchestrates the ETL pipeline to move volunteering data from BigQuery to Typesense."
-    entrypoint: src/pipelines/volunteering_to_typesense/pipeline.py:volunteering_to_typesense_etl
+    tags: [ ]
+    description: "Orchestrates the ETL pipeline to ingest complete volunteering data from BigQuery to Typesense."
+    entrypoint: src/pipelines/volunteering_to_typesense/ingest_from_scratch.py:volunteering_to_typesense_ingest_from_scratch
+    work_pool:
+      name: cloud-run-v2
+      work_queue_name: default
+      job_variables:
+        image: "{{ get_environment_docker_image.stdout }}"
+        memory: '4096Mi'
+        timeout: 86400
+        name: "srch-etl-volunteering-scratch"
+  - name: volunteering-to-typesense-updates-only
+    version:
+    tags: [ ]
+    description: "Orchestrates the ETL pipeline to move volunteering updates from BigQuery to Typesense."
+    entrypoint: src/pipelines/volunteering_to_typesense/ingest_updates.py:volunteering_to_typesense_ingest_updates
     schedules:
       - cron: 30 6 * * * # run every day at 06:30 (classification job runs from 04:40 to ~ 06:00)
         timezone: "Europe/Berlin"
@@ -57,9 +70,9 @@ deployments:
       work_queue_name: default
       job_variables:
         image: "{{ get_environment_docker_image.stdout }}"
-        memory: "4096Mi"
+        memory: '4096Mi'
         timeout: 86400
-        name: "srch-etl-volunteering"
+        name: "srch-etl-volunteering-updates"
     concurrency_limit:
-    parameters: {}
+    parameters: { }
     enforce_parameter_schema: true
