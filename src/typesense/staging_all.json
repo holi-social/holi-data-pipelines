@@ -1,5 +1,5 @@
 {
-    "name": "staging_all",
+    "name": "holi_search_staging",
     "enable_nested_fields": true,
     "fields": [
         {"name": "id", "type": "string"},
