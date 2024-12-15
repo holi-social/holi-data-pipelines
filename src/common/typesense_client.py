@@ -64,6 +64,7 @@ class TypesenseClient:
 
         Args:
             schema_file_path (str): Path to the schema JSON file.
+            collection_name (str): Name of the new collection (overwrites name in schema file).
         """
         # Load the schema from the JSON file
         with open(schema_file_path, "r") as file:
@@ -72,7 +73,7 @@ class TypesenseClient:
         if not collection_name:
             raise ValueError("Missing 'collection_name' field.")
 
-        schema.set("name", collection_name)
+        schema["name"] = collection_name
 
         # Create the collection with the new schema
         self.client.collections.create(schema)
