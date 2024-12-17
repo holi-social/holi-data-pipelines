@@ -15,9 +15,6 @@ strict_equality = true
 disallow_untyped_defs = true ###
 disallow_incomplete_defs = true
 disallow_untyped_calls = true
-exclude = [
-    "^.*/test_.*.py$"
-]
 
 [[tool.mypy.overrides]]
 module = [
