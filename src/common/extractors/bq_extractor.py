@@ -49,7 +49,7 @@ def extract_latest_partition_timestamp_from_bigquery(
         list[Dict]: A list containing a single dictionary with the latest partition timestamp.
     """
     query = (
-        f"SELECT MAX(`{VIEW_PARTITION_TIME_COLUMN_NAME}`) AS `{VIEW_PARTITION_TIME_COLUMN_NAME}` "
+        f"SELECT MAX(`{VIEW_PARTITION_TIME_COLUMN_NAME}`) AS `{VIEW_PARTITION_TIME_COLUMN_NAME}` "  # noqa: S608
         f"FROM `{table_name}`"
     )
     result = extract_data_from_bigquery(query)
@@ -120,7 +120,7 @@ def extract_changes_in_partitions(
         'deleted' AS change_type
         ,*
     FROM deleted_records;
-    """
+    """  # noqa: S608
     return extract_data_from_bigquery(query)
 
 
@@ -137,4 +137,4 @@ def extract_data_from_bigquery_table(table_name: str) -> list[Dict[str, Any]]:
     Raises:
         GoogleAPIError: If the BigQuery query fails.
     """
-    return extract_data_from_bigquery(f"SELECT * FROM `{table_name}`")
+    return extract_data_from_bigquery(f"SELECT * FROM `{table_name}`")  # noqa: S608

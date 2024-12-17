@@ -74,20 +74,3 @@ exclude = [
     "terraform",
     "venv",
 ]
-
-[tool.black]
-line-length = 119
-exclude = '''
-/(
-    \.docker
-    | \.docker-cache
-    | \.git
-    | \.venv
-    | media
-    | migrations
-    | reports
-    | static
-    | terraform
-    | venv
-)/
-'''

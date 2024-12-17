@@ -1,4 +1,4 @@
-from typing import Callable, Any
+from typing import Any
 
 from prefect.client.schemas.objects import FlowRun, State, StateType
 from prefect import runtime
@@ -39,7 +39,7 @@ def _compile_context_info(context: dict[str, StrictVariableValue], run: FlowRun,
         or run.estimated_run_time
         or run.estimated_start_time_delta
     ):
-        context_info.append(f"Temporal information:\n")
+        context_info.append("Temporal information:\n")
         if run.expected_start_time:
             context_info.append(f"\tExpected start time `{run.expected_start_time}`\n")
         if run.next_scheduled_start_time:
