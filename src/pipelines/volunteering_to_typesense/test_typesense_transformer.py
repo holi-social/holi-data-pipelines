@@ -125,7 +125,6 @@ def test_returns_none_for_invalid_lng(row):
 
 
 def test_tolerates_missing_values(row):
-
     row_with_missing_values = {
         "id": row["id"],
         "title": None,

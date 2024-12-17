@@ -36,6 +36,7 @@ def extract_data_from_bigquery(
         )
         return dict_list
 
+
 def extract_latest_partition_timestamp_from_bigquery(
     table_name: str,
 ) -> datetime:
@@ -63,10 +64,9 @@ def extract_latest_partition_timestamp_from_bigquery(
 
     return latest_partition_timestamp
 
+
 def extract_changes_in_partitions(
-        table_name: str,
-        new_partition_date: date,
-        old_partition_date: Optional[date] = None
+    table_name: str, new_partition_date: date, old_partition_date: Optional[date] = None
 ) -> list[Dict[str, Any]]:
     """
     Extracts (new, updated, or deleted records) in a BigQuery table by comparing

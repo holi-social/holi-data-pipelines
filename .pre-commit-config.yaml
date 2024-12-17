@@ -1,4 +1,24 @@
 repos:
+  - repo: local
+    hooks:
+      - id: ruff-lint
+        name: ruff-lint
+        language: system
+        entry: ruff check
+        pass_filenames: false
+        always_run: true
+      - id: ruff-format
+        name: ruff-format
+        language: system
+        entry: ruff format --check
+        pass_filenames: false
+        always_run: true
+      - id: gitleaks
+        name: gitleaks
+        language: system
+        entry: gitleaks protect --staged -v -c ../.gitleaks.toml
+        pass_filenames: false
+        always_run: true
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.13.0
     hooks:
@@ -6,19 +26,3 @@ repos:
         args: [
           --python-executable=.venv/bin/python,
         ]
-  - repo: local
-    hooks:
-      - id: ruff
-        name: ruff
-        language: system
-        entry: ruff check
-        pass_filenames: false
-        always_run: true
-  - repo: local
-    hooks:
-      - id: gitleaks
-        name: gitleaks
-        language: system
-        entry: gitleaks protect --staged -v -c ../.gitleaks.toml
-        pass_filenames: false
-        always_run: true

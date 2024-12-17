@@ -14,7 +14,7 @@ from src.pipelines.volunteering_to_typesense.tasks import (
     setup_pipeline,
     store_last_complete_ingestion_timestamp,
     extract_collection_name_from_schema,
-    diff_ingest
+    diff_ingest,
 )
 
 # Initialize logging
@@ -38,19 +38,25 @@ def volunteering_to_typesense_ingest_from_scratch() -> None | State:
         active_collection = typesense_client.get_active_collection(alias_name)
     except ObjectNotFound:
         # Handle case where alias does not exist
-        logger.warning(f"Alias '{alias_name}' does not exist while trying to ingest from scratch. Proceeding to create it later.")
+        logger.warning(
+            f"Alias '{alias_name}' does not exist while trying to ingest from scratch. Proceeding to create it later."
+        )
         active_collection = None
 
     next_collection = f"{alias_name}_{datetime.now().isoformat()}"
 
     typesense_client.drop_collection(next_collection)
-    typesense_client.create_collection(schema_file_path=cast(str, config["schema_path"]), collection_name=next_collection)
+    typesense_client.create_collection(
+        schema_file_path=cast(str, config["schema_path"]), collection_name=next_collection
+    )
 
-    deletion_succeeded, upsert_succeeded = diff_ingest(config=config,
-                                                       last_complete_ingestion_timestamp=None,
-                                                       latest_partition_timestamp=latest_partition_timestamp,
-                                                       typesense_client=typesense_client,
-                                                       typesense_collection_name=next_collection)
+    deletion_succeeded, upsert_succeeded = diff_ingest(
+        config=config,
+        last_complete_ingestion_timestamp=None,
+        latest_partition_timestamp=latest_partition_timestamp,
+        typesense_client=typesense_client,
+        typesense_collection_name=next_collection,
+    )
     if upsert_succeeded and deletion_succeeded:
         validation_result = validate_collection(typesense_client, next_collection)
         if validation_result.is_failed():
