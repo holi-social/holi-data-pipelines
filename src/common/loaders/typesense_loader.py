@@ -1,9 +1,12 @@
 import json
-from typing import Iterable, Dict, Tuple, List
+from typing import Iterable, Dict, Tuple, List, Any
 
+from prefect import task
 from typesense.client import Client
 
 from src.common.logging.PipelineLogger import PipelineLogger
+from src.common.typesense_client import TypesenseClient
+from src.pipelines.volunteering_to_typesense.tasks import batches, logger
 
 logger = PipelineLogger(__name__)
 
@@ -44,3 +47,25 @@ def upsert_documents_in_batches(
     success_count = len(results) - len(failed_items)
 
     return failed_items, success_count
+
+
+@task
+def upsert_typesense_documents(typesense_client: TypesenseClient, typesense_collection_name: str, new_or_updated_documents: List[Dict[str, Any]]) -> bool:
+    ingestion_succeeded = True
+    for docs_batch, batch_count in batches(new_or_updated_documents, 100):
+        failed_documents, success_count = upsert_documents_in_batches(
+            client=typesense_client.client,
+            docs=docs_batch,
+            batch_num=batch_count,
+            index_name=typesense_collection_name
+        )
+        if failed_documents:
+            ingestion_succeeded = False
+            logger.error(
+                f"Batch {batch_count} processed with failures: {len(failed_documents)} failed items out of"
+                f" {success_count + len(failed_documents)}. Failed items in batch {batch_count}: {failed_documents}"
+            )
+        else:
+            logger.info(f"Batch {batch_count} successfully upserted {success_count} documents.")
+            logger.debug(f"Batch {batch_count} upserted document IDs: {[doc["id"] for doc in docs_batch]}")
+    return ingestion_succeeded
