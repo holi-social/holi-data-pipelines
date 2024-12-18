@@ -89,3 +89,16 @@ deployments:
         memory: '4096Mi'
         timeout: 86400
         name: "srch-etl-profiles-scratch"
+  - name: spaces-to-typesense-from-scratch
+    version:
+    tags: [ ]
+    description: "Ingests spaces from Datastream-replicated Okuna into Typesense"
+    entrypoint: src/pipelines/spaces_to_typesense/ingest_from_scratch.py:spaces_to_typesense_ingest_from_scratch
+    work_pool:
+      name: cloud-run-v2
+      work_queue_name: default
+      job_variables:
+        image: "{{ get_environment_docker_image.stdout }}"
+        memory: '4096Mi'
+        timeout: 86400
+        name: "srch-etl-spaces-scratch"
