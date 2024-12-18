@@ -1,7 +1,6 @@
 from datetime import datetime
 from typing import cast
 
-import prefect.logging
 from prefect import flow, State
 from prefect.states import Failed, Completed
 from typesense.exceptions import ObjectNotFound
@@ -9,6 +8,7 @@ from typesense.exceptions import ObjectNotFound
 from src.common.extractors.bq_extractor import (
     extract_latest_partition_timestamp_from_bigquery,
 )
+from src.common.logging.PipelineLogger import PipelineLogger
 from src.pipelines.volunteering_to_typesense.tasks import (
     validate_collection,
     setup_pipeline,
@@ -17,8 +17,7 @@ from src.pipelines.volunteering_to_typesense.tasks import (
     diff_ingest
 )
 
-# Initialize logging
-logger = prefect.logging.get_logger()
+logger = PipelineLogger(__name__)
 
 
 # TODO configure flow via annotation

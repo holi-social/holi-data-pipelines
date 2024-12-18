@@ -1,9 +1,11 @@
 import json
 from typing import Iterable, Dict, Tuple, List
-import prefect
+
 from typesense.client import Client
 
-logger = prefect.logging.get_logger()
+from src.common.logging.PipelineLogger import PipelineLogger
+
+logger = PipelineLogger(__name__)
 
 def upsert_documents_in_batches(
     client: Client, docs: Iterable[Dict[str, object]], batch_num: int, index_name: str

@@ -5,7 +5,6 @@ from datetime import datetime
 from typing import Iterable, Generator, cast, Tuple
 from typing import List, Dict, Any, Optional
 
-import prefect.logging
 from prefect import task, State
 from prefect.states import Failed, Completed
 from prefect.types import StrictVariableValue
@@ -13,11 +12,12 @@ from prefect.variables import Variable
 
 from src.common.extractors.bq_extractor import extract_changes_in_partitions
 from src.common.loaders.typesense_loader import upsert_documents_in_batches
+from src.common.logging.PipelineLogger import PipelineLogger
 from src.common.typesense_client import TypesenseClient
 from src.common.variables import variable_value, secret_value
 from src.pipelines.volunteering_to_typesense.typesense_transformer import transform_row
 
-logger = prefect.logging.get_logger()
+logger = PipelineLogger(__name__)
 
 
 @task
