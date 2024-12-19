@@ -1,8 +1,8 @@
 import json
 import os
 from typing import Optional
-from prefect.types import StrictVariableValue
 
+from prefect.types import StrictVariableValue
 from prefect.variables import Variable
 from prefect_gcp.secret_manager import GcpSecret
 
@@ -66,6 +66,6 @@ def secret_value(key: str, default: Optional[str] = None) -> Optional[str]:
             raise ValueError(
                 f"Secret '{key}' can't be found, neither as prefect variable, nor as environment variable (key"
                 f" '{_env_key_from_prefect_key(key)}')"
-            )
+            ) from None
         else:
             return json.loads(environment_var_or_default)

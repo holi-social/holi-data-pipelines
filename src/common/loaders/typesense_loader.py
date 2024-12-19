@@ -5,6 +5,7 @@ from typesense.client import Client
 
 logger = prefect.logging.get_logger()
 
+
 def upsert_documents_in_batches(
     client: Client, docs: Iterable[Dict[str, object]], batch_num: int, index_name: str
 ) -> Tuple[List[Dict[str, object]], int]:
@@ -31,9 +32,7 @@ def upsert_documents_in_batches(
     batch_size = 3
 
     response = client.collections[index_name].documents.import_(
-        documents=docs,
-        params={"action": "upsert", "dirty_values": "coerce_or_reject"},
-        batch_size=batch_size
+        documents=docs, params={"action": "upsert", "dirty_values": "coerce_or_reject"}, batch_size=batch_size
     )
 
     # Parse and filter results
