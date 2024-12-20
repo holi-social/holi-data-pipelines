@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Optional, TypeVar, Type, Dict, Any
+from typing import Optional, TypeVar, Type
 
 from prefect.types import StrictVariableValue
 from prefect.variables import Variable
@@ -105,5 +105,6 @@ def get_secret_value(key: str, default: Optional[str] = None) -> str:
     :raises AssertionError
     """
     value = secret_value(key, default)
-    assert value is not None
+    if value is None:
+        raise ValueError(f"Got None value for secret '{key}'.")
     return value

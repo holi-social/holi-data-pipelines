@@ -1,22 +1,8 @@
-import functools
-from asyncio import Queue
-from typing import cast, Any, Callable, Optional, Tuple
-
-from aiohttp import ClientSession, TCPConnector
-from prefect import flow, task, State
-import prefect
-from prefect.states import Failed, Completed
-from prefect.types import StrictVariableValue
-from prefect_gcp import GcpCredentials, BigQueryWarehouse
-from prefect_gcp.bigquery import bigquery_insert_stream
-
-from src.common.monitoring.alerting import alert
-from src.common.variables import variable_value, secret_value
-
 import asyncio
-import json
-from datetime import date, timedelta
-import sys
+from typing import Any, Callable, Optional, Tuple
+
+import prefect
+from aiohttp import ClientSession
 
 logger = prefect.logging.get_logger()
 

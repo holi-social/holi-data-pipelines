@@ -1,21 +1,19 @@
 from __future__ import annotations
+
 import asyncio
-import dataclasses
 import functools
 from asyncio import Queue
 from copy import copy
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import Any, Dict, TypedDict, Self, Tuple, Iterable
+from typing import Any, Dict, Optional
 
-from dateutil.parser import isoparse
 import prefect
-from prefect import flow, task, State
-from prefect.types import StrictVariableValue
-from prefect_gcp import BigQueryWarehouse
+from dateutil.parser import isoparse
+from prefect import flow, task
 
 from src.common.extractors.rest_crawler import RestCrawler
-from src.common.loaders.bq_loader import stream_to_bigquery, delete_partition, insert
+from src.common.loaders.bq_loader import delete_partition, insert
 from src.common.monitoring.alerting import alert
 from src.common.variables import variable_value_as, get_secret_value, update_variable
 
@@ -64,16 +62,14 @@ _CONFIG: Config = Config(
 _HEADERS: Dict[str, str] = {"x-voltastics-token": get_secret_value("voltastics-api-key")}
 
 
-# dateutil.parser.parse(datetime.datetime.now().isoformat())
-
-
 @task
-def clear_partition(partition: date = datetime.today()) -> None:
+def clear_partition(partition: Optional[date]) -> None:
+    partition_to_delete: date = partition or datetime.today()
     project = _CONFIG.bigquery_table["project"]
     dataset = _CONFIG.bigquery_table["dataset"]
     table = _CONFIG.bigquery_table["table"]
 
-    delete_partition(project, dataset, table, partition)
+    delete_partition(project, dataset, table, partition_to_delete)
 
 
 @task
@@ -101,7 +97,7 @@ async def crawl(queue: Queue[Any]) -> None:
 
 
 @task
-async def write_to_bigquery(queue: Queue[Any], batch_size: int = 1000) -> None:
+async def write_to_bigquery(queue: Queue[Any], batch_size: int = 1000, stop_page: Any = None) -> None:
     async def get_document_from_queue() -> Any:
         result = await queue.get()
         queue.task_done()
@@ -118,7 +114,7 @@ async def write_to_bigquery(queue: Queue[Any], batch_size: int = 1000) -> None:
 
         for _ in range(batch_size):  # Batch size for streaming to BigQuery
             document = await queue.get()
-            if document == None:  # Stop signal
+            if document == stop_page:  # Stop signal
                 finished = True
                 break
             documents.append(document)
@@ -168,7 +164,9 @@ def crawl_voltastics() -> None:
 
         asyncio.run(async_crawl())
 
-        # persist_state(copy.replace(starting_state, {"last_successful_day": today}))  # type: ignore[attr-defined]
+        final_state = copy(starting_state)
+        final_state.last_successful_day = today
+        VoltasticsState.persist(final_state)
         logger.info("finished crawling")
 
 

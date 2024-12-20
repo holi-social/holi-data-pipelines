@@ -1,9 +1,7 @@
 from datetime import date
-from typing import Callable, Any, Awaitable, Iterable, Dict, List
+from typing import Callable, Any, Awaitable, Dict, List
 
 import prefect
-from prefect import State, task
-from prefect.states import Completed, Failed
 from prefect_gcp import GcpCredentials
 from prefect_gcp.bigquery import bigquery_insert_stream, BigQueryWarehouse
 

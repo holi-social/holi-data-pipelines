@@ -1,5 +1,5 @@
 import json
-from typing import Callable, Any, Dict, Mapping
+from typing import Any, Mapping
 
 from prefect import runtime
 from prefect.blocks.notifications import CustomWebhookNotificationBlock
@@ -58,7 +58,12 @@ def _compile_context_info(context: Mapping[str, StrictVariableValue], run: FlowR
     return "".join(context_info)
 
 
-def alert(context: Mapping[str, StrictVariableValue], flow: Flow[Any, Any], run: FlowRun, state: State) -> None:
+def alert(
+    context: Mapping[str, StrictVariableValue],
+    flow: Flow[Any, Any],
+    run: FlowRun,
+    state: State,
+) -> None:
     alerter = CustomWebhookNotificationBlock.load("rocketchat-alert")
     subject = f"Run `{run.name}` of flow `{flow.name}` is in state `{state.name}`."
     match state.type:
