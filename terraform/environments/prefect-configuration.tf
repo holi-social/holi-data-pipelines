@@ -62,6 +62,11 @@ resource "prefect_variable" "typesense_protocol" {
   value = "https"
 }
 
+resource "prefect_variable" "typesense_collection" {
+  name  = "typesense_collection"
+  value = local.environment == "production" ? "holi_search_production" : "holi_search_staging"
+}
+
 resource "prefect_variable" "prefect_environment" {
   name  = "prefect_environment"
   value = local.environment

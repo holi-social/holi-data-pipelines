@@ -17,28 +17,19 @@ class TypesenseClient:
         Args:
             config (dict): Configuration dictionary to initialize the Typesense client.
         """
-
-        # Fetch necessary variables
-        typesense_api_key = config["api_key"]
-        typesense_host = config["host"]
-        typesense_port = config["port"]
-        typesense_protocol = config["protocol"]
-        # Create the client
         self.client = Client(
             {
-                "api_key": typesense_api_key,
+                "api_key": config["api_key"],
                 "nodes": [
                     {
-                        "host": typesense_host,
-                        "port": typesense_port,
-                        "protocol": typesense_protocol,
+                        "host": config["host"],
+                        "port": config["port"],
+                        "protocol": config["protocol"],
                     }
                 ],
                 "connection_timeout_seconds": 60 * 60,
             }
         )
-
-        logger.debug("Typesense client successfully initialized.")
 
     def drop_collection(self, collection_name: str) -> None:
         """
