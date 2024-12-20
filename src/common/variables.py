@@ -1,10 +1,11 @@
 import json
 import os
-from typing import Optional
-from prefect.types import StrictVariableValue
+from typing import Optional, TypeVar, Type, Dict, Any
 
+from prefect.types import StrictVariableValue
 from prefect.variables import Variable
 from prefect_gcp.secret_manager import GcpSecret
+from trycast import isassignable, checkcast  # type: ignore
 
 
 def _env_key_from_prefect_key(key: str) -> str:
@@ -16,7 +17,7 @@ def _getenv_case_insensitive(key: str, default: Optional[str] = None) -> str | N
     return os.getenv(_env_key_from_prefect_key(key), default)
 
 
-def variable_value(key: str, default: Optional[StrictVariableValue] = None) -> StrictVariableValue:
+def variable_value(key: str, default: StrictVariableValue = None) -> StrictVariableValue:
     """
     Resolves the value for a given key by first attempting to retrieve it from
     Prefect variables. If not found, it falls back to searching the environment
@@ -32,17 +33,34 @@ def variable_value(key: str, default: Optional[StrictVariableValue] = None) -> S
 
     """
     prefect_var = Variable.get(key)
-    if prefect_var is None:
+    if prefect_var is not None:
+        return prefect_var
+    else:
         environment_var = _getenv_case_insensitive(key)
-        if not environment_var or default:
+        if environment_var is not None:
+            return json.loads(environment_var)
+        elif default is not None:
+            return default
+        else:
             raise ValueError(
                 f"Variable '{key}' can't be found, neither as prefect variable, nor as environment variable (key"
                 f" '{_env_key_from_prefect_key(key)}')"
             )
-        else:
-            return json.loads(environment_var) or default
+
+
+T = TypeVar("T", bound=StrictVariableValue)
+
+
+def variable_value_as(return_type: Type[T], key: str, default: Optional[T] = None) -> T:
+    value = variable_value(key, default)
+    if isassignable(value, return_type):
+        return checkcast(return_type, value)
     else:
-        return prefect_var
+        raise TypeError(f"Expected {return_type}, got {type(value)}")
+
+
+def update_variable(key: str, value: StrictVariableValue) -> None:
+    Variable.set(name=key, value=value, overwrite=True)
 
 
 def secret_value(key: str, default: Optional[str] = None) -> Optional[str]:
@@ -56,10 +74,10 @@ def secret_value(key: str, default: Optional[str] = None) -> Optional[str]:
         default: The default value to return if the key is not found.
 
     Returns:
-        The resolved value as str
+        The resolved value as Optional[str]
     """
     try:
-        return GcpSecret.load(key).read_secret()
+        return GcpSecret.load(key).read_secret().decode("utf-8")
     except ValueError:
         environment_var_or_default = _getenv_case_insensitive(key, default)
         if not environment_var_or_default:
@@ -69,3 +87,23 @@ def secret_value(key: str, default: Optional[str] = None) -> Optional[str]:
             )
         else:
             return json.loads(environment_var_or_default)
+
+
+def get_secret_value(key: str, default: Optional[str] = None) -> str:
+    """
+    Resolves the secret for a given key. If not found, it falls back to searching the environment
+    variables in a case-insensitive manner. If no value could be found anywhere, it fails with an AssertionError.
+
+    Args:
+        key: The key to look up. It needs to adhere to prefect block naming (max 255 characters?,
+             lowercase alphanumeric characters ([a-z], [0-9]) or dashes (-)).
+        default: The default value to return if the key is not found.
+
+    Returns:
+        The resolved value as Optional[str]
+
+    :raises AssertionError
+    """
+    value = secret_value(key, default)
+    assert value is not None
+    return value

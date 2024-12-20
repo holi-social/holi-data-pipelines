@@ -1,4 +1,4 @@
-from typing import Callable, Any
+from typing import Callable, Any, Dict, Mapping
 
 from prefect.client.schemas.objects import FlowRun, State, StateType
 from prefect import runtime
@@ -12,7 +12,7 @@ import prefect
 logger = prefect.logging.get_logger()
 
 
-def _compile_context_info(context: dict[str, StrictVariableValue], run: FlowRun, state: State) -> str:
+def _compile_context_info(context: Mapping[str, StrictVariableValue], run: FlowRun, state: State) -> str:
     context_info = []
     if state.message:
         context_info.append(f"**{state.message}**\n")
@@ -57,7 +57,7 @@ def _compile_context_info(context: dict[str, StrictVariableValue], run: FlowRun,
     return "".join(context_info)
 
 
-def alert(context: dict[str, StrictVariableValue], flow: Flow[Any, Any], run: FlowRun, state: State) -> None:
+def alert(context: Mapping[str, StrictVariableValue], flow: Flow[Any, Any], run: FlowRun, state: State) -> None:
     alerter = CustomWebhookNotificationBlock.load("rocketchat-alert")
     subject = f"Run `{run.name}` of flow `{flow.name}` is in state `{state.name}`."
     match state.type:

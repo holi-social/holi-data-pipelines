@@ -10,4 +10,6 @@ locals {
   prefect_server_url      = "http://${local.prefect_internal_domain}:${local.prefect_internal_port}"
   default_region          = data.terraform_remote_state.holi_infra_state.outputs.default_region
   default_project         = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
+  dataset_datalake        = local.environment == "production" ? "datalake_production" : "datalake_development"
+  dataset_datapool        = local.environment == "production" ? "datapool_production" : "datapool_development"
 }

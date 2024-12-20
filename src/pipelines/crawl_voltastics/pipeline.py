@@ -1,146 +1,174 @@
-from asyncio import Queue
-from typing import cast, Any
-
-from aiohttp import ClientSession, TCPConnector
-from google.cloud import bigquery
-from google.cloud.bigquery.dbapi import DatabaseError
-from prefect import flow, task
-import prefect
-from prefect_gcp import GcpCredentials, BigQueryWarehouse
-from prefect_gcp.bigquery import bigquery_insert_stream
-from src.common.variables import variable_value, secret_value
-
+from __future__ import annotations
 import asyncio
-import json
-from datetime import date, timedelta
-import sys
+import dataclasses
+import functools
+from asyncio import Queue
+from copy import copy
+from dataclasses import dataclass
+from datetime import date, datetime
+from typing import Any, Dict, TypedDict, Self, Tuple, Iterable
+
+from dateutil.parser import isoparse
+import prefect
+from prefect import flow, task, State
+from prefect.types import StrictVariableValue
+from prefect_gcp import BigQueryWarehouse
+
+from src.common.extractors.rest_crawler import RestCrawler
+from src.common.loaders.bq_loader import stream_to_bigquery, delete_partition, insert
+from src.common.monitoring.alerting import alert
+from src.common.variables import variable_value_as, get_secret_value, update_variable
 
 logger = prefect.logging.get_logger()
 
 
-sem = asyncio.Semaphore(1)
+@dataclass
+class VoltasticsState:
+    last_successful_day: date | None
+    last_run_day: date | None
+    variable_key = "voltastics_crawler_state"
+
+    @staticmethod
+    def _from_variable(value: Dict[str, str | None]) -> VoltasticsState:
+        date_values = {k: isoparse(v).date() if v else None for (k, v) in value.items()}
+        return VoltasticsState(
+            last_successful_day=date_values.get("last_successful_day", None),
+            last_run_day=date_values.get("last_run_day", None),
+        )
+
+    @staticmethod
+    def get() -> VoltasticsState:
+        state_from_prefect = variable_value_as(dict[str, str | None], VoltasticsState.variable_key, default={})
+        return VoltasticsState._from_variable(state_from_prefect)
+
+    @staticmethod
+    def persist(value: VoltasticsState) -> None:
+        serializable_state: Dict[str, str | None] = {
+            "last_successful_day": value.last_successful_day.isoformat() if value.last_successful_day else None,
+            "last_run_day": value.last_run_day.isoformat() if value.last_run_day else None,
+        }
+        update_variable(VoltasticsState.variable_key, serializable_state)
 
 
-async def fetch_total_entries(session: ClientSession) -> int:
-    params = _STATIC_PARAMS | {"offset": 0, "limit": 0}
-    async with session.get("/api/searchengagement", headers=_HEADERS, params=params) as response:
-        data = await response.json()
-        return data.get("totalEntries", 0)  # Read totalEntries from the response
+@dataclass
+class Config:
+    api_endpoint_url: str
+    bigquery_table: Dict[str, str]
 
 
-async def fetch_documents(session: ClientSession, offset: int = 0, limit: int = 100) -> list[Any]:
-    params = _STATIC_PARAMS | {"offset": offset, "limit": limit}
-    logger.info(f"Fetching page with offset {offset}")
-    async with session.get("/api/searchengagement", headers=_HEADERS, params=params) as response:
-        data = await response.json()
-        logger.info(f"Fetched page with offset {offset}")
-        return data.get("entries", [])  # Read totalEntries from the response
+_CONFIG: Config = Config(
+    api_endpoint_url=variable_value_as(str, "voltastics_api_endpoint_url"),
+    bigquery_table=variable_value_as(Dict[str, str], "voltastics_crawler_table"),
+)
+
+_HEADERS: Dict[str, str] = {"x-voltastics-token": get_secret_value("voltastics-api-key")}
 
 
-async def fetch_and_process_chunk(session: ClientSession, offset: int, limit: int, queue: Queue[Any]) -> None:
-    async with sem:
-        logger.info(f"Fetching chunk with offset {offset}")
-        documents = await fetch_documents(session, offset, limit)
-        if not documents:  # Stop if the API returns an empty list
-            return
-        # await save_to_disk(documents, "output.json")
-        for document in documents:
-            queue.put_nowait(document)
-
-
-_CONFIG = {
-    "api_endpoint_url": str(variable_value("voltastics_api_endpoint_url")),
-    "chunk_size": 50,
-}
-
-# _SECRETS = {"voltastics_api_key": secret_value("voltastics-api-key")}
-
-_HEADERS = {"x-voltastics-token": secret_value("voltastics-api-key") or "test"}
-
-_STATIC_PARAMS: dict[str, str] = {"city": "ALL_CITIES"}
+# dateutil.parser.parse(datetime.datetime.now().isoformat())
 
 
 @task
-def check_partition_exists() -> bool:
-    dataset = "datalake_development"
-    table = "volunteering_voltastics_raw_playground"
-    today = (date.today()).strftime("%Y-%m-%d")
-    with BigQueryWarehouse.load("bigquery-warehouse") as warehouse:
-        result = warehouse.fetch_one(
-            f"""
-                    SELECT count(*) as c
-                    FROM `{dataset}.{table}`
-                    WHERE _PARTITIONTIME = TIMESTAMP("{today}")
-                """
-        )
-        return result["c"] > 0
+def clear_partition(partition: date = datetime.today()) -> None:
+    project = _CONFIG.bigquery_table["project"]
+    dataset = _CONFIG.bigquery_table["dataset"]
+    table = _CONFIG.bigquery_table["table"]
+
+    delete_partition(project, dataset, table, partition)
 
 
-@task()
-async def async_crawl() -> None:
-    async with ClientSession(
-        base_url=str(_CONFIG["api_endpoint_url"]),
-        raise_for_status=True,
-        connector=TCPConnector(limit=1, limit_per_host=1),
-    ) as session:
-        number_of_total_entries = await fetch_total_entries(session)
-        logger.info(f"{number_of_total_entries} documents available to crawl")
-        offset = 0
-        tasks = []
-        queue: Queue[Any] = asyncio.Queue()
-        bigquery_writer = asyncio.create_task(write_to_bigquery(queue))
-        while offset < number_of_total_entries:
-            # Submit a task to fetch the chunk asynchronously
-            logger.info(f"Scheduling fetch with offset {offset}")
-            async_task = asyncio.create_task(
-                fetch_and_process_chunk(session, offset, cast(int, _CONFIG["chunk_size"]), queue)
-            )
-            tasks.append(async_task)
-            offset += cast(int, _CONFIG["chunk_size"])
+@task
+async def crawl(queue: Queue[Any]) -> None:
+    def add_page_to_queue(page: Any) -> None:
+        if page is None:  # stop signal, last element
+            queue.put_nowait(None)
+        else:
+            for document in page.get("entries"):
+                queue.put_nowait(document)
 
-        # Wait for all tasks to complete
-        await asyncio.gather(*tasks)
-        await queue.put(None)  # stop signal
-        await bigquery_writer
-        # queue is filled with documents, right?
+    crawler = RestCrawler(
+        str(_CONFIG.api_endpoint_url),
+        lambda index_and_size: {
+            "offset": index_and_size[0] * index_and_size[1],
+            "limit": index_and_size[1],
+            "city": "ALL_CITIES",
+        },
+        lambda page: page.get("totalEntries", 0),
+        add_page_to_queue,
+        headers=_HEADERS,
+    )
+
+    await crawler.crawl()
 
 
-async def write_to_bigquery(queue: Queue[Any]) -> None:
+@task
+async def write_to_bigquery(queue: Queue[Any], batch_size: int = 1000) -> None:
+    async def get_document_from_queue() -> Any:
+        result = await queue.get()
+        queue.task_done()
+        return result
+
+    project = _CONFIG.bigquery_table["project"]
+    dataset = _CONFIG.bigquery_table["dataset"]
+    table = _CONFIG.bigquery_table["table"]
+
+    # await stream_to_bigquery(project, dataset, table, get_document=get_document_from_queue)
     while True:
         finished = False
         documents = []
-        for _ in range(1000):  # Batch size for streaming to BigQuery
+
+        for _ in range(batch_size):  # Batch size for streaming to BigQuery
             document = await queue.get()
-            if document is None:  # Stop signal
+            if document == None:  # Stop signal
                 finished = True
                 break
             documents.append(document)
-            queue.task_done()
 
         if documents:
-            try:
-                result = bigquery_insert_stream(
-                    dataset="datalake_development",
-                    table="volunteering_voltastics_raw_playground",
-                    records=documents,
-                    gcp_credentials=GcpCredentials(project="holi-shared"),
-                )
-                logger.info(f"Inserted {len(documents)} documents into BigQuery")
-            except Exception as e:
-                logger.error(f"Failed to write documents to BigQuery: {e}")
-                break
+            insert(project, dataset, table, documents)
 
+            logger.info(f"Inserted {len(documents)} documents into BigQuery")
         if finished:  # Stop signal
-            break
+            return
 
 
-@flow()
+async def async_crawl() -> None:
+    # documents are transported from the crawler to the writer via this queue
+    queue: Queue[Any] = asyncio.Queue()
+    tasks = [asyncio.create_task(crawl(queue)), asyncio.create_task(write_to_bigquery(queue))]
+    try:
+        await asyncio.gather(*tasks)
+    except Exception as e:
+        logger.exception("gather hit exception")
+        for t in tasks:
+            t.cancel()
+            raise e
+
+
+@flow(
+    on_failure=[functools.partial(alert, vars(_CONFIG))],
+    on_crashed=[functools.partial(alert, vars(_CONFIG))],
+    on_cancellation=[functools.partial(alert, vars(_CONFIG))],
+)
 def crawl_voltastics() -> None:
-    if check_partition_exists() and False:
-        logger.info("Partition already exists, skipping crawling")
+    initial_state = VoltasticsState.get()
+    today = datetime.today().date()
+    if initial_state.last_successful_day == today:
+        logger.info("Crawling already ran successfully for today, skipping run.")
     else:
-        logger.info("Partition does not yet exist, starting crawling")
+        logger.info("Crawling did not run successfully for today, starting run.")
+
+        starting_state = copy(initial_state)
+        starting_state.last_run_day = today
+        needs_cleanup = initial_state.last_run_day == today
+        if needs_cleanup:
+            logger.info("Unfinished run happened for today, clearing today's partition .")
+            clear_partition(today)
+        else:
+            VoltasticsState.persist(starting_state)
+
         asyncio.run(async_crawl())
+
+        # persist_state(copy.replace(starting_state, {"last_successful_day": today}))  # type: ignore[attr-defined]
         logger.info("finished crawling")
 
 

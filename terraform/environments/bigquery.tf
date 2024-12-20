@@ -15,6 +15,7 @@ resource "google_bigquery_table" "volunteering_voltastics_raw" {
   dataset_id = local.dataset_id_datalake
   table_id   = "volunteering_voltastics_raw_playground"
 
+
   time_partitioning {
     type          = "DAY"
     expiration_ms = 2592000000 # 30 days
