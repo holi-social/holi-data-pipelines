@@ -1,8 +1,7 @@
-import itertools
 import json
 from datetime import date
 from datetime import datetime
-from typing import Iterable, Generator, cast, Tuple
+from typing import cast, Tuple
 from typing import List, Dict, Any, Optional
 
 from prefect import task, State
@@ -11,7 +10,7 @@ from prefect.types import StrictVariableValue
 from prefect.variables import Variable
 
 from src.common.extractors.bq_extractor import extract_changes_in_partitions
-from src.common.loaders.typesense_loader import upsert_documents_in_batches
+from src.common.loaders.typesense_loader import upsert_typesense_documents
 from src.common.logging.PipelineLogger import PipelineLogger
 from src.common.typesense_client import TypesenseClient
 from src.common.variables import variable_value, secret_value
@@ -43,30 +42,6 @@ def transform_data(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     transformed = [transform_row(row) for row in rows]
     logger.info(f"Transformed {len(rows)} rows of data")
     return transformed
-
-
-@task
-def upsert_typesense_documents(
-    typesense_client: TypesenseClient, typesense_collection_name: str, new_or_updated_documents: List[Dict[str, Any]]
-) -> bool:
-    ingestion_succeeded = True
-    for docs_batch, batch_count in batches(new_or_updated_documents, 100):
-        failed_documents, success_count = upsert_documents_in_batches(
-            client=typesense_client.client,
-            docs=docs_batch,
-            batch_num=batch_count,
-            index_name=typesense_collection_name,
-        )
-        if failed_documents:
-            ingestion_succeeded = False
-            logger.error(
-                f"Batch {batch_count} processed with failures: {len(failed_documents)} failed items out of"
-                f" {success_count + len(failed_documents)}. Failed items in batch {batch_count}: {failed_documents}"
-            )
-        else:
-            logger.info(f"Batch {batch_count} successfully upserted {success_count} documents.")
-            logger.debug(f"Batch {batch_count} upserted document IDs: {[doc["id"] for doc in docs_batch]}")
-    return ingestion_succeeded
 
 
 @task
@@ -116,14 +91,6 @@ def validate_collection(typesense_client: TypesenseClient, collection_name: str)
         return Failed(message=f"No documents found for {collection_name}")
 
     return Completed()
-
-
-def batches[T](iterable: Iterable[T], batch_size: int = 1) -> Generator[Tuple[Iterable[T], int], None, None]:
-    """Generator function yields batches of the original iterable in sizes of batch_size"""
-    batch_number: int = 1
-    for batch in itertools.batched(iterable, batch_size):
-        yield batch, batch_number
-        batch_number += 1
 
 
 def extract_collection_name_from_schema(schema_path: str) -> str:
@@ -216,7 +183,7 @@ def diff_ingest(
 
     # Step 4: Upsert documents into Typesense
     upsert_succeeded = upsert_typesense_documents(
-        typesense_client, typesense_collection_name, new_or_updated_documents
+        typesense_client, logger, typesense_collection_name, new_or_updated_documents
     )
 
     # Step 5: Delete outdated documents from Typesense
