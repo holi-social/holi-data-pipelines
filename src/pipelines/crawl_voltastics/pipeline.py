@@ -120,7 +120,7 @@ async def write_to_bigquery(queue: Queue[Any], batch_size: int = 1000, stop_page
             documents.append(document)
 
         if documents:
-            insert(project, dataset, table, documents)
+            await insert(project, dataset, table, documents)
 
             logger.info(f"Inserted {len(documents)} documents into BigQuery")
         if finished:  # Stop signal
@@ -145,10 +145,10 @@ async def async_crawl() -> None:
     on_crashed=[functools.partial(alert, vars(_CONFIG))],
     on_cancellation=[functools.partial(alert, vars(_CONFIG))],
 )
-def crawl_voltastics() -> None:
+def crawl_voltastics(force: bool = False) -> None:
     initial_state = VoltasticsState.get()
     today = datetime.today().date()
-    if initial_state.last_successful_day == today:
+    if initial_state.last_successful_day == today and not force:
         logger.info("Crawling already ran successfully for today, skipping run.")
     else:
         logger.info("Crawling did not run successfully for today, starting run.")
@@ -171,4 +171,4 @@ def crawl_voltastics() -> None:
 
 
 if __name__ == "__main__":
-    crawl_voltastics()
+    crawl_voltastics(True)

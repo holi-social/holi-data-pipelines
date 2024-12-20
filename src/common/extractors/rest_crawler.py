@@ -55,6 +55,7 @@ class RestCrawler:
 
     async def crawl(self) -> None:
         async with ClientSession(raise_for_status=True) as session:
+            logger.info(f"Starting to crawl '{self.url}'")
             number_of_total_entries = await self._fetch_total_entries(session)
             logger.info(f"{number_of_total_entries} documents available to crawl")
             offset = 0

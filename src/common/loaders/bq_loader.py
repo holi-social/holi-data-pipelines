@@ -35,9 +35,9 @@ async def stream_to_bigquery(
             return
 
 
-def insert(project: str, dataset: str, table: str, documents: List[Dict[str, Any]]) -> None:
-    with BigQueryWarehouse.load("bigquery-warehouse") as warehouse:
-        warehouse.execute_many(
+async def insert(project: str, dataset: str, table: str, documents: List[Dict[str, Any]]) -> None:
+    with await BigQueryWarehouse.load("bigquery-warehouse") as warehouse:
+        await warehouse.execute_many(
             f"INSERT into `{project}.{dataset}.{table}` (longitude, imageOrga, location, title, source, hashTags, description, "
             f"image, kink, orga, id, latitide, uses) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
             seq_of_parameters=documents,
