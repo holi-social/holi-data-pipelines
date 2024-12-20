@@ -4,11 +4,9 @@ from typing import Iterable, Dict, Tuple, List, Any
 from prefect import task
 from typesense.client import Client
 
-from src.common.logging.PipelineLogger import PipelineLogger
 from src.common.typesense_client import TypesenseClient
 from src.pipelines.volunteering_to_typesense.tasks import batches, logger
 
-logger = PipelineLogger(__name__)
 
 def upsert_documents_in_batches(
     client: Client, docs: Iterable[Dict[str, object]], batch_num: int, index_name: str
@@ -36,9 +34,7 @@ def upsert_documents_in_batches(
     batch_size = 3
 
     response = client.collections[index_name].documents.import_(
-        documents=docs,
-        params={"action": "upsert", "dirty_values": "coerce_or_reject"},
-        batch_size=batch_size
+        documents=docs, params={"action": "upsert", "dirty_values": "coerce_or_reject"}, batch_size=batch_size
     )
 
     # Parse and filter results
@@ -50,14 +46,16 @@ def upsert_documents_in_batches(
 
 
 @task
-def upsert_typesense_documents(typesense_client: TypesenseClient, typesense_collection_name: str, new_or_updated_documents: List[Dict[str, Any]]) -> bool:
+def upsert_typesense_documents(
+    typesense_client: TypesenseClient, typesense_collection_name: str, new_or_updated_documents: List[Dict[str, Any]]
+) -> bool:
     ingestion_succeeded = True
     for docs_batch, batch_count in batches(new_or_updated_documents, 100):
         failed_documents, success_count = upsert_documents_in_batches(
             client=typesense_client.client,
             docs=docs_batch,
             batch_num=batch_count,
-            index_name=typesense_collection_name
+            index_name=typesense_collection_name,
         )
         if failed_documents:
             ingestion_succeeded = False

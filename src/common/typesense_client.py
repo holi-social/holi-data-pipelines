@@ -1,5 +1,6 @@
 import json
 from typing import Dict
+
 from typesense.client import Client
 from typesense.exceptions import ObjectNotFound
 

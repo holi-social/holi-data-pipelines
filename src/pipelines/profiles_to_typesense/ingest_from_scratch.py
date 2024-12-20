@@ -14,6 +14,7 @@ logger = PipelineLogger(__name__)
 UserRow = dict[str, str | None]
 UserDoc = dict[str, Any | None]
 
+
 @task
 def load_users() -> list[UserRow]:
     return extract_data_from_bigquery("""
@@ -35,6 +36,7 @@ def load_users() -> list[UserRow]:
           user.is_deleted=false
     """)
 
+
 def user_to_doc(user: UserRow) -> UserDoc:
     full_name = f"{user.get("first_name")} {user.get('last_name')}"
     return {
@@ -47,24 +49,27 @@ def user_to_doc(user: UserRow) -> UserDoc:
         "location": user.get("location"),
         "location_lat_lng": None,
         "image_url": user.get("avatar"),
-        "link_locators": {
-            "profile": user.get("user_id")
-        },
+        "link_locators": {"profile": user.get("user_id")},
     }
+
 
 @task
 def users_to_typesense_docs(users: list[UserRow]) -> list[UserDoc]:
     return [user_to_doc(user) for user in users]
 
+
 @flow
 def profiles_to_typesense_ingest_from_scratch() -> State | None:
-    config = cast(Dict[str, str], {
-        "api_key": secret_value("typesense-admin-api-key"),
-        "host": variable_value("typesense_host"),
-        "port": variable_value("typesense_port"),
-        "protocol": variable_value("typesense_protocol"),
-        "collection": variable_value("typesense_collection"),
-    })
+    config = cast(
+        Dict[str, str],
+        {
+            "api_key": secret_value("typesense-admin-api-key"),
+            "host": variable_value("typesense_host"),
+            "port": variable_value("typesense_port"),
+            "protocol": variable_value("typesense_protocol"),
+            "collection": variable_value("typesense_collection"),
+        },
+    )
     typesense_client = TypesenseClient(config)
 
     users = load_users()
@@ -72,7 +77,7 @@ def profiles_to_typesense_ingest_from_scratch() -> State | None:
 
     user_documents = users_to_typesense_docs(users)
     logger.debug("Transformed %s documents", len(user_documents))
-    
+
     upsert_succeeded = upsert_typesense_documents(typesense_client, config["collection"], user_documents)
     if not upsert_succeeded:
         return Failed(message="Some documents failed ingestion. Please see error log.")

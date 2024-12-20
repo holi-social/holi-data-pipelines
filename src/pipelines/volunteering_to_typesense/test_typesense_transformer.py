@@ -1,4 +1,5 @@
 import json
+from typing import Any
 
 import pytest
 from faker import Faker
@@ -7,9 +8,11 @@ from src.pipelines.volunteering_to_typesense.typesense_transformer import transf
 
 fake = Faker()
 
+RowFixture = dict[str, Any]
+
 
 @pytest.fixture
-def row():
+def row() -> RowFixture:
     """Generates a random row with all fields set"""
     return {
         "id": fake.uuid4(),
@@ -23,7 +26,7 @@ def row():
     }
 
 
-def test_german_all_fields(row):
+def test_german_all_fields(row: RowFixture) -> None:
     row["title"] = "Dies ist ein deutscher Titel"
     row["description"] = "Dies ist eine deutsche Beschreibung"
 
@@ -39,7 +42,7 @@ def test_german_all_fields(row):
     assert result["link_locators"] == {"volunteering": row["id"]}
 
 
-def test_english_title_and_description(row):
+def test_english_title_and_description(row: RowFixture) -> None:
     row["title"] = "This is an english title"
     row["description"] = "This is an english description"
 
@@ -51,7 +54,7 @@ def test_english_title_and_description(row):
     assert result["description_en"] == row["description"]
 
 
-def test_english_title_german_description(row):
+def test_english_title_german_description(row: RowFixture) -> None:
     row["title"] = "This is an english title"
     row["description"] = "Dies ist eine deutsche Beschreibung"
 
@@ -63,7 +66,7 @@ def test_english_title_german_description(row):
     assert result["description_en"] is None
 
 
-def test_german_title_english_description(row):
+def test_german_title_english_description(row: RowFixture) -> None:
     row["title"] = "Dies ist ein deutscher Titel"
     row["description"] = "This is an english description"
 
@@ -76,7 +79,7 @@ def test_german_title_english_description(row):
 
 
 # noinspection PyTypedDict
-def test_only_lat_lng_if_both_fields_set(row):
+def test_only_lat_lng_if_both_fields_set(row: RowFixture) -> None:
     result = transform_row(row)
     assert result["location_lat_lng"] == [row["latitude"], row["longitude"]]
 
@@ -92,12 +95,12 @@ def test_only_lat_lng_if_both_fields_set(row):
     assert result["location_lat_lng"] is None
 
 
-def test_serializability_of_row(row):
+def test_serializability_of_row(row: RowFixture) -> None:
     json.dumps(transform_row(row))
 
 
 # noinspection PyTypedDict
-def test_id_mandatory(row):
+def test_id_mandatory(row: RowFixture) -> None:
     row["id"] = None
 
     with pytest.raises(ValueError) as e:
@@ -107,7 +110,7 @@ def test_id_mandatory(row):
 
 
 # noinspection PyTypedDict
-def test_returns_none_for_invalid_lat(row):
+def test_returns_none_for_invalid_lat(row: RowFixture) -> None:
     row["latitude"] = ""
 
     result = transform_row(row)
@@ -116,7 +119,7 @@ def test_returns_none_for_invalid_lat(row):
 
 
 # noinspection PyTypedDict
-def test_returns_none_for_invalid_lng(row):
+def test_returns_none_for_invalid_lng(row: RowFixture) -> None:
     row["longitude"] = ""
 
     result = transform_row(row)
@@ -124,8 +127,7 @@ def test_returns_none_for_invalid_lng(row):
     assert result["location_lat_lng"] is None
 
 
-def test_tolerates_missing_values(row):
-
+def test_tolerates_missing_values(row: RowFixture) -> None:
     row_with_missing_values = {
         "id": row["id"],
         "title": None,
@@ -151,7 +153,7 @@ def test_tolerates_missing_values(row):
     assert result["link_locators"] == {"volunteering": row_with_missing_values["id"]}
 
 
-def test_falls_back_to_german_if_language_detection_on_title_fails(row):
+def test_falls_back_to_german_if_language_detection_on_title_fails(row: RowFixture) -> None:
     row["title"] = "lkajdclvoju9p3845798)&"
 
     result = transform_row(row)
@@ -159,7 +161,7 @@ def test_falls_back_to_german_if_language_detection_on_title_fails(row):
     assert result["title_de"] == row["title"]
 
 
-def test_falls_back_to_german_if_language_detection_on_description_fails(row):
+def test_falls_back_to_german_if_language_detection_on_description_fails(row: RowFixture) -> None:
     row["description"] = "lkajdclvoju9p3845798)&"
 
     result = transform_row(row)
@@ -167,7 +169,7 @@ def test_falls_back_to_german_if_language_detection_on_description_fails(row):
     assert result["description_de"] == row["description"]
 
 
-def test_falls_back_to_german_if_language_is_other(row):
+def test_falls_back_to_german_if_language_is_other(row: RowFixture) -> None:
     row["description"] = (
         "La ville de Paris, capitale de la France, est un joyau culturel qui fascine des millions de visiteurs chaque"
         " année."
