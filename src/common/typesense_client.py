@@ -1,12 +1,12 @@
 import json
 from typing import Dict
 
-import prefect
 from typesense.client import Client
 from typesense.exceptions import ObjectNotFound
 
-# Initialize logging
-logger = prefect.logging.get_logger()
+from src.common.logging.PipelineLogger import PipelineLogger
+
+logger = PipelineLogger(__name__)
 
 
 class TypesenseClient:

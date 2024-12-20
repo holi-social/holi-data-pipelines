@@ -1,11 +1,11 @@
 from typing import Dict, Any, Optional
 
-import prefect.logging
 from prefect_gcp import BigQueryWarehouse
 from datetime import datetime, date
 from src.common.constants import VIEW_PARTITION_TIME_COLUMN_NAME
+from src.common.logging.PipelineLogger import PipelineLogger
 
-logger = prefect.logging.get_logger()
+logger = PipelineLogger(__name__)
 
 
 def extract_data_from_bigquery(

@@ -1,15 +1,16 @@
+import json
 from typing import Any
 
-from prefect.client.schemas.objects import FlowRun, State, StateType
 from prefect import runtime
-from prefect.flows import Flow
 from prefect.blocks.notifications import CustomWebhookNotificationBlock
+from prefect.client.schemas.objects import FlowRun, State, StateType
+from prefect.flows import Flow
 from prefect.types import StrictVariableValue
 from typing_extensions import assert_never
-import json
-import prefect
 
-logger = prefect.logging.get_logger()
+from src.common.logging.PipelineLogger import PipelineLogger
+
+logger = PipelineLogger(__name__)
 
 
 def _compile_context_info(context: dict[str, StrictVariableValue], run: FlowRun, state: State) -> str:
