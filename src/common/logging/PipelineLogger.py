@@ -1,11 +1,12 @@
 import logging
+from logging import Logger
 from typing import Union
 
 import prefect.logging
 
 
 # ruff: noqa: N999 false-positive
-class PipelineLogger:
+class PipelineLogger(Logger):
     def __init__(self, logger_name: str, prefect_level_threshold: Union[str, int] = "INFO"):
         """
         @param logger_name: name of the logger
@@ -14,6 +15,7 @@ class PipelineLogger:
         self._std_logger = logging.getLogger(logger_name)
         self._prefect_logger = prefect.logging.get_logger(logger_name)
         self._prefect_logger.setLevel(prefect_level_threshold)
+        super().__init__(logger_name)
 
     def debug(self, msg: str, *args, **kwargs):  # type: ignore
         self._std_logger.debug(msg, *args, **kwargs)

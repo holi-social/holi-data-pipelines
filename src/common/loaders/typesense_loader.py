@@ -1,21 +1,31 @@
+import itertools
 import json
-from typing import Iterable, Dict, Tuple, List, Any
+from logging import Logger
+from typing import Iterable, Dict, Tuple, List, Any, Generator
 
 from prefect import task
 from typesense.client import Client
 
 from src.common.typesense_client import TypesenseClient
-from src.pipelines.volunteering_to_typesense.tasks import batches, logger
+
+
+def batches[T](iterable: Iterable[T], batch_size: int = 1) -> Generator[Tuple[Iterable[T], int], None, None]:
+    """Generator function yields batches of the original iterable in sizes of batch_size"""
+    batch_number: int = 1
+    for batch in itertools.batched(iterable, batch_size):
+        yield batch, batch_number
+        batch_number += 1
 
 
 def upsert_documents_in_batches(
-    client: Client, docs: Iterable[Dict[str, object]], batch_num: int, index_name: str
+    client: Client, logger: Logger, docs: Iterable[Dict[str, object]], batch_num: int, index_name: str
 ) -> Tuple[List[Dict[str, object]], int]:
     """
     Upsert a batch of documents into Typesense.
 
     Args:
         client (Client): The Typesense client instance used to interact with the Typesense API.
+        logger (Logger): The logger instance
         docs (List[Dict[str, object]]): A list of dictionaries representing documents to be indexed.
                                         Each document is expected to have key-value pairs where keys are strings
                                         and values can be of any type (e.g., string, number, etc.).
@@ -47,12 +57,16 @@ def upsert_documents_in_batches(
 
 @task
 def upsert_typesense_documents(
-    typesense_client: TypesenseClient, typesense_collection_name: str, new_or_updated_documents: List[Dict[str, Any]]
+    typesense_client: TypesenseClient,
+    logger: Logger,
+    typesense_collection_name: str,
+    new_or_updated_documents: List[Dict[str, Any]],
 ) -> bool:
     ingestion_succeeded = True
     for docs_batch, batch_count in batches(new_or_updated_documents, 100):
         failed_documents, success_count = upsert_documents_in_batches(
             client=typesense_client.client,
+            logger=logger,
             docs=docs_batch,
             batch_num=batch_count,
             index_name=typesense_collection_name,

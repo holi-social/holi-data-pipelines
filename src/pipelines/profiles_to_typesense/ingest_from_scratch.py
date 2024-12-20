@@ -78,7 +78,7 @@ def profiles_to_typesense_ingest_from_scratch() -> State | None:
     user_documents = users_to_typesense_docs(users)
     logger.debug("Transformed %s documents", len(user_documents))
 
-    upsert_succeeded = upsert_typesense_documents(typesense_client, config["collection"], user_documents)
+    upsert_succeeded = upsert_typesense_documents(typesense_client, logger, config["collection"], user_documents)
     if not upsert_succeeded:
         return Failed(message="Some documents failed ingestion. Please see error log.")
     else:

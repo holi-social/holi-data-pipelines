@@ -1,8 +1,7 @@
-import itertools
 import json
 from datetime import date
 from datetime import datetime
-from typing import Iterable, Generator, cast, Tuple
+from typing import cast, Tuple
 from typing import List, Dict, Any, Optional
 
 from prefect import task, State
@@ -92,14 +91,6 @@ def validate_collection(typesense_client: TypesenseClient, collection_name: str)
         return Failed(message=f"No documents found for {collection_name}")
 
     return Completed()
-
-
-def batches[T](iterable: Iterable[T], batch_size: int = 1) -> Generator[Tuple[Iterable[T], int], None, None]:
-    """Generator function yields batches of the original iterable in sizes of batch_size"""
-    batch_number: int = 1
-    for batch in itertools.batched(iterable, batch_size):
-        yield batch, batch_number
-        batch_number += 1
 
 
 def extract_collection_name_from_schema(schema_path: str) -> str:
@@ -192,7 +183,7 @@ def diff_ingest(
 
     # Step 4: Upsert documents into Typesense
     upsert_succeeded = upsert_typesense_documents(
-        typesense_client, typesense_collection_name, new_or_updated_documents
+        typesense_client, logger, typesense_collection_name, new_or_updated_documents
     )
 
     # Step 5: Delete outdated documents from Typesense
