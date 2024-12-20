@@ -84,7 +84,7 @@ def secret_value(key: str, default: Optional[str] = None) -> Optional[str]:
             raise ValueError(
                 f"Secret '{key}' can't be found, neither as prefect variable, nor as environment variable (key"
                 f" '{_env_key_from_prefect_key(key)}')"
-            )
+            ) from None
         else:
             return json.loads(environment_var_or_default)
 

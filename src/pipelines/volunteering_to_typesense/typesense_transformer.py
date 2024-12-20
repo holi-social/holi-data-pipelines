@@ -1,11 +1,12 @@
-from typing import Dict, Optional, Any
-from decimal import Decimal
 import decimal
+from decimal import Decimal
+from typing import Dict, Optional, Any
 
-import prefect
 from langdetect import detect, LangDetectException
 
-logger = prefect.logging.get_logger()
+from src.common.logging.PipelineLogger import PipelineLogger
+
+logger = PipelineLogger(__name__)
 
 
 def _key_for_lang(key: str, lang: str) -> str:

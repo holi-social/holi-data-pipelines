@@ -1,15 +1,16 @@
+import json
 from typing import Callable, Any, Dict, Mapping
 
-from prefect.client.schemas.objects import FlowRun, State, StateType
 from prefect import runtime
-from prefect.flows import Flow
 from prefect.blocks.notifications import CustomWebhookNotificationBlock
+from prefect.client.schemas.objects import FlowRun, State, StateType
+from prefect.flows import Flow
 from prefect.types import StrictVariableValue
 from typing_extensions import assert_never
-import json
-import prefect
 
-logger = prefect.logging.get_logger()
+from src.common.logging.PipelineLogger import PipelineLogger
+
+logger = PipelineLogger(__name__)
 
 
 def _compile_context_info(context: Mapping[str, StrictVariableValue], run: FlowRun, state: State) -> str:
@@ -39,7 +40,7 @@ def _compile_context_info(context: Mapping[str, StrictVariableValue], run: FlowR
         or run.estimated_run_time
         or run.estimated_start_time_delta
     ):
-        context_info.append(f"Temporal information:\n")
+        context_info.append("Temporal information:\n")
         if run.expected_start_time:
             context_info.append(f"\tExpected start time `{run.expected_start_time}`\n")
         if run.next_scheduled_start_time:

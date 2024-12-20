@@ -1,5 +1,5 @@
 {
-    "name": "production_all",
+    "name": "holi_search_production",
     "enable_nested_fields": true,
     "fields": [
         {"name": "id", "type": "string"},
