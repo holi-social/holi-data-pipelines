@@ -21,17 +21,20 @@ logger = PipelineLogger(__name__)
 
 
 @task
-def extract_changed_records(table_name: str, last_complete_ingestion_date: Optional[date], latest_partition_date: date) -> List[Dict[str, Any]]:
+def extract_changed_records(
+    table_name: str, last_complete_ingestion_date: Optional[date], latest_partition_date: date
+) -> List[Dict[str, Any]]:
     """Extract changed data from BigQuery."""
-    logger.info(f"Extracting changed records (table_name={table_name}, last_complete_ingestion_date={last_complete_ingestion_date}, latest_partition_date={latest_partition_date}).")
+    logger.info(
+        f"Extracting changed records (table_name={table_name}, last_complete_ingestion_date={last_complete_ingestion_date}, latest_partition_date={latest_partition_date})."
+    )
     data = extract_changes_in_partitions(
         table_name=table_name,
         new_partition_date=latest_partition_date,
-        old_partition_date=last_complete_ingestion_date
+        old_partition_date=last_complete_ingestion_date,
     )
     logger.info(f"Extracted {len(data)} changed records")
     return data
-
 
 
 @task
@@ -43,14 +46,16 @@ def transform_data(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
 
 @task
-def upsert_typesense_documents(typesense_client: TypesenseClient, typesense_collection_name: str, new_or_updated_documents: List[Dict[str, Any]]) -> bool:
+def upsert_typesense_documents(
+    typesense_client: TypesenseClient, typesense_collection_name: str, new_or_updated_documents: List[Dict[str, Any]]
+) -> bool:
     ingestion_succeeded = True
     for docs_batch, batch_count in batches(new_or_updated_documents, 100):
         failed_documents, success_count = upsert_documents_in_batches(
             client=typesense_client.client,
             docs=docs_batch,
             batch_num=batch_count,
-            index_name=typesense_collection_name
+            index_name=typesense_collection_name,
         )
         if failed_documents:
             ingestion_succeeded = False
@@ -65,7 +70,9 @@ def upsert_typesense_documents(typesense_client: TypesenseClient, typesense_coll
 
 
 @task
-def delete_typesense_documents(typesense_client: TypesenseClient, typesense_collection_name: str, document_ids_to_delete: list[str]) -> bool:
+def delete_typesense_documents(
+    typesense_client: TypesenseClient, typesense_collection_name: str, document_ids_to_delete: list[str]
+) -> bool:
     """
     Deletes documents with the given IDs from the Typesense collection.
 
@@ -84,8 +91,14 @@ def delete_typesense_documents(typesense_client: TypesenseClient, typesense_coll
         logger.info(f"Deleted {len(document_ids_to_delete)} documents from Typesense.")
         return True
     except Exception as e:
-        logger.error(f"Error deleting {len(document_ids_to_delete)} documents from Typesense: " + str(e) + "\nFailed document ids: " + ','.join(document_ids_to_delete))
+        logger.error(
+            f"Error deleting {len(document_ids_to_delete)} documents from Typesense: "
+            + str(e)
+            + "\nFailed document ids: "
+            + ",".join(document_ids_to_delete)
+        )
         return False
+
 
 @task
 def validate_collection(typesense_client: TypesenseClient, collection_name: str) -> State:
@@ -104,12 +117,14 @@ def validate_collection(typesense_client: TypesenseClient, collection_name: str)
 
     return Completed()
 
+
 def batches[T](iterable: Iterable[T], batch_size: int = 1) -> Generator[Tuple[Iterable[T], int], None, None]:
     """Generator function yields batches of the original iterable in sizes of batch_size"""
     batch_number: int = 1
     for batch in itertools.batched(iterable, batch_size):
         yield batch, batch_number
         batch_number += 1
+
 
 def extract_collection_name_from_schema(schema_path: str) -> str:
     with open(schema_path, "r") as file:
@@ -159,6 +174,7 @@ def store_last_complete_ingestion_timestamp(timestamp: datetime) -> None:
     state["last_complete_ingestion_timestamp"] = timestamp.isoformat()
     Variable.set("volunteering_to_typesense_state", state, overwrite=True)
 
+
 @task
 def diff_ingest(
     config: dict[str, StrictVariableValue],
@@ -192,12 +208,8 @@ def diff_ingest(
     )
 
     # Step 2: Segregate records by change type
-    new_or_updated_records = [
-        record for record in changed_records if record["change_type"] == "new_or_updated"
-    ]
-    document_ids_to_delete = [
-        record["id"] for record in changed_records if record["change_type"] == "deleted"
-    ]
+    new_or_updated_records = [record for record in changed_records if record["change_type"] == "new_or_updated"]
+    document_ids_to_delete = [record["id"] for record in changed_records if record["change_type"] == "deleted"]
 
     # Step 3: Transform new or updated records
     new_or_updated_documents = transform_data(new_or_updated_records)

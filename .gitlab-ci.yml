@@ -138,6 +138,7 @@ validate:
   cache: !reference [.pip_cache_readonly]
   script:
     - source venv/bin/activate
+    - ruff check
     - mypy src
     - pytest .
 

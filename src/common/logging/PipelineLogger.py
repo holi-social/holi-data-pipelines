@@ -4,6 +4,7 @@ from typing import Union
 import prefect.logging
 
 
+# ruff: noqa: N999 false-positive
 class PipelineLogger:
     def __init__(self, logger_name: str, prefect_level_threshold: Union[str, int] = "INFO"):
         """
