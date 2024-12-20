@@ -2,6 +2,7 @@ from typing import Any, cast, Dict
 
 from prefect import flow, task
 from prefect.states import Failed, State, Completed
+from prefect.cache_policies import NONE
 
 from src.common.extractors.bq_extractor import extract_data_from_bigquery
 from src.common.loaders.typesense_loader import upsert_typesense_documents
@@ -15,7 +16,7 @@ SpaceRow = dict[str, str | None]
 SpaceDoc = dict[str, Any | None]
 
 
-@task
+@task(cache_policy=NONE)
 def load_spaces() -> list[SpaceRow]:
     return extract_data_from_bigquery("""
         SELECT
@@ -48,7 +49,7 @@ def space_to_doc(space: SpaceRow) -> SpaceDoc:
     }
 
 
-@task
+@task(cache_policy=NONE)
 def spaces_to_typesense_docs(spaces: list[SpaceRow]) -> list[SpaceDoc]:
     return [space_to_doc(space) for space in spaces]
 
@@ -68,10 +69,10 @@ def spaces_to_typesense_ingest_from_scratch() -> State | None:
     typesense_client = TypesenseClient(config)
 
     spaces = load_spaces()
-    logger.debug("Found %s spaces", len(spaces))
+    logger.info("Found %s spaces", len(spaces))
 
     space_documents = spaces_to_typesense_docs(spaces)
-    logger.debug("Transformed %s documents", len(space_documents))
+    logger.info("Transformed %s documents", len(space_documents))
 
     upsert_succeeded = upsert_typesense_documents(typesense_client, logger, config["collection"], space_documents)
     if not upsert_succeeded:

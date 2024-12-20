@@ -13,7 +13,7 @@ class PipelineLogger(Logger):
         @param prefect_level_threshold: threshold of the level from which logs also go to prefect
         """
         self._std_logger = logging.getLogger(logger_name)
-        self._prefect_logger = prefect.logging.get_logger(logger_name)
+        self._prefect_logger = prefect.logging.get_run_logger()
         self._prefect_logger.setLevel(prefect_level_threshold)
         super().__init__(logger_name)
 

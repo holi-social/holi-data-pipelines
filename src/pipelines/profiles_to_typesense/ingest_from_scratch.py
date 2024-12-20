@@ -2,6 +2,7 @@ from typing import Any, cast, Dict
 
 from prefect import flow, task
 from prefect.states import Failed, State, Completed
+from prefect.cache_policies import NONE
 
 from src.common.extractors.bq_extractor import extract_data_from_bigquery
 from src.common.loaders.typesense_loader import upsert_typesense_documents
@@ -15,7 +16,7 @@ UserRow = dict[str, str | None]
 UserDoc = dict[str, Any | None]
 
 
-@task
+@task(cache_policy=NONE)
 def load_users() -> list[UserRow]:
     return extract_data_from_bigquery("""
         SELECT
@@ -53,7 +54,7 @@ def user_to_doc(user: UserRow) -> UserDoc:
     }
 
 
-@task
+@task(cache_policy=NONE)
 def users_to_typesense_docs(users: list[UserRow]) -> list[UserDoc]:
     return [user_to_doc(user) for user in users]
 
@@ -73,10 +74,10 @@ def profiles_to_typesense_ingest_from_scratch() -> State | None:
     typesense_client = TypesenseClient(config)
 
     users = load_users()
-    logger.debug("Found %s users", len(users))
+    logger.info("Found %s users", len(users))
 
     user_documents = users_to_typesense_docs(users)
-    logger.debug("Transformed %s documents", len(user_documents))
+    logger.info("Transformed %s documents", len(user_documents))
 
     upsert_succeeded = upsert_typesense_documents(typesense_client, logger, config["collection"], user_documents)
     if not upsert_succeeded:
