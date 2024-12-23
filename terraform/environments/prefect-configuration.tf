@@ -37,15 +37,51 @@ resource "prefect_variable" "volunteering_with_classification" {
   value = local.environment == "production" ? "holi-shared.datapool_production.volunteering_voltastics_with_classification_enriched" : "holi-shared.datapool_development.volunteering_voltastics_with_classification_enriched"
 }
 
+# crawler / voltastics
 resource "prefect_variable" "voltastics_crawler_table" {
-  name  = "voltastics_crawler_table"
+  name = "voltastics_crawler_table"
   value = {
     project = local.default_project
     dataset = local.dataset_datalake
-    table = "volunteering_voltastics_raw_playground"
+    table   = google_bigquery_table.volunteering_voltastics_raw.table_id
   }
 }
 
+resource "prefect_variable" "voltastics_api_url" {
+  name  = "voltastics_api_url"
+  value = "https://backend.voltastics.de/api/searchengagement"
+}
+
+resource "prefect_block" "voltastics_api_key" {
+  name      = "voltastics-api-key"
+  type_slug = "gcpsecret"
+
+  data = jsonencode({
+    "gcp_credentials" = {
+      "project" = "holi-shared"
+    }
+    "secret_name"    = "VOLUNTEERING_VOLTASTICS_API_KEY"
+    "secret_version" = "latest"
+  })
+  depends_on = [null_resource.prefect_server_available]
+}
+
+# crawler / betterplace
+resource "prefect_variable" "betterplace_crawler_table" {
+  name = "betterplace_crawler_table"
+  value = {
+    project = local.default_project
+    dataset = local.dataset_datalake
+    table   = google_bigquery_table.donations_betterplace_raw.table_id
+  }
+}
+
+resource "prefect_variable" "betterplace_api_url" {
+  name  = "betterplace_api_url"
+  value = "https://api.betterplace.org/de/api_v4"
+}
+
+# deprecated
 resource "prefect_variable" "volunteering_voltastics_raw_deduped" {
   name  = "volunteering_voltastics_raw_deduped"
   value = local.environment == "production" ? "holi-shared.datalake_production.volunteering_voltastics_raw_deduped" : "holi-shared.datalake_development.volunteering_voltastics_raw_deduped"
@@ -92,20 +128,6 @@ resource "prefect_block" "typesense_admin_api_key" {
       "project" = "holi-shared"
     }
     "secret_name"    = local.environment == "production" ? "TYPESENSE_CLOUD_ADMIN_API_KEY_PRODUCTION" : "TYPESENSE_CLOUD_ADMIN_API_KEY_STAGING"
-    "secret_version" = "latest"
-  })
-  depends_on = [null_resource.prefect_server_available]
-}
-
-resource "prefect_block" "voltastics_api_key" {
-  name      = "voltastics-api-key"
-  type_slug = "gcpsecret"
-
-  data = jsonencode({
-    "gcp_credentials" = {
-      "project" = "holi-shared"
-    }
-    "secret_name"    = "VOLUNTEERING_VOLTASTICS_API_KEY"
     "secret_version" = "latest"
   })
   depends_on = [null_resource.prefect_server_available]
@@ -165,7 +187,10 @@ resource "google_cloud_run_v2_service" "work_pool_cloud_run_worker" {
     service_account = data.terraform_remote_state.holi_data_pipeline_common_state.outputs.data_pipeline_service_account_email
     containers {
       image = "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3-latest"
-      args  = ["prefect", "worker", "start", "--install-policy", "always", "--with-healthcheck", "-p", "${prefect_work_pool.cloud_run.name}", "-t", "${prefect_work_pool.cloud_run.type}"]
+      args = [
+        "prefect", "worker", "start", "--install-policy", "always", "--with-healthcheck", "-p",
+        "${prefect_work_pool.cloud_run.name}", "-t", "${prefect_work_pool.cloud_run.type}"
+      ]
       env {
         name  = "PREFECT_API_URL"
         value = "http://${local.prefect_internal_domain}:${local.prefect_internal_port}/api"

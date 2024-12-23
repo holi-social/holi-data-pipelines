@@ -64,6 +64,10 @@ def alert(
     run: FlowRun,
     state: State,
 ) -> None:
+    # We don't want to alert on runs happening during development, e.g. runs on developer's boxes.
+    # These runs don't have a deployment and are not auto-scheduled
+    if run.deployment_id is None and not run.auto_scheduled:
+        return
     alerter = CustomWebhookNotificationBlock.load("rocketchat-alert")
     subject = f"Run `{run.name}` of flow `{flow.name}` is in state `{state.name}`."
     match state.type:

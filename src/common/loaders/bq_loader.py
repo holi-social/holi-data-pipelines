@@ -2,8 +2,10 @@ from datetime import date
 from typing import Callable, Any, Awaitable, Dict, List
 
 import prefect
+from codetiming import Timer
 from prefect_gcp import GcpCredentials
-from prefect_gcp.bigquery import bigquery_insert_stream, BigQueryWarehouse
+from prefect_gcp.bigquery import BigQueryWarehouse
+from typing_extensions import deprecated
 
 logger = prefect.logging.get_logger()
 
@@ -16,6 +18,7 @@ async def stream_to_bigquery(
     batch_size: int = 1000,
     stop_document: Any = None,
 ) -> None:
+    bq_client = GcpCredentials(project=project).get_bigquery_client()
     while True:
         finished = False
         documents = []
@@ -28,21 +31,30 @@ async def stream_to_bigquery(
             documents.append(document)
 
         if documents:
-            bigquery_insert_stream(
-                dataset=dataset,
-                table=table,
-                records=documents,
-                gcp_credentials=GcpCredentials(project=project),
-            )
+            with Timer(
+                text=f"Stream-inserting {len(documents)} documents into BigQuery " f"took {{:0.4f}} seconds",
+                logger=logger.info,
+            ):
+                # prefect_gcp.bigquery.bigquery_insert_stream() does not allow to set ignore_unknown_values
+                response = bq_client.insert_rows_json(
+                    table=f"{project}.{dataset}.{table}", ignore_unknown_values=True, json_rows=documents
+                )
+                errors = []
+                for row in response:
+                    if "errors" in row:
+                        errors.append(row["errors"])
 
-            logger.info(f"Inserted {len(documents)} documents into BigQuery")
+                if errors:
+                    raise ValueError(errors)
+
         if finished:  # Stop signal
             return
 
 
+@deprecated("Slow one-after-another insert-via-statement, use streaming instead")
 async def insert(project: str, dataset: str, table: str, documents: List[Dict[str, Any]]) -> None:
     """
-    Inserts documents into bigquery. Very slow, consider using streaming.
+    Inserts documents into bigquery one by one. Very slow, consider using streaming.
 
     :param project:
     :param dataset:

@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime, date
 from typing import Dict, Tuple
 
 import prefect
@@ -8,8 +9,10 @@ logger = prefect.logging.get_logger()
 
 @dataclass
 class CrawlerConfig:
-    api_endpoint_url: str
+    state_variable_name: str
+    api_url: str
     bigquery_table: Dict[str, str]
+    partition_date: date = datetime.today().date()
 
     def get_bq_project(self) -> str:
         return self.bigquery_table["project"]
