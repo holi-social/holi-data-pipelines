@@ -4,10 +4,14 @@ from typing import Union
 
 from prefect.context import get_run_context, TaskRunContext, FlowRunContext
 import prefect.logging
+from prefect.exceptions import MissingContextError
 
 
 def __running_on_prefect() -> bool:
-    context = get_run_context()
+    try:
+        context = get_run_context()
+    except MissingContextError:
+        return False
     return isinstance(context, FlowRunContext) or isinstance(context, TaskRunContext)
 
 
