@@ -2,8 +2,13 @@ import logging
 from logging import Logger, LoggerAdapter
 from typing import Union
 
-from prefect import context
+from prefect.context import get_run_context, TaskRunContext, FlowRunContext
 import prefect.logging
+
+
+def __running_on_prefect() -> bool:
+    context = get_run_context()
+    return isinstance(context, FlowRunContext) or isinstance(context, TaskRunContext)
 
 
 # ruff: noqa: N999 false-positive
@@ -19,7 +24,7 @@ class PipelineLogger(Logger):
         self._std_logger = logging.getLogger(logger_name)
 
         # Prefect loggers can only be instantiated if called in flow or task context
-        self._prefect_logger = prefect.logging.get_run_logger() if hasattr(context, "flow_run_id") else None
+        self._prefect_logger = prefect.logging.get_run_logger() if __running_on_prefect() else None
         if self._prefect_logger is not None:
             self._prefect_logger.setLevel(prefect_level_threshold)
 
