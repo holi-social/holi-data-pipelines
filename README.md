@@ -3,18 +3,17 @@
 This project contains code and infrastructure definitions for all data pipelines.
 
 <!-- TOC -->
-
 * [holi Data Pipelines](#holi-data-pipelines)
-    * [Dev Quickstart](#dev-quickstart)
-        * [Troubleshooting](#troubleshooting)
-    * [Infrastructure](#infrastructure)
-    * [Setup](#setup)
-    * [Running](#running)
-    * [CI/CD](#cicd)
-    * [Infrastructure: Typesense Cloud Setup](#infrastructure-typesense-cloud-setup)
-        * [Current Cluster Hardware Setup (as of 02.12.2024)](#current-cluster-hardware-setup-as-of-02122024)
-        * [Security](#security)
-
+  * [Dev Quickstart](#dev-quickstart)
+    * [Troubleshooting](#troubleshooting)
+  * [Infrastructure](#infrastructure)
+  * [Setup](#setup)
+  * [Running](#running)
+  * [CI/CD](#cicd)
+  * [Typesense Cloud](#typesense-cloud)
+  * [Learning / Good-to-Know](#learning--good-to-know)
+    * [Current Cluster Hardware Setup (as of 02.12.2024)](#current-cluster-hardware-setup-as-of-02122024)
+    * [Security](#security)
 <!-- TOC -->
 
 ## Dev Quickstart
