@@ -1,4 +1,4 @@
-from typing import Any, cast, Dict
+from typing import Any, cast
 
 from prefect import flow, task
 from prefect.states import Failed, State, Completed
@@ -7,8 +7,8 @@ from prefect.cache_policies import NONE
 from src.common.extractors.bq_extractor import extract_data_from_bigquery
 from src.common.loaders.typesense_loader import upsert_typesense_documents
 from src.common.logging.PipelineLogger import PipelineLogger
-from src.common.typesense_client import TypesenseClient
-from src.common.variables import variable_value, secret_value
+from src.common.typesense_client import TypesenseClient, TypesenseClientConfig
+from src.common.variables import variable_value
 
 logger = PipelineLogger(__name__)
 
@@ -55,18 +55,14 @@ def spaces_to_typesense_docs(spaces: list[SpaceRow]) -> list[SpaceDoc]:
 
 
 @flow
-def spaces_to_typesense_ingest_from_scratch() -> State | None:
-    config = cast(
-        Dict[str, str],
-        {
-            "api_key": secret_value("typesense-admin-api-key"),
-            "host": variable_value("typesense_host"),
-            "port": variable_value("typesense_port"),
-            "protocol": variable_value("typesense_protocol"),
-            "collection": variable_value("typesense_collection"),
-        },
-    )
-    typesense_client = TypesenseClient(config)
+def spaces_to_typesense_ingest_from_scratch_flow() -> State:
+    typesense_client = TypesenseClient(TypesenseClientConfig.from_env())
+    return spaces_to_typesense_ingest_from_scratch(typesense_client, cast(str, variable_value("typesense_collection")))
+
+
+@task(cache_policy=NONE)
+def spaces_to_typesense_ingest_from_scratch(typesense_client: TypesenseClient, collection: str) -> State:
+    logger.info(f"Starting spaces ingestion from scratch into typesense collection '{collection}'")
 
     spaces = load_spaces()
     logger.info("Found %s spaces", len(spaces))
@@ -74,7 +70,7 @@ def spaces_to_typesense_ingest_from_scratch() -> State | None:
     space_documents = spaces_to_typesense_docs(spaces)
     logger.info("Transformed %s documents", len(space_documents))
 
-    upsert_succeeded = upsert_typesense_documents(typesense_client, logger, config["collection"], space_documents)
+    upsert_succeeded = upsert_typesense_documents(typesense_client, logger, collection, space_documents)
     if not upsert_succeeded:
         return Failed(message="Some documents failed ingestion. Please see error log.")
     else:

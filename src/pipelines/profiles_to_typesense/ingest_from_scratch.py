@@ -1,4 +1,4 @@
-from typing import Any, cast, Dict
+from typing import Any, cast
 
 from prefect import flow, task
 from prefect.states import Failed, State, Completed
@@ -7,8 +7,8 @@ from prefect.cache_policies import NONE
 from src.common.extractors.bq_extractor import extract_data_from_bigquery
 from src.common.loaders.typesense_loader import upsert_typesense_documents
 from src.common.logging.PipelineLogger import PipelineLogger
-from src.common.typesense_client import TypesenseClient
-from src.common.variables import variable_value, secret_value
+from src.common.typesense_client import TypesenseClient, TypesenseClientConfig
+from src.common.variables import variable_value
 
 logger = PipelineLogger(__name__)
 
@@ -60,18 +60,16 @@ def users_to_typesense_docs(users: list[UserRow]) -> list[UserDoc]:
 
 
 @flow
-def profiles_to_typesense_ingest_from_scratch() -> State | None:
-    config = cast(
-        Dict[str, str],
-        {
-            "api_key": secret_value("typesense-admin-api-key"),
-            "host": variable_value("typesense_host"),
-            "port": variable_value("typesense_port"),
-            "protocol": variable_value("typesense_protocol"),
-            "collection": variable_value("typesense_collection"),
-        },
+def profiles_to_typesense_ingest_from_scratch_flow() -> State:
+    typesense_client = TypesenseClient(TypesenseClientConfig.from_env())
+    return profiles_to_typesense_ingest_from_scratch(
+        typesense_client, cast(str, variable_value("typesense_collection"))
     )
-    typesense_client = TypesenseClient(config)
+
+
+@task(cache_policy=NONE)
+def profiles_to_typesense_ingest_from_scratch(typesense_client: TypesenseClient, collection: str) -> State:
+    logger.info(f"Starting profiles ingestion from scratch into typesense collection '{collection}'")
 
     users = load_users()
     logger.info("Found %s users", len(users))
@@ -79,7 +77,7 @@ def profiles_to_typesense_ingest_from_scratch() -> State | None:
     user_documents = users_to_typesense_docs(users)
     logger.info("Transformed %s documents", len(user_documents))
 
-    upsert_succeeded = upsert_typesense_documents(typesense_client, logger, config["collection"], user_documents)
+    upsert_succeeded = upsert_typesense_documents(typesense_client, logger, collection, user_documents)
     if not upsert_succeeded:
         return Failed(message="Some documents failed ingestion. Please see error log.")
     else:
