@@ -17,7 +17,7 @@ logger = PipelineLogger(__name__)
 
 
 @flow()
-def all_to_typesense_ingest_from_scratch_flow() -> None | State:
+def all_to_typesense_ingest_from_scratch_flow() -> State:
     """
     Orchestrates the ETL pipeline to ingest all search data into Typesense from scratch.
     """
@@ -62,7 +62,7 @@ def all_to_typesense_ingest_from_scratch_flow() -> None | State:
         or not volunteering_result.is_completed()
     ):
         logger.error(
-            "One of the ingestion tasks did not complete successfully. %s",
+            "One or multiple of the ingestion tasks did not complete successfully. %s",
             {
                 "profiles": str(profiles_result),
                 "spaces": str(spaces_result),
