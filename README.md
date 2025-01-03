@@ -4,23 +4,24 @@ This project contains code and infrastructure definitions for all data pipelines
 
 <!-- TOC -->
 * [holi Data Pipelines](#holi-data-pipelines)
-  * [Dev Quickstart](#dev-quickstart)
+  * [(Local) Development Quickstart](#local-development-quickstart)
     * [Troubleshooting](#troubleshooting)
   * [Infrastructure](#infrastructure)
   * [Setup](#setup)
   * [Running](#running)
   * [CI/CD](#cicd)
   * [Typesense Cloud](#typesense-cloud)
-  * [Learning / Good-to-Know](#learning--good-to-know)
+    * [Learnings / Good-to-Know](#learnings--good-to-know)
     * [Current Cluster Hardware Setup (as of 02.12.2024)](#current-cluster-hardware-setup-as-of-02122024)
     * [Security](#security)
 <!-- TOC -->
 
-## Dev Quickstart
+## (Local) Development Quickstart
 
 You need some tools installed: pyenv, direnv. See holi-meta/README.md for more information.
 
-Since (prefect)[#prefect] is nut publically available, but only via the GCP VPC, in order to execute terraform, we can make use of an SSH tunnel by following these steps (work for staging and production):
+Since (prefect)[#prefect] is not publicly available, but only via the GCP VPC, in order to execute terraform, we can
+make use of an SSH tunnel by following these steps (work for staging and production):
 
 * Add the following line to your `etc/hosts`:
   `127.0.0.1 prefect-server-staging.holi.internal prefect-server-production.holi.internal`
@@ -91,7 +92,7 @@ TODO
 Typesense cloud setup is currently a manual process. The reason for this is that there are currently no mature Terraform
 providers for provisioning Typesense cloud with.
 
-## Learning / Good-to-Know
+### Learnings / Good-to-Know
 
 * You can only update / upsert by id column, not by any other. Therefore, it is advisable to set the id column to
   something well-known (easy) or to save the returned auto-generated ID (harder). For the first data type (volunteering)

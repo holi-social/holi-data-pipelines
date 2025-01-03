@@ -1,8 +1,9 @@
 from datetime import datetime
-from typing import cast
+from typing import cast, Any
 
 from prefect import flow, State
 from prefect.states import Failed, Completed
+from prefect.futures import PrefectFuture
 from typesense.exceptions import ObjectNotFound
 
 from src.common.logging.PipelineLogger import PipelineLogger
@@ -41,9 +42,13 @@ def all_to_typesense_ingest_from_scratch_flow() -> State:
         schema_file_path=cast(str, config["schema_path"]), collection_name=next_collection
     )
 
-    profiles_future = profiles_to_typesense_ingest_from_scratch.submit(typesense_client, next_collection)
-    spaces_future = spaces_to_typesense_ingest_from_scratch.submit(typesense_client, next_collection)
-    volunteering_future = volunteering_to_typesense_ingest_updates.submit(
+    profiles_future: PrefectFuture[Any] = profiles_to_typesense_ingest_from_scratch.submit(
+        typesense_client, next_collection
+    )
+    spaces_future: PrefectFuture[Any] = spaces_to_typesense_ingest_from_scratch.submit(
+        typesense_client, next_collection
+    )
+    volunteering_future: PrefectFuture[Any] = volunteering_to_typesense_ingest_updates.submit(
         typesense_client=typesense_client,
         typesense_collection_name=next_collection,
         table_name=cast(str, config.get("volunteering_raw_deduped")),
@@ -52,14 +57,14 @@ def all_to_typesense_ingest_from_scratch_flow() -> State:
 
     logger.info("Submitted tasks for parallel execution (profiles, spaces, volunteering). Waiting for results...")
 
-    profiles_result: State = profiles_future.result()
-    spaces_result: State = spaces_future.result()
-    volunteering_result: State = volunteering_future.result()
+    profiles_result = profiles_future.result(raise_on_failure=False)
+    spaces_result = spaces_future.result(raise_on_failure=False)
+    volunteering_result = volunteering_future.result(raise_on_failure=False)
 
     if (
-        not profiles_result.is_completed()
-        or not spaces_result.is_completed()
-        or not volunteering_result.is_completed()
+        not profiles_future.state.is_completed()
+        or not spaces_future.state.is_completed()
+        or not volunteering_future.state.is_completed()
     ):
         logger.error(
             "One or multiple of the ingestion tasks did not complete successfully. %s",
