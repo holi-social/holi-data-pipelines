@@ -1,11 +1,9 @@
 from typing import cast
 
-from prefect import flow, task
-import functools
-
+from prefect import task
 from prefect.types import StrictVariableValue
 
-from src.common.monitoring.alerting import alert
+from src.common.monitoring.alerting import alerting_flow
 
 
 @task(log_prints=True)
@@ -16,11 +14,8 @@ def say_hello(name: str) -> None:
 _CONFIG: dict[str, StrictVariableValue] = {"names": ["Marvin", "Trillian", "Ford"]}
 
 
-@flow(
-    on_failure=[functools.partial(alert, _CONFIG)],
-    on_crashed=[functools.partial(alert, _CONFIG)],
-    on_cancellation=[functools.partial(alert, _CONFIG)],
-)
+# TODO can we somehow avoid silencing mypy here?
+@alerting_flow(context=_CONFIG)  # type: ignore
 def hello_universe() -> None:
     for name in cast(list[str], _CONFIG["names"]):
         say_hello(name)

@@ -1,13 +1,14 @@
 from datetime import datetime
 from typing import cast
 
-from prefect import flow, State
+from prefect import State
 from prefect.states import Failed, Completed
 
 from src.common.extractors.bq_extractor import (
     extract_latest_partition_timestamp_from_bigquery,
 )
 from src.common.logging.PipelineLogger import PipelineLogger
+from src.common.monitoring.alerting import alerting_flow
 from src.pipelines.volunteering_to_typesense.tasks import (
     validate_collection,
     setup_pipeline,
@@ -20,9 +21,8 @@ from src.pipelines.volunteering_to_typesense.tasks import (
 logger = PipelineLogger(__name__)
 
 
-# TODO configure flow via annotation
 # TODO configure task so that they can be tried
-@flow()
+@alerting_flow
 def volunteering_to_typesense_ingest_updates() -> None | State:
     """Orchestrates the ETL pipeline to move volunteering data from BigQuery to Typesense."""
     config, typesense_client = setup_pipeline()
