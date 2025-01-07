@@ -1,16 +1,35 @@
 import json
-from typing import Dict
+from dataclasses import dataclass
+from typing import cast
 
 from typesense.client import Client
 from typesense.exceptions import ObjectNotFound
 
 from src.common.logging.PipelineLogger import PipelineLogger
+from src.common.variables import secret_value, variable_value
 
 logger = PipelineLogger(__name__)
 
 
+@dataclass
+class TypesenseClientConfig:
+    api_key: str
+    host: str
+    port: str
+    protocol: str
+
+    @staticmethod
+    def from_env() -> "TypesenseClientConfig":
+        return TypesenseClientConfig(
+            api_key=cast(str, secret_value("typesense-admin-api-key")),
+            host=cast(str, variable_value("typesense_host")),
+            port=cast(str, variable_value("typesense_port")),
+            protocol=cast(str, variable_value("typesense_protocol")),
+        )
+
+
 class TypesenseClient:
-    def __init__(self, config: Dict[str, str]) -> None:
+    def __init__(self, config: TypesenseClientConfig) -> None:
         """
         Initialize TypesenseClient with a given configuration.
 
@@ -19,12 +38,12 @@ class TypesenseClient:
         """
         self.client = Client(
             {
-                "api_key": config["api_key"],
+                "api_key": config.api_key,
                 "nodes": [
                     {
-                        "host": config["host"],
-                        "port": config["port"],
-                        "protocol": config["protocol"],
+                        "host": config.host,
+                        "port": config.port,
+                        "protocol": config.protocol,
                     }
                 ],
                 "connection_timeout_seconds": 60 * 60,
@@ -72,7 +91,7 @@ class TypesenseClient:
 
         return collection_name
 
-    def get_active_collection(self, alias_name: str) -> str:
+    def get_active_collection_name(self, alias_name: str) -> str:
         """Retrieve the current active collection for the given alias name.
 
         Args:

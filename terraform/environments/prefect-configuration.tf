@@ -84,7 +84,7 @@ resource "prefect_variable" "betterplace_api_url" {
 # deprecated
 resource "prefect_variable" "volunteering_voltastics_raw_deduped" {
   name  = "volunteering_voltastics_raw_deduped"
-  value = local.environment == "production" ? "holi-shared.datalake_production.volunteering_voltastics_raw_deduped" : "holi-shared.datalake_development.volunteering_voltastics_raw_deduped"
+  value = local.environment == "production" ? "holi-shared.datalake_production.volunteering_voltastics_raw_deduped_location_enriched" : "holi-shared.datalake_development.volunteering_voltastics_raw_deduped_location_enriched"
 }
 
 resource "prefect_variable" "volunteering_to_typesense_state" {

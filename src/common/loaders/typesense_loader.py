@@ -3,6 +3,7 @@ import json
 from logging import Logger
 from typing import Iterable, Dict, Tuple, List, Any, Generator
 
+import prefect
 from prefect import task
 from typesense.client import Client
 
@@ -55,7 +56,7 @@ def upsert_documents_in_batches(
     return failed_items, success_count
 
 
-@task
+@task(cache_policy=prefect.cache_policies.NONE)
 def upsert_typesense_documents(
     typesense_client: TypesenseClient,
     logger: Logger,
