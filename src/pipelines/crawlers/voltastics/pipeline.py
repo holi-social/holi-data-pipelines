@@ -1,15 +1,14 @@
 from __future__ import annotations
 
 import asyncio
-import functools
 from asyncio import Queue
 from typing import Any, Dict
 
 import prefect
-from prefect import flow, task
+from prefect import task
 
 from src.common.extractors.rest_crawler import RestCrawler, PagingInfo
-from src.common.monitoring.alerting import alert
+from src.common.monitoring.alerting import alerting_flow
 from src.common.variables import variable_value_as, get_secret_value
 from src.pipelines.crawlers.crawler_common_code import check_and_setup, finalize, source_to_sink, bigquery_sink
 from src.pipelines.crawlers.crawler_config import CrawlerConfig
@@ -50,11 +49,8 @@ async def crawl(queue: Queue[Any]) -> None:
     ).crawl()
 
 
-@flow(
-    on_failure=[functools.partial(alert, vars(_CONFIG))],
-    on_crashed=[functools.partial(alert, vars(_CONFIG))],
-    on_cancellation=[functools.partial(alert, vars(_CONFIG))],
-)
+# TODO can we somehow avoid silencing mypy here?
+@alerting_flow(context=_CONFIG)  # type: ignore
 def crawl_voltastics(force: bool = False) -> None:
     if check_and_setup(_CONFIG, force):
         asyncio.run(source_to_sink(crawl, bigquery_sink(_CONFIG, _STOP_DOC)))
