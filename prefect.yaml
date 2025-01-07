@@ -42,11 +42,11 @@ deployments:
     concurrency_limit:
     parameters: { }
     enforce_parameter_schema: true
-  - name: volunteering-to-typesense-from-scratch
+  - name: all-to-typesense-from-scratch
     version:
     tags: [ ]
-    description: "Orchestrates the ETL pipeline to ingest complete volunteering data from BigQuery to Typesense."
-    entrypoint: src/pipelines/volunteering_to_typesense/ingest_from_scratch.py:volunteering_to_typesense_ingest_from_scratch
+    description: "Orchestrates the ETL pipeline to ingest all data to Typesense."
+    entrypoint: src/pipelines/all_to_typesense/ingest_from_scratch.py:all_to_typesense_ingest_from_scratch_flow
     work_pool:
       name: cloud-run-v2
       work_queue_name: default
@@ -59,7 +59,7 @@ deployments:
     version:
     tags: [ ]
     description: "Orchestrates the ETL pipeline to move volunteering updates from BigQuery to Typesense."
-    entrypoint: src/pipelines/volunteering_to_typesense/ingest_updates.py:volunteering_to_typesense_ingest_updates
+    entrypoint: src/pipelines/volunteering_to_typesense/ingest_updates.py:volunteering_to_typesense_ingest_updates_flow
     schedules:
       - cron: 30 6 * * * # run every day at 06:30 (classification job runs from 04:40 to ~ 06:00)
         timezone: "Europe/Berlin"
@@ -80,7 +80,7 @@ deployments:
     version:
     tags: [ ]
     description: "Ingests user profiles from Datastream-replicated Okuna into Typesense"
-    entrypoint: src/pipelines/profiles_to_typesense/ingest_from_scratch.py:profiles_to_typesense_ingest_from_scratch
+    entrypoint: src/pipelines/profiles_to_typesense/ingest_from_scratch.py:profiles_to_typesense_ingest_from_scratch_flow
     work_pool:
       name: cloud-run-v2
       work_queue_name: default
@@ -93,7 +93,7 @@ deployments:
     version:
     tags: [ ]
     description: "Ingests spaces from Datastream-replicated Okuna into Typesense"
-    entrypoint: src/pipelines/spaces_to_typesense/ingest_from_scratch.py:spaces_to_typesense_ingest_from_scratch
+    entrypoint: src/pipelines/spaces_to_typesense/ingest_from_scratch.py:spaces_to_typesense_ingest_from_scratch_flow
     work_pool:
       name: cloud-run-v2
       work_queue_name: default

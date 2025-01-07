@@ -1,19 +1,16 @@
-import json
-from datetime import date
-from datetime import datetime
-from typing import cast, Tuple
-from typing import List, Dict, Any, Optional
+from datetime import date, datetime
+from typing import Tuple, cast, Any
+from typing import List, Dict, Optional
 
 from prefect import task, State
 from prefect.states import Failed, Completed
-from prefect.types import StrictVariableValue
 from prefect.variables import Variable
 
 from src.common.extractors.bq_extractor import extract_changes_in_partitions
 from src.common.loaders.typesense_loader import upsert_typesense_documents
 from src.common.logging.PipelineLogger import PipelineLogger
 from src.common.typesense_client import TypesenseClient
-from src.common.variables import variable_value, secret_value
+from src.common.variables import variable_value
 from src.pipelines.volunteering_to_typesense.typesense_transformer import transform_row
 
 logger = PipelineLogger(__name__)
@@ -93,37 +90,6 @@ def validate_collection(typesense_client: TypesenseClient, collection_name: str)
     return Completed()
 
 
-def extract_collection_name_from_schema(schema_path: str) -> str:
-    with open(schema_path, "r") as file:
-        schema = json.load(file)
-
-    collection_name = schema.get("name")
-    if not collection_name:
-        raise ValueError("Schema is missing a 'name' field.")
-
-    return collection_name
-
-
-def get_config() -> dict[str, StrictVariableValue]:
-    return {
-        "volunteering_with_classification": variable_value("volunteering_with_classification"),
-        "volunteering_raw_deduped": variable_value("volunteering_voltastics_raw_deduped"),
-        "typesense_config": {
-            "api_key": secret_value("typesense-admin-api-key"),
-            "host": variable_value("typesense_host"),
-            "port": variable_value("typesense_port"),
-            "protocol": variable_value("typesense_protocol"),
-        },
-        "schema_path": f"src/typesense/{variable_value("prefect_environment")}_all.json",
-    }
-
-
-def setup_pipeline() -> Tuple[dict[str, StrictVariableValue], TypesenseClient]:
-    config = get_config()
-    typesense_client = TypesenseClient(cast(Dict[str, str], config["typesense_config"]))
-    return config, typesense_client
-
-
 def load_last_complete_ingestion_timestamp() -> datetime | None:
     state = cast(dict[str, Any], variable_value("volunteering_to_typesense_state"))
     timestamp_str = state.get("last_complete_ingestion_timestamp")
@@ -144,7 +110,7 @@ def store_last_complete_ingestion_timestamp(timestamp: datetime) -> None:
 
 @task
 def diff_ingest(
-    config: dict[str, StrictVariableValue],
+    table_name: str,
     last_complete_ingestion_timestamp: Optional[datetime],
     latest_partition_timestamp: date,
     typesense_client: TypesenseClient,
@@ -154,7 +120,7 @@ def diff_ingest(
     Incrementally ingests data into a Typesense collection by processing changed records.
 
     Args:
-        config (dict[str, StrictVariableValue]): Configuration dictionary containing metadata.
+        table_name (str): the name of the table to extract changed data from
         last_complete_ingestion_timestamp (date): Timestamp of the last successful ingestion, used
             to filter changed records.
         latest_partition_timestamp (date): The most recent timestamp to fetch updated data.
@@ -169,7 +135,7 @@ def diff_ingest(
     """
     # Step 1: Extract changed records
     changed_records = extract_changed_records(
-        cast(str, config.get("volunteering_raw_deduped")),
+        table_name,
         last_complete_ingestion_timestamp.date() if last_complete_ingestion_timestamp is not None else None,
         latest_partition_timestamp,
     )
