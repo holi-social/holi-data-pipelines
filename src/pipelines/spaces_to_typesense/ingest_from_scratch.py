@@ -1,12 +1,13 @@
 from typing import Any, cast
 
-from prefect import flow, task
-from prefect.states import Failed, State, Completed
+from prefect import task
 from prefect.cache_policies import NONE
+from prefect.states import Failed, State, Completed
 
 from src.common.extractors.bq_extractor import extract_data_from_bigquery
 from src.common.loaders.typesense_loader import upsert_typesense_documents
 from src.common.logging.PipelineLogger import PipelineLogger
+from src.common.monitoring.alerting import alerting_flow
 from src.common.typesense_client import TypesenseClient, TypesenseClientConfig
 from src.common.variables import variable_value
 
@@ -54,7 +55,7 @@ def spaces_to_typesense_docs(spaces: list[SpaceRow]) -> list[SpaceDoc]:
     return [space_to_doc(space) for space in spaces]
 
 
-@flow
+@alerting_flow
 def spaces_to_typesense_ingest_from_scratch_flow() -> State:
     typesense_client = TypesenseClient(TypesenseClientConfig.from_env())
     return spaces_to_typesense_ingest_from_scratch(typesense_client, cast(str, variable_value("typesense_collection")))

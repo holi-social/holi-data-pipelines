@@ -1,14 +1,16 @@
 from datetime import datetime
 from typing import cast
 
-from prefect import flow, task, State
-from prefect.states import Failed, Completed
+from prefect import task, State
 from prefect.cache_policies import NONE
+from prefect.states import Failed, Completed
 
 from src.common.extractors.bq_extractor import (
     extract_latest_partition_timestamp_from_bigquery,
 )
 from src.common.logging.PipelineLogger import PipelineLogger
+from src.common.monitoring.alerting import alerting_flow
+from src.common.typesense import extract_collection_name_from_schema, get_config
 from src.common.typesense_client import TypesenseClient, TypesenseClientConfig
 from src.pipelines.volunteering_to_typesense.tasks import (
     validate_collection,
@@ -16,12 +18,11 @@ from src.pipelines.volunteering_to_typesense.tasks import (
     store_last_complete_ingestion_timestamp,
     load_last_complete_ingestion_timestamp,
 )
-from src.common.typesense import extract_collection_name_from_schema, get_config
 
 logger = PipelineLogger(__name__)
 
 
-@flow()
+@alerting_flow
 def volunteering_to_typesense_ingest_updates_flow() -> State:
     """
     Orchestrates the ETL pipeline to move volunteering data from BigQuery to Typesense.

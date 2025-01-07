@@ -1,12 +1,13 @@
 from datetime import datetime
 from typing import cast, Any
 
-from prefect import flow, State
+from prefect import State
 from prefect.states import Failed, Completed
 from prefect.futures import PrefectFuture
 from typesense.exceptions import ObjectNotFound
 
 from src.common.logging.PipelineLogger import PipelineLogger
+from src.common.monitoring.alerting import alerting_flow
 from src.common.typesense_client import TypesenseClient, TypesenseClientConfig
 from src.pipelines.volunteering_to_typesense.ingest_updates import volunteering_to_typesense_ingest_updates
 from src.common.typesense import extract_collection_name_from_schema, get_config
@@ -17,7 +18,7 @@ from src.pipelines.spaces_to_typesense.ingest_from_scratch import spaces_to_type
 logger = PipelineLogger(__name__)
 
 
-@flow()
+@alerting_flow
 def all_to_typesense_ingest_from_scratch_flow() -> State:
     """
     Orchestrates the ETL pipeline to ingest all search data into Typesense from scratch.
