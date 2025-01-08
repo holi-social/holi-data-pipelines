@@ -28,11 +28,11 @@ class CrawlerState:
         )
 
     @staticmethod
-    def get(variable_key: str) -> CrawlerState:
+    def load_from_variable(variable_key: str) -> CrawlerState:
         state_from_prefect = variable_value_as(dict[str, str | None], variable_key, default={})
         return CrawlerState._from_variable(variable_key, state_from_prefect)
 
-    def persist(self) -> None:
+    def persist_to_variable(self) -> None:
         serializable_state: Dict[str, str | None] = {
             "last_successful_day": self.last_successful_day.isoformat() if self.last_successful_day else None,
             "last_run_day": self.last_run_day.isoformat() if self.last_run_day else None,

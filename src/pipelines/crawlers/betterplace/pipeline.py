@@ -9,9 +9,16 @@ import prefect
 from prefect import task
 
 from src.common.extractors.rest_crawler import RestCrawler, PagingInfo
+from src.common.loaders.bq_loader import is_streaming_buffer_empty, delete_partition
 from src.common.monitoring.alerting import alerting_flow
 from src.common.variables import variable_value_as
-from src.pipelines.crawlers.crawler_common_code import check_and_setup, finalize, source_to_sink, bigquery_sink
+from src.pipelines.crawlers.crawler_common_code import (
+    update_last_successful_day,
+    source_to_sink,
+    bigquery_sink,
+    has_run_successfully_for_day,
+    is_cleanup_needed,
+)
 from src.pipelines.crawlers.crawler_config import CrawlerConfig
 
 logger = prefect.logging.get_logger()
@@ -87,10 +94,22 @@ async def crawl(queue: Queue[Any]) -> None:
 
 # TODO can we somehow avoid silencing mypy here?
 @alerting_flow(context=_CONFIG)  # type: ignore
-def crawl_betterplace(force: bool = False) -> None:
-    if check_and_setup(_CONFIG, force):
+def crawl_betterplace(force_run: bool = False) -> None:
+    if not has_run_successfully_for_day(_CONFIG) or force_run:
+        logger.info("Crawling did not run successfully for today, starting run.")
+
+        if is_cleanup_needed(_CONFIG):
+            if is_streaming_buffer_empty(*_CONFIG.get_bq_table_fqdn()) or force_run:
+                logger.info("Unfinished run happened for today, clearing today's partition.")
+                delete_partition(*_CONFIG.get_bq_table_fqdn(), partition=_CONFIG.partition_date)
+            else:
+                logger.warning("Unfinished run happened for today, but streaming buffer is not empty. Aborting flow.")
+                return
+
         asyncio.run(source_to_sink(crawl, bigquery_sink(_CONFIG, _STOP_DOC)))
-        finalize(_CONFIG)
+        update_last_successful_day(_CONFIG)  # = finalize
+    else:
+        logger.info("Crawling already ran successfully for today, skipping run.")
 
 
 if __name__ == "__main__":

@@ -1,5 +1,6 @@
 import json
 import os
+from json import JSONDecodeError
 from typing import Optional, TypeVar, Type
 
 from prefect.types import StrictVariableValue
@@ -38,7 +39,13 @@ def variable_value(key: str, default: StrictVariableValue = None) -> StrictVaria
     else:
         environment_var = _getenv_case_insensitive(key)
         if environment_var is not None:
-            return json.loads(environment_var)
+            try:
+                return json.loads(environment_var)
+            except JSONDecodeError as decode_error:
+                raise ValueError(
+                    "Please specify environment variables in JSON format, "
+                    "e.g. for a string, put quotes around it: `ENV_VAR='\"value\"'`."
+                ) from decode_error
         elif default is not None:
             return default
         else:
