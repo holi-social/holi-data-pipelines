@@ -24,10 +24,8 @@ def load_users() -> list[UserRow]:
           user.username as user_id,
           profile.name as first_name,
           profile.last_name,
-          profile.location,
           profile.avatar,
           profile.avatar_blurhash,
-          profile.about_me
         FROM
           `public.openbook_auth_user` user
         LEFT OUTER JOIN
@@ -44,14 +42,12 @@ def user_to_doc(user: UserRow) -> UserDoc:
     return {
         "id": f"profile_{str(user.get("user_id"))}",
         "type": "profile",
-        "title_de": full_name,
-        "title_en": full_name,
-        "description_de": user.get("about_me"),
-        "description_en": user.get("about_me"),
-        "location": user.get("location"),
+        # Deleted description & location fields as they'd creep into embeddings and mess up search results
+        # TODO: Consider omitting optional fields set to None to reduce document size
         "location_lat_lng": None,
         "image_url": user.get("avatar"),
         "link_locators": {"profile": user.get("user_id")},
+        "full_name": full_name
     }
 
 
