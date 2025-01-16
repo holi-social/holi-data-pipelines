@@ -46,18 +46,8 @@
             "index": false
         },
         {
-            "name": "full_name",
-            "type": "string",
-            "optional": true,
-            "infix": true,
-            "stem": true,
-            "sort": true,
-            "comment": "enabling sort can help display results in some meaningful order, such as alphabetical"
-        },
-        {
             "name": "embedding",
             "type": "float[]",
-            "optional": true,
             "embed": {
                 "from": [
                     "title_de",
