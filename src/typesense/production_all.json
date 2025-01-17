@@ -46,7 +46,7 @@
             "index": false
         },
         {
-            "name": "full_name",
+            "name": "user_full_name",
             "type": "string",
             "optional": true,
             "infix": true,

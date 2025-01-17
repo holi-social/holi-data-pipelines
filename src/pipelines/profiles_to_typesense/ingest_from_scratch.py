@@ -24,6 +24,7 @@ def load_users() -> list[UserRow]:
           user.username as user_id,
           profile.name as first_name,
           profile.last_name,
+          profile.location,
           profile.avatar,
           profile.avatar_blurhash,
         FROM
@@ -38,16 +39,16 @@ def load_users() -> list[UserRow]:
 
 
 def user_to_doc(user: UserRow) -> UserDoc:
-    full_name = f"{user.get("first_name")} {user.get('last_name')}"
+    user_full_name = f"{user.get("first_name")} {user.get('last_name')}"
     return {
         "id": f"profile_{str(user.get("user_id"))}",
         "type": "profile",
-        # Deleted description & location fields as they'd creep into embeddings and mess up search results
-        # TODO: Consider omitting optional fields set to None to reduce document size
-        "location_lat_lng": None,
+        # deleted description fields as they'd creep into embeddings and mess up search results
+        "location": user.get("location"),
+        # omitting optional fields set to None to reduce document size
         "image_url": user.get("avatar"),
         "link_locators": {"profile": user.get("user_id")},
-        "full_name": full_name
+        "user_full_name": user_full_name
     }
 
 
