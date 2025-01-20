@@ -27,7 +27,6 @@ def load_users() -> list[UserRow]:
           profile.location,
           profile.avatar,
           profile.avatar_blurhash,
-          profile.about_me
         FROM
           `public.openbook_auth_user` user
         LEFT OUTER JOIN
@@ -40,18 +39,16 @@ def load_users() -> list[UserRow]:
 
 
 def user_to_doc(user: UserRow) -> UserDoc:
-    full_name = f"{user.get("first_name")} {user.get('last_name')}"
+    user_full_name = f"{user.get("first_name")} {user.get('last_name')}"
     return {
         "id": f"profile_{str(user.get("user_id"))}",
         "type": "profile",
-        "title_de": full_name,
-        "title_en": full_name,
-        "description_de": user.get("about_me"),
-        "description_en": user.get("about_me"),
+        # deleted description fields as they'd creep into embeddings and mess up search results
         "location": user.get("location"),
-        "location_lat_lng": None,
+        # omitting optional fields set to None to reduce document size
         "image_url": user.get("avatar"),
         "link_locators": {"profile": user.get("user_id")},
+        "user_full_name": user_full_name
     }
 
 
@@ -83,4 +80,3 @@ def profiles_to_typesense_ingest_from_scratch(typesense_client: TypesenseClient,
         return Failed(message="Some documents failed ingestion. Please see error log.")
     else:
         return Completed(message=f"All {len(user_documents)} documents successfully ingested.")
-
