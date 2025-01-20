@@ -48,7 +48,7 @@ def user_to_doc(user: UserRow) -> UserDoc:
         # omitting optional fields set to None to reduce document size
         "image_url": user.get("avatar"),
         "link_locators": {"profile": user.get("user_id")},
-        "user_full_name": user_full_name
+        "user_full_name": user_full_name,
     }
 
 
