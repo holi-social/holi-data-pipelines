@@ -47,7 +47,7 @@ stages:
 
 .terraform_deploy:
   image:
-    name: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/hashicorp/terraform:1.9.8"
+    name: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/hashicorp/terraform:1.10.4"
     entrypoint: ["/bin/sh", "-c"]
   stage: "deploy"
   variables:
