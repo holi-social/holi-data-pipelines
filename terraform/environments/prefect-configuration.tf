@@ -133,6 +133,10 @@ resource "prefect_work_pool" "cloud_run" {
   depends_on = [null_resource.prefect_server_available]
 }
 
+resource "docker_image" "prefect" {
+  name = "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.1.12-python3.12"
+}
+
 resource "google_cloud_run_v2_service" "work_pool_cloud_run_worker" {
   name                = "prefect-worker-${local.environment_name}"
   location            = local.default_region # finland, low CO2 emissions
@@ -141,7 +145,7 @@ resource "google_cloud_run_v2_service" "work_pool_cloud_run_worker" {
   template {
     service_account = data.terraform_remote_state.holi_data_pipeline_common_state.outputs.data_pipeline_service_account_email
     containers {
-      image = "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3-latest"
+      image = docker_image.prefect.name
       args  = ["prefect", "worker", "start", "--install-policy", "always", "--with-healthcheck", "-p", "${prefect_work_pool.cloud_run.name}", "-t", "${prefect_work_pool.cloud_run.type}"]
       env {
         name  = "PREFECT_API_URL"

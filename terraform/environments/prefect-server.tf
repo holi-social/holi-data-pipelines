@@ -11,7 +11,10 @@ data "google_secret_manager_secret_version_access" "prefect_database_password" {
   secret = local.environment == "production" ? "PREFECT_DB_PASSWORD_PRODUCTION" : "PREFECT_DB_PASSWORD_DEVELOPMENT"
 }
 
-# TODO private network
+data "local_file" "prefect_server_requirements_file" {
+  filename = "prefect-server-requirements.txt"
+}
+
 # TODO green/blue
 # TODO green/blue certificate replication
 resource "google_compute_instance" "prefect_server_green" {
@@ -47,6 +50,7 @@ resource "google_compute_instance" "prefect_server_green" {
       database_password  = data.google_secret_manager_secret_version_access.prefect_database_password.secret_data
       database_name      = google_sql_database.database.name
       database_host      = local.environment_name == "production" ? data.terraform_remote_state.holi_infra_state.outputs.database_ip_address_production : data.terraform_remote_state.holi_infra_state.outputs.database_ip_address_development
+      requirements       = data.local_file.prefect_server_requirements_file.content
     })
   }
 
