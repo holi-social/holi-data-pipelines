@@ -10,6 +10,7 @@ from src.common.logging.PipelineLogger import PipelineLogger
 from src.common.monitoring.alerting import alerting_flow
 from src.common.typesense import extract_collection_name_from_schema, get_config
 from src.common.typesense_client import TypesenseClient, TypesenseClientConfig
+from src.common.variables import variable_value
 from src.pipelines.profiles_to_typesense.ingest_from_scratch import profiles_to_typesense_ingest_from_scratch
 from src.pipelines.spaces_to_typesense.ingest_from_scratch import spaces_to_typesense_ingest_from_scratch
 from src.pipelines.volunteering_to_typesense.ingest_updates import volunteering_to_typesense_ingest_updates
@@ -25,6 +26,7 @@ def all_to_typesense_ingest_from_scratch_flow() -> State:
     """
     config = get_config()
     typesense_client = TypesenseClient(TypesenseClientConfig.from_env())
+    source_dataset = cast(str, variable_value("bigquery_okuna_dataset"))
     alias_name = extract_collection_name_from_schema(cast(str, config["schema_path"]))
 
     try:
@@ -44,11 +46,11 @@ def all_to_typesense_ingest_from_scratch_flow() -> State:
     )
 
     profiles_future: PrefectFuture[Any] = cast(
-        Task[[TypesenseClient, str], State], profiles_to_typesense_ingest_from_scratch
-    ).submit(typesense_client, next_collection)
+        Task[[TypesenseClient, str, str], State], profiles_to_typesense_ingest_from_scratch
+    ).submit(typesense_client, source_dataset, next_collection)
     spaces_future: PrefectFuture[Any] = cast(
-        Task[[TypesenseClient, str], State], spaces_to_typesense_ingest_from_scratch
-    ).submit(typesense_client, next_collection)
+        Task[[TypesenseClient, str, str], State], spaces_to_typesense_ingest_from_scratch
+    ).submit(typesense_client, source_dataset, next_collection)
     volunteering_future: PrefectFuture[Any] = cast(
         Task[[TypesenseClient, str, str, datetime | None], State], volunteering_to_typesense_ingest_updates
     ).submit(typesense_client, next_collection, cast(str, config.get("volunteering_raw_deduped")), None)
