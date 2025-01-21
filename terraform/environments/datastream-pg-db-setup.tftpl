@@ -1,0 +1,25 @@
+nohup gcloud compute ssh --zone "europe-north1-a" "nginx-proxy-old-domains-and-okuna-blue" --project "holi-shared" -- -L 54434:localhost:5439 "./cloud-sql-proxy --private-ip --port 5439 holi-shared:europe-north1:${database_server_name}" &
+
+PROXY_PID=$!
+sleep 5
+
+psql -h localhost -p 54434 ${okuna_database} ${okuna_db_user} << EOF
+ALTER USER ${okuna_db_user} WITH REPLICATION;
+DROP PUBLICATION IF EXISTS ${publication_name};
+CREATE PUBLICATION ${publication_name} for
+%{~ for table in tables }
+table only ${table}
+%{~ if index(tables, table) == length(tables)-1 ~}
+;
+%{~ else ~}
+,
+%{~ endif ~}
+%{ endfor ~}     
+SELECT PG_CREATE_LOGICAL_REPLICATION_SLOT('${publication_name}', 'pgoutput');
+ALTER USER ${datastream_db_user} WITH REPLICATION;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO ${datastream_db_user};
+GRANT USAGE ON SCHEMA public TO ${datastream_db_user};
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO ${datastream_db_user};
+EOF
+
+kill $PROXY_PID
