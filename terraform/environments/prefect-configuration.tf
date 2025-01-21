@@ -134,7 +134,7 @@ resource "prefect_work_pool" "cloud_run" {
 }
 
 resource "docker_image" "prefect" {
-  name = "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.1.12-python3.12"
+  name = "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.1.13-python3.12"
 }
 
 resource "google_cloud_run_v2_service" "work_pool_cloud_run_worker" {
@@ -146,7 +146,10 @@ resource "google_cloud_run_v2_service" "work_pool_cloud_run_worker" {
     service_account = data.terraform_remote_state.holi_data_pipeline_common_state.outputs.data_pipeline_service_account_email
     containers {
       image = docker_image.prefect.name
-      args  = ["prefect", "worker", "start", "--install-policy", "always", "--with-healthcheck", "-p", "${prefect_work_pool.cloud_run.name}", "-t", "${prefect_work_pool.cloud_run.type}"]
+      # install-policy always leads to an upgrade of prefect to the latest version, which leads to breakages...any other policy leads to the worker being unable to start
+      # possible solution is to build a docker image ourselves:
+      # https://linen.prefect.io/t/23212478/when-i-use-a-prefect-worker-gcp-cloud-run-v2-worker-to-be-pr
+      args = ["prefect", "worker", "start", "--install-policy", "always", "--with-healthcheck", "-p", "${prefect_work_pool.cloud_run.name}", "-t", "${prefect_work_pool.cloud_run.type}"]
       env {
         name  = "PREFECT_API_URL"
         value = "http://${local.prefect_internal_domain}:${local.prefect_internal_port}/api"

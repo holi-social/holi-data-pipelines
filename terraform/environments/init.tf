@@ -16,10 +16,21 @@ terraform {
       source  = "hashicorp/null"
       version = ">= 3.2.2"
     }
+    docker = {
+      source  = "kreuzwerker/docker"
+      version = ">= 3.0.2"
+    }
   }
   backend "gcs" {
     bucket = "holi-shared-terraform-state"
     prefix = "data-pipeline-environments"
+  }
+}
+
+provider "docker" {
+  #host = "unix:///var/run/docker.sock"
+  registry_auth {
+    address = "europe-north1-docker.pkg.dev"
   }
 }
 
