@@ -47,8 +47,11 @@ stages:
 
 .terraform_deploy:
   image:
-    name: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/hashicorp/terraform:1.10.4"
-    entrypoint: ["/bin/sh", "-c"]
+    name: "europe-north1-docker.pkg.dev/holi-shared/docker/holi-docker/terraform-docker"
+  stage: build
+  services:
+    - name: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/docker:27-dind"
+      alias: "docker"
   stage: "deploy"
   variables:
     ENVIRONMENT_ID: $CI_ENVIRONMENT_SLUG
