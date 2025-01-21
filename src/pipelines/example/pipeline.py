@@ -2,13 +2,12 @@ from typing import cast
 
 from prefect import task
 from prefect.futures import PrefectFuture
-
 from prefect.types import StrictVariableValue
 
 from src.common.monitoring.alerting import alerting_flow
 
 
-@task(log_prints=True)
+@task(log_prints=True)  # type: ignore[arg-type]
 def say_hello(name: str) -> None:
     print(f"Hello, {name}!")  # noqa: T201
 
@@ -16,18 +15,18 @@ def say_hello(name: str) -> None:
 _CONFIG: dict[str, StrictVariableValue] = {"names": ["Marvin", "Trillian", "Ford"]}
 
 
-@task()
+@task()  # type: ignore[arg-type]
 def the_answer() -> int:
     return 42
 
 
-@task()
+@task()  # type: ignore[arg-type]
 def timed_out_answer() -> int:
     raise Exception("Deep thought not have enough time to complete calculation")
 
 
 # TODO can we somehow avoid silencing mypy here?
-@alerting_flow(context=_CONFIG)  # type: ignore
+@alerting_flow(context=_CONFIG)  # type: ignore[call-overload]
 def hello_universe() -> None:
     for name in cast(list[str], _CONFIG["names"]):
         say_hello(name)

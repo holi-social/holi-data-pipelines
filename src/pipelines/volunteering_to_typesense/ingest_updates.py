@@ -47,7 +47,7 @@ def volunteering_to_typesense_ingest_updates_flow() -> State:
     return result
 
 
-@task(cache_policy=NONE)
+@task(cache_policy=NONE)  # type: ignore[arg-type]
 def volunteering_to_typesense_ingest_updates(
     typesense_client: TypesenseClient,
     typesense_collection_name: str,

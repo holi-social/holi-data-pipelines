@@ -31,7 +31,7 @@ def variable_value(key: str, default: Optional[StrictVariableValue] = None) -> S
         The resolved value, parsed as JSON if applicable.
 
     """
-    prefect_var = Variable.get(key)
+    prefect_var: StrictVariableValue = Variable.get(key)  # type: ignore[assignment]
     if prefect_var is None:
         environment_var = _getenv_case_insensitive(key)
         if not environment_var or default:

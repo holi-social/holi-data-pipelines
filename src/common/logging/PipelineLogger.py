@@ -1,5 +1,6 @@
 import logging
 from logging import Logger
+from typing import Any
 
 import prefect.logging
 from prefect.context import get_run_context, TaskRunContext, FlowRunContext
@@ -26,37 +27,37 @@ class PipelineLogger(Logger):
             return False
         return isinstance(context, FlowRunContext) or isinstance(context, TaskRunContext)
 
-    def debug(self, msg: str, *args, **kwargs):  # type: ignore
-        self._std_logger.debug(msg, *args, **kwargs)
+    def debug(self, *args: Any, **kwargs: Any) -> None:
+        self._std_logger.debug(*args, **kwargs)
         if self.__running_on_prefect():
-            prefect.logging.get_run_logger().debug(msg, *args, **kwargs)
+            prefect.logging.get_run_logger().debug(*args, **kwargs)
 
-    def info(self, msg: str, *args, **kwargs):  # type: ignore
-        self._std_logger.info(msg, *args, **kwargs)
+    def info(self, *args: Any, **kwargs: Any) -> None:
+        self._std_logger.info(*args, **kwargs)
         if self.__running_on_prefect():
-            prefect.logging.get_run_logger().info(msg, *args, **kwargs)
+            prefect.logging.get_run_logger().info(*args, **kwargs)
 
-    def warning(self, msg: str, *args, **kwargs):  # type: ignore
-        self._std_logger.warning(msg, *args, **kwargs)
+    def warning(self, *args: Any, **kwargs: Any) -> None:
+        self._std_logger.warning(*args, **kwargs)
         if self.__running_on_prefect():
-            prefect.logging.get_run_logger().warning(msg, *args, **kwargs)
+            prefect.logging.get_run_logger().warning(*args, **kwargs)
 
-    def error(self, msg: str, *args, **kwargs):  # type: ignore
-        self._std_logger.error(msg, *args, **kwargs)
+    def error(self, *args: Any, **kwargs: Any) -> None:
+        self._std_logger.error(*args, **kwargs)
         if self.__running_on_prefect():
-            prefect.logging.get_run_logger().error(msg, *args, **kwargs)
+            prefect.logging.get_run_logger().error(*args, **kwargs)
 
-    def critical(self, msg: str, *args, **kwargs):  # type: ignore
-        self._std_logger.critical(msg, *args, **kwargs)
+    def critical(self, *args: Any, **kwargs: Any) -> None:
+        self._std_logger.critical(*args, **kwargs)
         if self.__running_on_prefect():
-            prefect.logging.get_run_logger().critical(msg, *args, **kwargs)
+            prefect.logging.get_run_logger().critical(*args, **kwargs)
 
-    def exception(self, msg: str, *args, **kwargs):  # type: ignore
-        self._std_logger.exception(msg, *args, **kwargs)
+    def exception(self, *args: Any, **kwargs: Any) -> None:
+        self._std_logger.exception(*args, **kwargs)
         if self.__running_on_prefect():
-            prefect.logging.get_run_logger().exception(msg, *args, **kwargs)
+            prefect.logging.get_run_logger().exception(*args, **kwargs)
 
-    def log(self, level: int, msg: str, *args, **kwargs):  # type: ignore
-        self._std_logger.log(level, msg, *args, **kwargs)
+    def log(self, *args: Any, **kwargs: Any) -> None:
+        self._std_logger.log(*args, **kwargs)
         if self.__running_on_prefect():
-            prefect.logging.get_run_logger().log(level, msg, *args, **kwargs)
+            prefect.logging.get_run_logger().log(*args, **kwargs)

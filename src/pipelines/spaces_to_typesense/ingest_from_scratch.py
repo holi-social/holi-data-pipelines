@@ -17,7 +17,7 @@ SpaceRow = dict[str, str | None]
 SpaceDoc = dict[str, Any | None]
 
 
-@task(cache_policy=NONE)
+@task(cache_policy=NONE)  # type: ignore[arg-type]
 def load_spaces() -> list[SpaceRow]:
     return extract_data_from_bigquery("""
         SELECT
@@ -50,7 +50,7 @@ def space_to_doc(space: SpaceRow) -> SpaceDoc:
     }
 
 
-@task(cache_policy=NONE)
+@task(cache_policy=NONE)  # type: ignore[arg-type]
 def spaces_to_typesense_docs(spaces: list[SpaceRow]) -> list[SpaceDoc]:
     return [space_to_doc(space) for space in spaces]
 
@@ -61,7 +61,7 @@ def spaces_to_typesense_ingest_from_scratch_flow() -> State:
     return spaces_to_typesense_ingest_from_scratch(typesense_client, cast(str, variable_value("typesense_collection")))
 
 
-@task(cache_policy=NONE)
+@task(cache_policy=NONE)  # type: ignore[arg-type]
 def spaces_to_typesense_ingest_from_scratch(typesense_client: TypesenseClient, collection: str) -> State:
     logger.info(f"Starting spaces ingestion from scratch into typesense collection '{collection}'")
 

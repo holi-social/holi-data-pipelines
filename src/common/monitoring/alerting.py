@@ -60,7 +60,7 @@ def _compile_context_info(context: dict[str, StrictVariableValue], run: FlowRun,
 
 
 def alert(context: dict[str, StrictVariableValue], flow: Flow[Any, Any], run: FlowRun, state: State) -> None:
-    alerter = CustomWebhookNotificationBlock.load("rocketchat-alert")
+    alerter: CustomWebhookNotificationBlock = CustomWebhookNotificationBlock.load("rocketchat-alert")  # type: ignore[assignment]
     subject = f"Run `{run.name}` of flow `{flow.name}` is in state `{state.name}`."
     match state.type:
         case StateType.SCHEDULED | StateType.PENDING | StateType.RUNNING | StateType.COMPLETED:
@@ -68,7 +68,7 @@ def alert(context: dict[str, StrictVariableValue], flow: Flow[Any, Any], run: Fl
             return
         # PAUSED and CANCELLING are maybe not interesting to us, but for now we include them
         case StateType.FAILED | StateType.CANCELLED | StateType.CRASHED | StateType.PAUSED | StateType.CANCELLING:
-            alerter.notify(
+            alerter.notify(  # type: ignore[unused-coroutine]
                 subject=subject,
                 body=_compile_context_info(context, run, state),
             )

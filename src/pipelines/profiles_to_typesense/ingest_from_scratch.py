@@ -17,7 +17,7 @@ UserRow = dict[str, str | None]
 UserDoc = dict[str, Any | None]
 
 
-@task(cache_policy=NONE)
+@task(cache_policy=NONE)  # type: ignore[arg-type]
 def load_users() -> list[UserRow]:
     return extract_data_from_bigquery("""
         SELECT
@@ -52,7 +52,7 @@ def user_to_doc(user: UserRow) -> UserDoc:
     }
 
 
-@task(cache_policy=NONE)
+@task(cache_policy=NONE)  # type: ignore[arg-type]
 def users_to_typesense_docs(users: list[UserRow]) -> list[UserDoc]:
     return [user_to_doc(user) for user in users]
 
@@ -65,7 +65,7 @@ def profiles_to_typesense_ingest_from_scratch_flow() -> State:
     )
 
 
-@task(cache_policy=NONE)
+@task(cache_policy=NONE)  # type: ignore[arg-type]
 def profiles_to_typesense_ingest_from_scratch(typesense_client: TypesenseClient, collection: str) -> State:
     logger.info(f"Starting profiles ingestion from scratch into typesense collection '{collection}'")
 
