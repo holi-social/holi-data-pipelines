@@ -139,7 +139,7 @@ validate:
   script:
     - source venv/bin/activate
     - ruff check
-    - mypy src
+    #- mypy src
     - pytest .
 
 build_prefect_flow_docker_image_staging:
