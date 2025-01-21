@@ -29,9 +29,9 @@ def _compile_context_info(context: dict[str, StrictVariableValue], run: FlowRun,
     if run.job_variables:
         context_info.append(f"Run job variables `{json.dumps(run.job_variables)}`.\n")
     if run.tags:
-        context_info.append(f"Run tags `{",".join(run.tags)}`\n")
+        context_info.append(f"Run tags `{','.join(run.tags)}`\n")
     if run.labels:
-        context_info.append(f"Run labels `{",".join(run.labels)}`.\n")
+        context_info.append(f"Run labels `{','.join(run.labels)}`.\n")
     if (
         run.expected_start_time
         or run.next_scheduled_start_time

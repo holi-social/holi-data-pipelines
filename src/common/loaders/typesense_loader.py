@@ -80,5 +80,5 @@ def upsert_typesense_documents(
             )
         else:
             logger.info(f"Batch {batch_count} successfully upserted {success_count} documents.")
-            logger.debug(f"Batch {batch_count} upserted document IDs: {[doc["id"] for doc in docs_batch]}")
+            logger.debug(f"Batch {batch_count} upserted document IDs: {[doc['id'] for doc in docs_batch]}")
     return ingestion_succeeded

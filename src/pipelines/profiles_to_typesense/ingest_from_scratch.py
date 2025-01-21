@@ -39,9 +39,9 @@ def load_users() -> list[UserRow]:
 
 
 def user_to_doc(user: UserRow) -> UserDoc:
-    user_full_name = f"{user.get("first_name")} {user.get('last_name')}"
+    user_full_name = f"{user.get('first_name')} {user.get('last_name')}"
     return {
-        "id": f"profile_{str(user.get("user_id"))}",
+        "id": f"profile_{str(user.get('user_id'))}",
         "type": "profile",
         # deleted description fields as they'd creep into embeddings and mess up search results
         "location": user.get("location"),

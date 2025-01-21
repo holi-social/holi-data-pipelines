@@ -37,7 +37,7 @@ def load_spaces() -> list[SpaceRow]:
 
 def space_to_doc(space: SpaceRow) -> SpaceDoc:
     return {
-        "id": f"space_{str(space.get("id"))}",
+        "id": f"space_{str(space.get('id'))}",
         "type": "space",
         "title_de": space.get("title"),
         "title_en": space.get("title"),
