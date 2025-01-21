@@ -72,6 +72,11 @@ resource "prefect_variable" "prefect_environment" {
   value = local.environment
 }
 
+resource "prefect_variable" "bigquery_okuna_dataset" {
+  name  = "bigquery_okuna_dataset"
+  value = local.environment == "production" ? "okuna_production_public" : "okuna_staging_public"
+}
+
 # create one: create the GCP secret in the ui console
 # create a block that references it.
 resource "prefect_block" "typesense_admin_api_key" {
