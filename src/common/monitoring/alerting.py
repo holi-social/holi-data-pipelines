@@ -69,7 +69,7 @@ def alert(
     # These runs don't have a deployment and are not auto-scheduled
     if run.deployment_id is None and not run.auto_scheduled:
         return
-    alerter = CustomWebhookNotificationBlock.load("rocketchat-alert")
+    alerter: CustomWebhookNotificationBlock = CustomWebhookNotificationBlock.load("rocketchat-alert")  # type: ignore[assignment]
     subject = f"Run `{run.name}` of flow `{flow.name}` is in state `{state.name}`."
     match state.type:
         case StateType.SCHEDULED | StateType.PENDING | StateType.RUNNING | StateType.COMPLETED:
