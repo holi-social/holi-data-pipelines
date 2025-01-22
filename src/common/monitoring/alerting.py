@@ -29,9 +29,9 @@ def _compile_context_info(context: Mapping[str, StrictVariableValue], run: FlowR
     if run.job_variables:
         context_info.append(f"Run job variables `{json.dumps(run.job_variables)}`.\n")
     if run.tags:
-        context_info.append(f"Run tags `{",".join(run.tags)}`\n")
+        context_info.append(f"Run tags `{','.join(run.tags)}`\n")
     if run.labels:
-        context_info.append(f"Run labels `{",".join(run.labels)}`.\n")
+        context_info.append(f"Run labels `{','.join(run.labels)}`.\n")
     if (
         run.expected_start_time
         or run.next_scheduled_start_time
@@ -77,7 +77,7 @@ def alert(
             return
         # PAUSED and CANCELLING are maybe not interesting to us, but for now we include them
         case StateType.FAILED | StateType.CANCELLED | StateType.CRASHED | StateType.PAUSED | StateType.CANCELLING:
-            alerter.notify(
+            alerter.notify(  # type: ignore[unused-coroutine]
                 subject=subject,
                 body=_compile_context_info(context, run, state),
             )

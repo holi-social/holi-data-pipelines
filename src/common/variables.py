@@ -33,7 +33,7 @@ def variable_value(key: str, default: StrictVariableValue = None) -> StrictVaria
         The resolved value, parsed as JSON if applicable.
 
     """
-    prefect_var = Variable.get(key)
+    prefect_var: StrictVariableValue = Variable.get(key)  # type: ignore[assignment]
     if prefect_var is not None:
         return prefect_var
     else:

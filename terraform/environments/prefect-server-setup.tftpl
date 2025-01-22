@@ -190,7 +190,10 @@ mkdir -p /srv/prefect-server
 python3 -m venv /srv/prefect-server/.venv
 source /srv/prefect-server/.venv/bin/activate
 pip3 install -U pip
-pip3 install -U "prefect-gcp[all_extras]"
+cat >requirements.txt <<EOL
+${requirements}
+EOL
+pip3 install -r requirements.txt
 
 cat << EOF > /srv/prefect-server/profiles.toml
 active = "default"

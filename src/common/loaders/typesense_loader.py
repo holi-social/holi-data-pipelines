@@ -56,7 +56,7 @@ def upsert_documents_in_batches(
     return failed_items, success_count
 
 
-@task(cache_policy=prefect.cache_policies.NONE)
+@task(cache_policy=prefect.cache_policies.NONE)  # type: ignore[arg-type]
 def upsert_typesense_documents(
     typesense_client: TypesenseClient,
     logger: Logger,
@@ -80,5 +80,5 @@ def upsert_typesense_documents(
             )
         else:
             logger.info(f"Batch {batch_count} successfully upserted {success_count} documents.")
-            logger.debug(f"Batch {batch_count} upserted document IDs: {[doc["id"] for doc in docs_batch]}")
+            logger.debug(f"Batch {batch_count} upserted document IDs: {[doc['id'] for doc in docs_batch]}")
     return ingestion_succeeded

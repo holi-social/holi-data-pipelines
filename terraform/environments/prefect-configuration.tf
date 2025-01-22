@@ -22,7 +22,7 @@
 #  remote-file-system
 #  secret
 #  shell-operation
-#  slack-credentials
+#  slack-credentialsterraform/environments/datastream-monitoring.tf
 #  slack-webhook
 #  smb
 
@@ -117,6 +117,11 @@ resource "prefect_variable" "prefect_environment" {
   value = local.environment
 }
 
+resource "prefect_variable" "bigquery_okuna_dataset" {
+  name  = "bigquery_okuna_dataset"
+  value = local.environment == "production" ? "okuna_production_public" : "okuna_staging_public"
+}
+
 # create one: create the GCP secret in the ui console
 # create a block that references it.
 resource "prefect_block" "typesense_admin_api_key" {
@@ -178,6 +183,10 @@ resource "prefect_work_pool" "cloud_run" {
   depends_on = [null_resource.prefect_server_available]
 }
 
+resource "docker_image" "prefect" {
+  name = "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.1.13-python3.12"
+}
+
 resource "google_cloud_run_v2_service" "work_pool_cloud_run_worker" {
   name                = "prefect-worker-${local.environment_name}"
   location            = local.default_region # finland, low CO2 emissions
@@ -186,24 +195,30 @@ resource "google_cloud_run_v2_service" "work_pool_cloud_run_worker" {
   template {
     service_account = data.terraform_remote_state.holi_data_pipeline_common_state.outputs.data_pipeline_service_account_email
     containers {
-      image = "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3-latest"
+      image = docker_image.prefect.name
       args = [
-        "prefect", "worker", "start", "--install-policy", "always", "--with-healthcheck", "-p",
-        "${prefect_work_pool.cloud_run.name}", "-t", "${prefect_work_pool.cloud_run.type}"
-      ]
+      args  = ["prefect", "worker", "start", "--install-policy", "never", "--with-healthcheck", "-p", "${prefect_work_pool.cloud_run.name}", "-t", "${prefect_work_pool.cloud_run.type}"]
       env {
         name  = "PREFECT_API_URL"
         value = "http://${local.prefect_internal_domain}:${local.prefect_internal_port}/api"
+      }
+      # setting the install-policy flag of the prefect worker command above to always leads to an upgrade of prefect to the latest version on service start. This breaks communication between the server and the worker service.
+      # In order to set the flag to never (or any other value), we need to pre-install prefect-gcp[all_extras].
+      # See https://linen.prefect.io/t/23212478/when-i-use-a-prefect-worker-gcp-cloud-run-v2-worker-to-be-pr for inspiration to this fix.
+      env {
+        name  = "EXTRA_PIP_PACKAGES"
+        value = "prefect-gcp[all_extras]"
       }
       resources {
         cpu_idle          = false
         startup_cpu_boost = true
         limits = {
           cpu    = "1"
-          memory = "512Mi"
+          memory = "1024Mi"
         }
       }
       startup_probe {
+        failure_threshold = 10
         http_get {
           path = "/health"
         }
@@ -225,11 +240,14 @@ resource "google_cloud_run_v2_service" "work_pool_cloud_run_worker" {
       "environment_type" = local.environment_type
       "holi_service"     = "prefect-worker"
     }
+    scaling {
+      min_instance_count = 1
+      max_instance_count = 1
+    }
   }
 
   scaling {
     min_instance_count = 1
-    #max_instance_count = 1 # TODO this should work, but does not
   }
 
   ingress = "INGRESS_TRAFFIC_INTERNAL_ONLY"

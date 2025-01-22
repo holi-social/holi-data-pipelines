@@ -32,7 +32,7 @@ async def stream_to_bigquery(
 
         if documents:
             with Timer(
-                text=f"Stream-inserting {len(documents)} documents into BigQuery " f"took {{:0.4f}} seconds",
+                text=f"Stream-inserting {len(documents)} documents into BigQuery took {{:0.4f}} seconds",
                 logger=logger.info,
             ):
                 # prefect_gcp.bigquery.bigquery_insert_stream() does not allow to set ignore_unknown_values

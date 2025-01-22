@@ -47,8 +47,11 @@ stages:
 
 .terraform_deploy:
   image:
-    name: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/hashicorp/terraform:1.9.8"
-    entrypoint: ["/bin/sh", "-c"]
+    name: "europe-north1-docker.pkg.dev/holi-shared/docker/holi-docker/terraform-docker"
+  stage: build
+  services:
+    - name: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/docker:27-dind"
+      alias: "docker"
   stage: "deploy"
   variables:
     ENVIRONMENT_ID: $CI_ENVIRONMENT_SLUG
@@ -66,7 +69,7 @@ stages:
   interruptible: false
 
 .prefect_deploy:
-  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.1.5-python3.12"
+  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.1.13-python3.12"
   stage: "deploy"
   variables:
     ENVIRONMENT_ID: $CI_ENVIRONMENT_SLUG
@@ -77,7 +80,7 @@ stages:
   resource_group: $ENVIRONMENT_ID
 
 .smoketest:
-  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.1.5-python3.12"
+  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.1.13-python3.12"
   stage: "deploy"
   cache: !reference [.pip_cache_readonly]
   script:
@@ -139,7 +142,8 @@ validate:
   script:
     - source venv/bin/activate
     - ruff check
-    - mypy src
+    - ruff format --check
+    - mypy --python-executable=venv/bin/python src
     - pytest .
 
 build_prefect_flow_docker_image_staging:

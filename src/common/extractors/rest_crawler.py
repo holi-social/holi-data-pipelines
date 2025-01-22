@@ -75,7 +75,7 @@ class RestCrawler:
         url_encoded_params = urlencode(params)
         with Timer(
             text=(
-                f"Fetching page #{paging_info.page_number()} ({self.url}{"?"+url_encoded_params if params else ""}) "
+                f"Fetching page #{paging_info.page_number()} ({self.url}{'?' + url_encoded_params if params else ''}) "
                 f"took {{:0.4f}} seconds"
             ),
             logger=self.log_fn,

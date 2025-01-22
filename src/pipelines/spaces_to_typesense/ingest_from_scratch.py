@@ -17,9 +17,9 @@ SpaceRow = dict[str, str | None]
 SpaceDoc = dict[str, Any | None]
 
 
-@task(cache_policy=NONE)
-def load_spaces() -> list[SpaceRow]:
-    return extract_data_from_bigquery("""
+@task(cache_policy=NONE)  # type: ignore[arg-type]
+def load_spaces(source_dataset: str) -> list[SpaceRow]:
+    return extract_data_from_bigquery(f"""
         SELECT
           id,
           name,
@@ -29,7 +29,7 @@ def load_spaces() -> list[SpaceRow]:
           avatar,
           avatar_blurhash,
         FROM
-          `public.openbook_communities_community`
+          `{source_dataset}.openbook_communities_community`
         WHERE
           is_deleted=false
     """)
@@ -37,7 +37,7 @@ def load_spaces() -> list[SpaceRow]:
 
 def space_to_doc(space: SpaceRow) -> SpaceDoc:
     return {
-        "id": f"space_{str(space.get("id"))}",
+        "id": f"space_{str(space.get('id'))}",
         "type": "space",
         "title_de": space.get("title"),
         "title_en": space.get("title"),
@@ -50,7 +50,7 @@ def space_to_doc(space: SpaceRow) -> SpaceDoc:
     }
 
 
-@task(cache_policy=NONE)
+@task(cache_policy=NONE)  # type: ignore[arg-type]
 def spaces_to_typesense_docs(spaces: list[SpaceRow]) -> list[SpaceDoc]:
     return [space_to_doc(space) for space in spaces]
 
@@ -58,14 +58,18 @@ def spaces_to_typesense_docs(spaces: list[SpaceRow]) -> list[SpaceDoc]:
 @alerting_flow
 def spaces_to_typesense_ingest_from_scratch_flow() -> State:
     typesense_client = TypesenseClient(TypesenseClientConfig.from_env())
-    return spaces_to_typesense_ingest_from_scratch(typesense_client, cast(str, variable_value("typesense_collection")))
+    typesense_collection = cast(str, variable_value("typesense_collection"))
+    source_dataset = cast(str, variable_value("bigquery_okuna_dataset"))
+    return spaces_to_typesense_ingest_from_scratch(typesense_client, source_dataset, typesense_collection)
 
 
-@task(cache_policy=NONE)
-def spaces_to_typesense_ingest_from_scratch(typesense_client: TypesenseClient, collection: str) -> State:
+@task(cache_policy=NONE)  # type: ignore[arg-type]
+def spaces_to_typesense_ingest_from_scratch(
+    typesense_client: TypesenseClient, source_dataset: str, collection: str
+) -> State:
     logger.info(f"Starting spaces ingestion from scratch into typesense collection '{collection}'")
 
-    spaces = load_spaces()
+    spaces = load_spaces(source_dataset)
     logger.info("Found %s spaces", len(spaces))
 
     space_documents = spaces_to_typesense_docs(spaces)
