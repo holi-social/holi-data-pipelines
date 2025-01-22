@@ -1,6 +1,6 @@
 import json
 from functools import partial
-from typing import Any, Optional, List, Callable, cast
+from typing import Any, Optional, List, Callable, cast, Mapping
 
 from prefect import runtime
 from prefect.blocks.notifications import CustomWebhookNotificationBlock
@@ -14,7 +14,7 @@ from src.common.logging.PipelineLogger import PipelineLogger
 logger = PipelineLogger(__name__)
 
 
-def _compile_context_info(context: dict[str, StrictVariableValue], run: FlowRun, state: State) -> str:
+def _compile_context_info(context: Mapping[str, StrictVariableValue], run: FlowRun, state: State) -> str:
     context_info = []
     if state.message:
         context_info.append(f"**{state.message}**\n")
@@ -59,7 +59,16 @@ def _compile_context_info(context: dict[str, StrictVariableValue], run: FlowRun,
     return "".join(context_info)
 
 
-def alert(context: dict[str, StrictVariableValue], flow: Flow[Any, Any], run: FlowRun, state: State) -> None:
+def alert(
+    context: Mapping[str, StrictVariableValue],
+    flow: Flow[Any, Any],
+    run: FlowRun,
+    state: State,
+) -> None:
+    # We don't want to alert on runs happening during development, e.g. runs on developer's boxes.
+    # These runs don't have a deployment and are not auto-scheduled
+    if run.deployment_id is None and not run.auto_scheduled:
+        return
     alerter: CustomWebhookNotificationBlock = CustomWebhookNotificationBlock.load("rocketchat-alert")  # type: ignore[assignment]
     subject = f"Run `{run.name}` of flow `{flow.name}` is in state `{state.name}`."
     match state.type:

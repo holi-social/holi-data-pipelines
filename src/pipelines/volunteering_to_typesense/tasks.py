@@ -1,6 +1,5 @@
 from datetime import date, datetime
-from typing import Tuple, cast, Any
-from typing import List, Dict, Optional
+from typing import Any, List, Dict, Optional, cast, Tuple
 
 from prefect import task, State
 from prefect.states import Failed, Completed
@@ -18,7 +17,9 @@ logger = PipelineLogger(__name__)
 
 @task
 def extract_changed_records(
-    table_name: str, last_complete_ingestion_date: Optional[date], latest_partition_date: date
+    table_name: str,
+    last_complete_ingestion_date: Optional[date],
+    latest_partition_date: date,
 ) -> List[Dict[str, Any]]:
     """Extract changed data from BigQuery."""
     logger.info(
@@ -43,7 +44,9 @@ def transform_data(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
 @task
 def delete_typesense_documents(
-    typesense_client: TypesenseClient, typesense_collection_name: str, document_ids_to_delete: list[str]
+    typesense_client: TypesenseClient,
+    typesense_collection_name: str,
+    document_ids_to_delete: list[str],
 ) -> bool:
     """
     Deletes documents with the given IDs from the Typesense collection.

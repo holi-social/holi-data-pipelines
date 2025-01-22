@@ -22,7 +22,7 @@
 #  remote-file-system
 #  secret
 #  shell-operation
-#  slack-credentials
+#  slack-credentialsterraform/environments/datastream-monitoring.tf
 #  slack-webhook
 #  smb
 
@@ -37,6 +37,51 @@ resource "prefect_variable" "volunteering_with_classification" {
   value = local.environment == "production" ? "holi-shared.datapool_production.volunteering_voltastics_with_classification_enriched" : "holi-shared.datapool_development.volunteering_voltastics_with_classification_enriched"
 }
 
+# crawler / voltastics
+resource "prefect_variable" "voltastics_crawler_table" {
+  name = "voltastics_crawler_table"
+  value = {
+    project = local.default_project
+    dataset = local.dataset_datalake
+    table   = google_bigquery_table.volunteering_voltastics_raw.table_id
+  }
+}
+
+resource "prefect_variable" "voltastics_api_url" {
+  name  = "voltastics_api_url"
+  value = "https://backend.voltastics.de/api/searchengagement"
+}
+
+resource "prefect_block" "voltastics_api_key" {
+  name      = "voltastics-api-key"
+  type_slug = "gcpsecret"
+
+  data = jsonencode({
+    "gcp_credentials" = {
+      "project" = "holi-shared"
+    }
+    "secret_name"    = "VOLUNTEERING_VOLTASTICS_API_KEY"
+    "secret_version" = "latest"
+  })
+  depends_on = [null_resource.prefect_server_available]
+}
+
+# crawler / betterplace
+resource "prefect_variable" "betterplace_crawler_table" {
+  name = "betterplace_crawler_table"
+  value = {
+    project = local.default_project
+    dataset = local.dataset_datalake
+    table   = google_bigquery_table.donations_betterplace_raw.table_id
+  }
+}
+
+resource "prefect_variable" "betterplace_api_url" {
+  name  = "betterplace_api_url"
+  value = "https://api.betterplace.org/de/api_v4"
+}
+
+# deprecated
 resource "prefect_variable" "volunteering_voltastics_raw_deduped" {
   name  = "volunteering_voltastics_raw_deduped"
   value = local.environment == "production" ? "holi-shared.datalake_production.volunteering_voltastics_raw_deduped_location_enriched" : "holi-shared.datalake_development.volunteering_voltastics_raw_deduped_location_enriched"
@@ -151,6 +196,7 @@ resource "google_cloud_run_v2_service" "work_pool_cloud_run_worker" {
     service_account = data.terraform_remote_state.holi_data_pipeline_common_state.outputs.data_pipeline_service_account_email
     containers {
       image = docker_image.prefect.name
+      args = [
       args  = ["prefect", "worker", "start", "--install-policy", "never", "--with-healthcheck", "-p", "${prefect_work_pool.cloud_run.name}", "-t", "${prefect_work_pool.cloud_run.type}"]
       env {
         name  = "PREFECT_API_URL"
