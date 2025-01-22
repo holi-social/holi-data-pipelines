@@ -58,6 +58,15 @@ data "terraform_remote_state" "holi_data_pipeline_common_state" {
   }
 }
 
+data "terraform_remote_state" "okuna_state" {
+  backend = "gcs"
+  config = {
+    bucket = "holi-shared-terraform-state"
+    prefix = "okuna-environments"
+  }
+  workspace = terraform.workspace
+}
+
 # provider google including beta features
 provider "google" {
   project = "holi-shared" # string, because referencing google_project.holi_shared would be a cycle

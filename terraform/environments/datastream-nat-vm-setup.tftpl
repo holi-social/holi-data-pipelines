@@ -1,0 +1,38 @@
+#! /bin/bash
+
+# adapted from https://cloud.google.com/datastream/docs/private-connectivity
+
+# Enable the VM to receive packets whose destinations do
+# not match any running process local to the VM
+echo 1 > /proc/sys/net/ipv4/ip_forward
+
+# Ask the Metadata server for the IP address of the VM nic0
+# network interface:
+md_url_prefix="http://169.254.169.254/computeMetadata/v1/instance"
+vm_nic_ip="$(curl -H "Metadata-Flavor: Google" $md_url_prefix/network-interfaces/0/ip)"
+
+# Clear any existing iptables NAT table entries (all chains):
+iptables -t nat -F
+
+%{ for datastream_destination_port, target_ip_and_port in ports_to_targets }
+
+# Create a NAT table entry in the prerouting chain, matching
+# any packets with destination port, changing the target
+# IP address and port of the packet to the SQL instance:
+iptables -t nat -A PREROUTING \
+     -p tcp --dport ${datastream_destination_port} \
+     -j DNAT \
+     --to-destination ${target_ip_and_port}
+
+# Create a NAT table entry in the postrouting chain, matching
+# any packets with destination database port, changing the source IP
+# address of the packet to the NAT VM's primary internal IPv4 address:
+iptables -t nat -A POSTROUTING \
+     -p tcp --dport ${datastream_destination_port} \
+     -j SNAT \
+     --to-source $vm_nic_ip
+
+%{ endfor ~}     
+
+# Save iptables configuration:
+iptables-save

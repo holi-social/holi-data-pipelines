@@ -7,13 +7,10 @@ resource "google_kms_crypto_key" "data_pipeline" {
   }
 }
 
-resource "google_kms_crypto_key_iam_binding" "data_pipeline" {
+resource "google_kms_crypto_key_iam_member" "data_pipeline" {
   crypto_key_id = google_kms_crypto_key.data_pipeline.id
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
-
-  members = [
-    "serviceAccount:service-${data.terraform_remote_state.holi_infra_state.outputs.shared_project_number}@compute-system.iam.gserviceaccount.com",
-  ]
+  member        = "serviceAccount:service-${data.terraform_remote_state.holi_infra_state.outputs.shared_project_number}@compute-system.iam.gserviceaccount.com"
 }
 
 output "data_pipeline_key" {
