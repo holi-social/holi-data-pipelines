@@ -102,3 +102,29 @@ deployments:
         memory: '4096Mi'
         timeout: 86400
         name: "srch-etl-spaces-scratch"
+  - name: crawl-betterplace
+    version:
+    tags: [ ]
+    description: "Crawls betterplace.org for charity projects and ingests them into BigQuery"
+    entrypoint: src/pipelines/crawlers/betterplace/pipeline.py:crawl_betterplace
+    work_pool:
+      name: cloud-run-v2
+      work_queue_name: default
+      job_variables:
+        image: "{{ get_environment_docker_image.stdout }}"
+        memory: '512Mi'
+        timeout: 86400
+        name: "crawl-betterplace"
+  - name: crawl-voltastics
+    version:
+    tags: [ ]
+    description: "Crawls voltastics.com for volunteering opportunities and ingests them into BigQuery"
+    entrypoint: src/pipelines/crawlers/voltastics/pipeline.py:crawl_voltastics
+    work_pool:
+      name: cloud-run-v2
+      work_queue_name: default
+      job_variables:
+        image: "{{ get_environment_docker_image.stdout }}"
+        memory: '512Mi'
+        timeout: 86400
+        name: "crawl-voltastics"
