@@ -151,23 +151,28 @@ resource "google_cloud_run_v2_service" "work_pool_cloud_run_worker" {
     service_account = data.terraform_remote_state.holi_data_pipeline_common_state.outputs.data_pipeline_service_account_email
     containers {
       image = docker_image.prefect.name
-      # install-policy always leads to an upgrade of prefect to the latest version, which leads to breakages...any other policy leads to the worker being unable to start
-      # possible solution is to build a docker image ourselves:
-      # https://linen.prefect.io/t/23212478/when-i-use-a-prefect-worker-gcp-cloud-run-v2-worker-to-be-pr
-      args = ["prefect", "worker", "start", "--install-policy", "always", "--with-healthcheck", "-p", "${prefect_work_pool.cloud_run.name}", "-t", "${prefect_work_pool.cloud_run.type}"]
+      args  = ["prefect", "worker", "start", "--install-policy", "never", "--with-healthcheck", "-p", "${prefect_work_pool.cloud_run.name}", "-t", "${prefect_work_pool.cloud_run.type}"]
       env {
         name  = "PREFECT_API_URL"
         value = "http://${local.prefect_internal_domain}:${local.prefect_internal_port}/api"
+      }
+      # setting the install-policy flag of the prefect worker command above to always leads to an upgrade of prefect to the latest version on service start. This breaks communication between the server and the worker service.
+      # In order to set the flag to never (or any other value), we need to pre-install prefect-gcp[all_extras].
+      # See https://linen.prefect.io/t/23212478/when-i-use-a-prefect-worker-gcp-cloud-run-v2-worker-to-be-pr for inspiration to this fix.
+      env {
+        name  = "EXTRA_PIP_PACKAGES"
+        value = "prefect-gcp[all_extras]"
       }
       resources {
         cpu_idle          = false
         startup_cpu_boost = true
         limits = {
           cpu    = "1"
-          memory = "512Mi"
+          memory = "1024Mi"
         }
       }
       startup_probe {
+        failure_threshold = 10
         http_get {
           path = "/health"
         }
@@ -189,11 +194,14 @@ resource "google_cloud_run_v2_service" "work_pool_cloud_run_worker" {
       "environment_type" = local.environment_type
       "holi_service"     = "prefect-worker"
     }
+    scaling {
+      min_instance_count = 1
+      max_instance_count = 1
+    }
   }
 
   scaling {
     min_instance_count = 1
-    #max_instance_count = 1 # TODO this should work, but does not
   }
 
   ingress = "INGRESS_TRAFFIC_INTERNAL_ONLY"
