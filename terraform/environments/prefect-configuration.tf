@@ -196,7 +196,6 @@ resource "google_cloud_run_v2_service" "work_pool_cloud_run_worker" {
     service_account = data.terraform_remote_state.holi_data_pipeline_common_state.outputs.data_pipeline_service_account_email
     containers {
       image = docker_image.prefect.name
-      args = [
       args  = ["prefect", "worker", "start", "--install-policy", "never", "--with-healthcheck", "-p", "${prefect_work_pool.cloud_run.name}", "-t", "${prefect_work_pool.cloud_run.type}"]
       env {
         name  = "PREFECT_API_URL"
