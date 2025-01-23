@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
-from typing import Dict
+from typing import Dict, cast
 
 import prefect
 from dateutil.parser import isoparse
@@ -29,7 +29,10 @@ class CrawlerState:
 
     @staticmethod
     def load_from_variable(variable_key: str) -> CrawlerState:
-        state_from_prefect = variable_value_as(dict[str, str | None], variable_key, default={})
+        # FIXME remove casting once https://github.com/PrefectHQ/prefect/issues/16825 has a resolution
+        state_from_prefect = cast(
+            Dict[str, str | None], variable_value_as(Dict[str, str | None], variable_key, default={})
+        )
         return CrawlerState._from_variable(variable_key, state_from_prefect)
 
     def persist_to_variable(self) -> None:

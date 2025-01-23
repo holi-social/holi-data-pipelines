@@ -3,29 +3,30 @@ from __future__ import annotations
 import asyncio
 import functools
 from asyncio import Queue
-from typing import Any, Dict, Callable, Awaitable
+from typing import Any, Awaitable, Callable, Dict, cast
 
 import prefect
 from prefect import task
 
-from src.common.extractors.rest_crawler import RestCrawler, PagingInfo
-from src.common.loaders.bq_loader import is_streaming_buffer_empty, delete_partition
+from src.common.extractors.rest_crawler import PagingInfo, RestCrawler
+from src.common.loaders.bq_loader import delete_partition, is_streaming_buffer_empty
 from src.common.monitoring.alerting import alerting_flow
 from src.common.variables import variable_value_as
 from src.pipelines.crawlers.crawler_common_code import (
-    update_last_successful_day,
-    source_to_sink,
     bigquery_sink,
     has_run_successfully_for_day,
     is_cleanup_needed,
+    source_to_sink,
+    update_last_successful_day,
 )
 from src.pipelines.crawlers.crawler_config import CrawlerConfig
 
 logger = prefect.logging.get_logger()
 _CONFIG: CrawlerConfig = CrawlerConfig(
     state_variable_name="betterplace_crawler_state",
-    api_url=variable_value_as(str, "betterplace_api_url"),
-    bigquery_table=variable_value_as(Dict[str, str], "betterplace_crawler_table"),
+    # FIXME remove casting once https://github.com/PrefectHQ/prefect/issues/16825 has a resolution
+    api_url=cast(str, variable_value_as(str, "betterplace_api_url")),
+    bigquery_table=cast(Dict[str, str], variable_value_as(Dict[str, str], "betterplace_crawler_table")),
 )
 _HEADERS: Dict[str, str] = {"X-Requested-With": "holi"}
 _STOP_DOC = object()

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from asyncio import Queue
-from typing import Any, Dict
+from typing import Any, Dict, cast
 
 import prefect
 from prefect import task
@@ -23,10 +23,12 @@ from src.pipelines.crawlers.crawler_config import CrawlerConfig
 logger = prefect.logging.get_logger()
 _CONFIG: CrawlerConfig = CrawlerConfig(
     state_variable_name="voltastics_crawler_state",
-    api_url=variable_value_as(str, "voltastics_api_url"),
-    bigquery_table=variable_value_as(Dict[str, str], "voltastics_crawler_table"),
+    # FIXME remove casting once https://github.com/PrefectHQ/prefect/issues/16825 has a resolution
+    api_url=cast(str, variable_value_as(str, "voltastics_api_url")),
+    bigquery_table=cast(Dict[str, str], variable_value_as(Dict[str, str], "voltastics_crawler_table")),
 )
-_HEADERS: Dict[str, str] = {"x-voltastics-token": get_secret_value("voltastics-api-key")}
+# FIXME remove casting once https://github.com/PrefectHQ/prefect/issues/16825 has a resolution
+_HEADERS: Dict[str, str] = {"x-voltastics-token": cast(str, get_secret_value("voltastics-api-key"))}
 _STOP_DOC = object()
 
 
