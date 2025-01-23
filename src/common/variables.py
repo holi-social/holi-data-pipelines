@@ -88,7 +88,7 @@ async def secret_value(key: str, default: Optional[str] = None) -> Optional[str]
         The resolved value as Optional[str]
     """
     try:
-        return (await GcpSecret.load(key).read_secret()).decode("utf-8")
+        return (await (await GcpSecret.load(key)).read_secret()).decode("utf-8")
     except ValueError:
         environment_var_or_default = _getenv_case_insensitive(key, default)
         if not environment_var_or_default:

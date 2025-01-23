@@ -112,7 +112,7 @@ deployments:
       work_queue_name: default
       job_variables:
         image: "{{ get_environment_docker_image.stdout }}"
-        memory: '512Mi'
+        memory: '1024Mi'
         timeout: 86400
         name: "crawl-betterplace"
   - name: crawl-voltastics
@@ -125,6 +125,6 @@ deployments:
       work_queue_name: default
       job_variables:
         image: "{{ get_environment_docker_image.stdout }}"
-        memory: '512Mi'
+        memory: '1024Mi'
         timeout: 86400
         name: "crawl-voltastics"
