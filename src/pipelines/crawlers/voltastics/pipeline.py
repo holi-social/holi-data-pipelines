@@ -17,6 +17,7 @@ from src.pipelines.crawlers.crawler_common_code import (
     bigquery_sink,
     has_run_successfully_for_day,
     is_cleanup_needed,
+    update_last_run_day,
 )
 from src.pipelines.crawlers.crawler_config import CrawlerConfig
 
@@ -63,6 +64,7 @@ async def crawl(queue: Queue[Any]) -> None:
 def crawl_voltastics(force_run: bool = False) -> None:
     if not has_run_successfully_for_day(_CONFIG) or force_run:
         logger.info("Crawling did not run successfully for today, starting run.")
+        update_last_run_day(_CONFIG)
 
         if is_cleanup_needed(_CONFIG):
             if is_streaming_buffer_empty(*_CONFIG.get_bq_table_fqdn()) or force_run:
