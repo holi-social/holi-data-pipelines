@@ -29,7 +29,7 @@ class PagingInfo:
 
 class RestCrawler:
     _default_retry = ExponentialRetry()
-    _default_timeout = ClientTimeout(total=60, sock_connect=10)
+    _default_timeout = ClientTimeout(total=300, sock_connect=10)
 
     def __init__(
         self,
