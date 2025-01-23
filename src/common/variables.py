@@ -4,6 +4,7 @@ from json import JSONDecodeError
 from typing import Optional, TypeVar, Type
 
 from prefect.types import StrictVariableValue
+from prefect.utilities.asyncutils import sync_compatible
 from prefect.variables import Variable
 from prefect_gcp.secret_manager import GcpSecret
 from trycast import isassignable, checkcast  # type: ignore
@@ -18,7 +19,8 @@ def _getenv_case_insensitive(key: str, default: Optional[str] = None) -> str | N
     return os.getenv(_env_key_from_prefect_key(key), default)
 
 
-def variable_value(key: str, default: StrictVariableValue = None) -> StrictVariableValue:
+@sync_compatible
+async def variable_value(key: str, default: StrictVariableValue = None) -> StrictVariableValue:
     """
     Resolves the value for a given key by first attempting to retrieve it from
     Prefect variables. If not found, it falls back to searching the environment
@@ -33,7 +35,7 @@ def variable_value(key: str, default: StrictVariableValue = None) -> StrictVaria
         The resolved value, parsed as JSON if applicable.
 
     """
-    prefect_var: StrictVariableValue = Variable.get(key)  # type: ignore[assignment]
+    prefect_var: StrictVariableValue = await Variable.aget(key)  # type: ignore[assignment]
     if prefect_var is not None:
         return prefect_var
     else:
@@ -58,8 +60,9 @@ def variable_value(key: str, default: StrictVariableValue = None) -> StrictVaria
 T = TypeVar("T", bound=StrictVariableValue)
 
 
-def variable_value_as(return_type: Type[T], key: str, default: Optional[T] = None) -> T:
-    value = variable_value(key, default)
+@sync_compatible
+async def variable_value_as(return_type: Type[T], key: str, default: Optional[T] = None) -> T:
+    value = await variable_value(key, default)
     if isassignable(value, return_type):
         return checkcast(return_type, value)
     else:
@@ -70,7 +73,8 @@ def update_variable(key: str, value: StrictVariableValue) -> None:
     Variable.set(name=key, value=value, overwrite=True)
 
 
-def secret_value(key: str, default: Optional[str] = None) -> Optional[str]:
+@sync_compatible
+async def secret_value(key: str, default: Optional[str] = None) -> Optional[str]:
     """
     Resolves the secret for a given key. If not found, it falls back to searching the environment
     variables in a case-insensitive manner.
@@ -84,7 +88,7 @@ def secret_value(key: str, default: Optional[str] = None) -> Optional[str]:
         The resolved value as Optional[str]
     """
     try:
-        return GcpSecret.load(key).read_secret().decode("utf-8")
+        return (await GcpSecret.load(key).read_secret()).decode("utf-8")
     except ValueError:
         environment_var_or_default = _getenv_case_insensitive(key, default)
         if not environment_var_or_default:
@@ -96,7 +100,8 @@ def secret_value(key: str, default: Optional[str] = None) -> Optional[str]:
             return json.loads(environment_var_or_default)
 
 
-def get_secret_value(key: str, default: Optional[str] = None) -> str:
+@sync_compatible
+async def get_secret_value(key: str, default: Optional[str] = None) -> str:
     """
     Resolves the secret for a given key. If not found, it falls back to searching the environment
     variables in a case-insensitive manner. If no value could be found anywhere, it fails with an AssertionError.
@@ -111,7 +116,7 @@ def get_secret_value(key: str, default: Optional[str] = None) -> str:
 
     :raises AssertionError
     """
-    value = secret_value(key, default)
+    value = await secret_value(key, default)
     if value is None:
         raise ValueError(f"Got None value for secret '{key}'.")
     return value
