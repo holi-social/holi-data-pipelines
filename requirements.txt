@@ -5,7 +5,7 @@ langdetect==1.0.9
 prefect==3.1.13
 prefect-gcp[all_extras]==0.6.2
 pyarrow>=3.0.0
-pydantic==2.10.5
+pydantic==2.10.6
 python-dateutil==2.9.0.post0
 trycast==1.2.0
 types-python-dateutil==2.9.0.20241206
