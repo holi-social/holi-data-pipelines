@@ -64,7 +64,6 @@ async def crawl(queue: Queue[Any]) -> None:
 def crawl_voltastics(force_run: bool = False) -> None:
     if not has_run_successfully_for_day(_CONFIG) or force_run:
         logger.info("Crawling did not run successfully for today, starting run.")
-        update_last_run_day(_CONFIG)
 
         if is_cleanup_needed(_CONFIG):
             if is_streaming_buffer_empty(*_CONFIG.get_bq_table_fqdn()) or force_run:
@@ -74,6 +73,7 @@ def crawl_voltastics(force_run: bool = False) -> None:
                 logger.warning("Unfinished run happened for today, but streaming buffer is not empty. Aborting flow.")
                 return
 
+        update_last_run_day(_CONFIG)
         asyncio.run(source_to_sink(crawl, bigquery_sink(_CONFIG, _STOP_DOC)))
         update_last_successful_day(_CONFIG)  # = finalize
     else:
