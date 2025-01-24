@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import functools
 from asyncio import Queue
-from typing import Any, Awaitable, Callable, Dict, cast
+from typing import Any, Awaitable, Callable, Dict, cast, Coroutine
 
 import prefect
 from prefect import task
@@ -43,7 +43,7 @@ def categories_url(project_id: int) -> str:
 
 # @task(cache_policy=TASK_SOURCE + RUN_ID)
 @task
-async def crawl(queue: Queue[Any]) -> None:
+def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, None]]:
     def projects_paging_params(paging_info: PagingInfo) -> dict[str, Any]:
         return {
             "page": paging_info.page_number(),
@@ -51,47 +51,52 @@ async def crawl(queue: Queue[Any]) -> None:
             "order": "id:DESC",
         }
 
-    async def add_page_to_queue(projects_page: Any) -> None:
-        # we need to perform sub requests for fetching the categories
-        async def fetch_categories(project_id: int, process_page: Callable[[Any], Awaitable[None]]) -> None:
-            default_page_size = 50
-            await RestCrawler(
-                url=categories_url(project_id),
-                get_params=lambda _: {},
-                get_full_count=default_page_size,  # instead of fetching, we just tell the crawler 1 page is enough
-                process_page=process_page,
-                page_size=default_page_size,
-                headers=_HEADERS,
-                stop_page=_STOP_DOC,
-                log_function=logger.debug,
-            ).crawl()
+    async def crawl_to_queue(queue: Queue[Any]) -> None:
+        async def add_page_to_queue(projects_page: Any) -> None:
+            # we need to perform sub requests for fetching the categories
+            async def fetch_categories(project_id: int, process_page: Callable[[Any], Awaitable[None]]) -> None:
+                default_page_size = 50
+                await RestCrawler(
+                    url=categories_url(project_id),
+                    get_params=lambda _: {},
+                    get_full_count=default_page_size,  # instead of fetching, we just tell the crawler 1 page is enough
+                    process_page=process_page,
+                    page_size=default_page_size,
+                    headers=_HEADERS,
+                    stop_page=_STOP_DOC,
+                    log_function=logger.debug,
+                ).crawl()
 
-        async def get_project_with_categories(local_queue: Queue[Any], project: Any, categories_page: Any) -> None:
-            if categories_page is not _STOP_DOC:  # skip stop signal, for categories we always get a single page only
-                project_with_categories = project | {"categories": categories_page.get("data")}
-                local_queue.put_nowait(project_with_categories)
+            async def get_project_with_categories(local_queue: Queue[Any], project: Any, categories_page: Any) -> None:
+                if (
+                    categories_page is not _STOP_DOC
+                ):  # skip stop signal, for categories we always get a single page only
+                    project_with_categories = project | {"categories": categories_page.get("data")}
+                    local_queue.put_nowait(project_with_categories)
 
-        if projects_page is _STOP_DOC:  # stop signal, last element
-            queue.put_nowait(_STOP_DOC)
-        else:
-            categories_queue: Queue[Any] = asyncio.Queue()
-            for document in projects_page.get("data"):
-                await fetch_categories(
-                    document["id"],
-                    functools.partial(get_project_with_categories, categories_queue, document),
-                )
-                queue.put_nowait(await categories_queue.get())
-                categories_queue.task_done()
+            if projects_page is _STOP_DOC:  # stop signal, last element
+                queue.put_nowait(_STOP_DOC)
+            else:
+                categories_queue: Queue[Any] = asyncio.Queue()
+                for document in projects_page.get("data"):
+                    await fetch_categories(
+                        document["id"],
+                        functools.partial(get_project_with_categories, categories_queue, document),
+                    )
+                    queue.put_nowait(await categories_queue.get())
+                    categories_queue.task_done()
 
-    await RestCrawler(
-        url=projects_url(),
-        get_params=projects_paging_params,
-        get_full_count=lambda page: page.get("total_entries", 0),
-        process_page=add_page_to_queue,
-        headers=_HEADERS,
-        parallelism=20,
-        stop_page=_STOP_DOC,
-    ).crawl()
+        await RestCrawler(
+            url=projects_url(),
+            get_params=projects_paging_params,
+            get_full_count=lambda page: page.get("total_entries", 0),
+            process_page=add_page_to_queue,
+            headers=_HEADERS,
+            parallelism=20,
+            stop_page=_STOP_DOC,
+        ).crawl()
+
+    return crawl_to_queue
 
 
 # TODO can we somehow avoid silencing mypy here?
@@ -109,7 +114,7 @@ def crawl_betterplace(force_run: bool = False) -> None:
                 return
 
         update_last_run_day(_CONFIG)
-        asyncio.run(source_to_sink(crawl, bigquery_sink(_CONFIG, _STOP_DOC)))
+        asyncio.run(source_to_sink(crawl(), bigquery_sink(_CONFIG, _STOP_DOC)))
         update_last_successful_day(_CONFIG)  # = finalize
     else:
         logger.info("Crawling already ran successfully for today, skipping run.")

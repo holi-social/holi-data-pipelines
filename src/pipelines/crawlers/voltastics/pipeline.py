@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from asyncio import Queue
-from typing import Any, Dict, cast
+from typing import Any, Dict, cast, Callable, Coroutine
 
 import prefect
 from prefect import task
@@ -34,7 +34,7 @@ _STOP_DOC = object()
 
 
 @task
-async def crawl(queue: Queue[Any]) -> None:
+def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, None]]:
     def paging_params(paging_info: PagingInfo) -> dict[str, Any]:
         return {
             "offset": paging_info.offset,
@@ -42,21 +42,24 @@ async def crawl(queue: Queue[Any]) -> None:
             "city": "ALL_CITIES",
         }
 
-    async def add_page_to_queue(page: Any) -> None:
-        if page is _STOP_DOC:  # stop signal, last element
-            queue.put_nowait(_STOP_DOC)
-        else:
-            for document in page.get("entries"):
-                queue.put_nowait(document)
+    async def crawl_to_queue(queue: Queue[Any]) -> None:
+        async def add_page_to_queue(page: Any) -> None:
+            if page is _STOP_DOC:  # stop signal, last element
+                queue.put_nowait(_STOP_DOC)
+            else:
+                for document in page.get("entries"):
+                    queue.put_nowait(document)
 
-    await RestCrawler(
-        url=str(_CONFIG.api_url),
-        get_params=paging_params,
-        get_full_count=lambda page: page.get("totalEntries", 0),
-        process_page=add_page_to_queue,
-        headers=_HEADERS,
-        stop_page=_STOP_DOC,
-    ).crawl()
+        await RestCrawler(
+            url=str(_CONFIG.api_url),
+            get_params=paging_params,
+            get_full_count=lambda page: page.get("totalEntries", 0),
+            process_page=add_page_to_queue,
+            headers=_HEADERS,
+            stop_page=_STOP_DOC,
+        ).crawl()
+
+    return crawl_to_queue
 
 
 # TODO can we somehow avoid silencing mypy here?
@@ -74,7 +77,7 @@ def crawl_voltastics(force_run: bool = False) -> None:
                 return
 
         update_last_run_day(_CONFIG)
-        asyncio.run(source_to_sink(crawl, bigquery_sink(_CONFIG, _STOP_DOC)))
+        asyncio.run(source_to_sink(crawl(), bigquery_sink(_CONFIG, _STOP_DOC)))
         update_last_successful_day(_CONFIG)  # = finalize
     else:
         logger.info("Crawling already ran successfully for today, skipping run.")
