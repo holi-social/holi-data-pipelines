@@ -35,7 +35,7 @@ def load_users(source_dataset: str) -> list[UserRow]:
           user.id=profile.user_id
         WHERE
           user.is_deleted=false
-    """)
+    """)  # noqa: S608
 
 
 def user_to_doc(user: UserRow) -> UserDoc:

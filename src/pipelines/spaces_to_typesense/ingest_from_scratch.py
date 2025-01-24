@@ -32,7 +32,7 @@ def load_spaces(source_dataset: str) -> list[SpaceRow]:
           `{source_dataset}.openbook_communities_community`
         WHERE
           is_deleted=false
-    """)
+    """)  # noqa: S608
 
 
 def space_to_doc(space: SpaceRow) -> SpaceDoc:
