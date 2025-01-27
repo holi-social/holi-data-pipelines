@@ -38,7 +38,13 @@ def load_users(source_dataset: str) -> list[UserRow]:
     """)  # noqa: S608
 
 
-def user_to_doc(user: UserRow) -> UserDoc:
+def user_to_doc(user: UserRow) -> UserDoc | None:
+    def empty(str: str | None) -> bool:
+        return str is None or str.strip() == ""
+
+    if empty(user.get("first_name")) and empty(user.get("last_name")):
+        return None
+
     user_full_name = f"{user.get('first_name')} {user.get('last_name')}"
     return {
         "id": f"profile_{str(user.get('user_id'))}",
@@ -52,9 +58,8 @@ def user_to_doc(user: UserRow) -> UserDoc:
     }
 
 
-@task(cache_policy=NONE)  # type: ignore[arg-type]
 def users_to_typesense_docs(users: list[UserRow]) -> list[UserDoc]:
-    return [user_to_doc(user) for user in users]
+    return [user_doc for user_doc in map(user_to_doc, users) if user_doc is not None]
 
 
 @alerting_flow
