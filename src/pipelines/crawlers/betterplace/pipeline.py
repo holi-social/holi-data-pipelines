@@ -19,6 +19,7 @@ from src.pipelines.crawlers.crawler_common_code import (
     source_to_sink,
     update_last_successful_day,
     update_last_run_day,
+    is_production_environment,
 )
 from src.pipelines.crawlers.crawler_config import CrawlerConfig
 
@@ -102,7 +103,8 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, None]]:
 # TODO can we somehow avoid silencing mypy here?
 @alerting_flow(context=_CONFIG)  # type: ignore
 def crawl_betterplace(force_run: bool = False) -> None:
-    if not has_run_successfully_for_day(_CONFIG) or force_run:
+    # only run on production for days that have not been successfully crawled yet, or when forced
+    if (is_production_environment() and not has_run_successfully_for_day(_CONFIG)) or force_run:
         logger.info("Crawling did not run successfully for today, starting run.")
 
         if is_cleanup_needed(_CONFIG):

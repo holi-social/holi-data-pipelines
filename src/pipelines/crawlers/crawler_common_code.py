@@ -4,6 +4,7 @@ from typing import Any, Callable, Coroutine
 
 import prefect
 from prefect import task
+from prefect.variables import Variable
 
 from src.common.loaders.bq_loader import stream_to_bigquery
 from src.pipelines.crawlers.crawler_config import CrawlerConfig
@@ -19,6 +20,10 @@ def _get_state(config: CrawlerConfig) -> CrawlerState:
 def is_cleanup_needed(config: CrawlerConfig) -> bool:
     state = _get_state(config)
     return state.last_run_day == config.partition_date
+
+
+def is_production_environment() -> bool:
+    return Variable.get("prefect_environment") == "production"
 
 
 def has_run_successfully_for_day(config: CrawlerConfig) -> bool:
