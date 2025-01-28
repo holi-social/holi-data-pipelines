@@ -45,7 +45,7 @@ EOF
 resource "google_bigquery_table" "donations_betterplace_raw" {
   project    = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
   dataset_id = local.dataset_id_datalake
-  table_id   = "donations_betterplace_raw_playground"
+  table_id   = "donations_betterplace_raw"
 
 
   time_partitioning {
@@ -53,7 +53,7 @@ resource "google_bigquery_table" "donations_betterplace_raw" {
     expiration_ms = 2592000000 # 30 days
   }
 
-  deletion_protection = false
+  deletion_protection = true
 
   lifecycle {
     ignore_changes = [encryption_configuration, schema]
