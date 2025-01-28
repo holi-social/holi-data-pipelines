@@ -35,6 +35,8 @@ def load_users(source_dataset: str) -> list[UserRow]:
           user.id=profile.user_id
         WHERE
           user.is_deleted=false
+          AND profile IS NOT NULL
+          AND user.identity IS NOT NULL
     """)  # noqa: S608
 
 
@@ -88,3 +90,7 @@ def profiles_to_typesense_ingest_from_scratch(
         return Failed(message="Some documents failed ingestion. Please see error log.")
     else:
         return Completed(message=f"All {len(user_documents)} documents successfully ingested.")
+
+
+if __name__ == "__main__":
+    profiles_to_typesense_ingest_from_scratch_flow()
