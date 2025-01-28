@@ -118,7 +118,6 @@ deployments:
     schedules:
       - <<: *default_cron_schedule_values
         cron: 40 1 * * * # run every day at 01:40
-        active: { { get_prefect_environment.stdout == "production" } }
     work_pool:
       <<: *cloud_run_v2
       job_variables:
