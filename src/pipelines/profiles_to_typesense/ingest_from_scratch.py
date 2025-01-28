@@ -39,13 +39,14 @@ def load_users(source_dataset: str) -> list[UserRow]:
 
 
 def user_to_doc(user: UserRow) -> UserDoc | None:
-    def empty(str: str | None) -> bool:
-        return str is None or str.strip() == ""
+    def empty(string: str | None) -> bool:
+        return string is None or string.strip() == ""
 
     if empty(user.get("first_name")) and empty(user.get("last_name")):
         return None
 
-    user_full_name = f"{user.get('first_name')} {user.get('last_name')}"
+    user_names = [user.get("first_name"), user.get("last_name")]
+    user_full_name = " ".join(filter(lambda s: s != "", map(str.strip, filter(None, user_names))))
     return {
         "id": f"profile_{str(user.get('user_id'))}",
         "type": "profile",
