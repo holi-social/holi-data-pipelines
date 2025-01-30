@@ -6,8 +6,13 @@ from prefect.deployments.runner import RunnerDeployment
 from prefect.deployments.schedules import FlexibleScheduleList
 
 from src.common.variables import variable_value_as
+from src.pipelines.all_to_typesense.ingest_from_scratch import all_to_typesense_ingest_from_scratch_flow
 from src.pipelines.crawlers.betterplace.pipeline import crawl_betterplace
 from src.pipelines.crawlers.voltastics.pipeline import crawl_voltastics
+from src.pipelines.example.pipeline import hello_universe
+from src.pipelines.profiles_to_typesense.ingest_from_scratch import profiles_to_typesense_ingest_from_scratch_flow
+from src.pipelines.spaces_to_typesense.ingest_from_scratch import spaces_to_typesense_ingest_from_scratch_flow
+from src.pipelines.volunteering_to_typesense.ingest_updates import volunteering_to_typesense_ingest_updates_flow
 
 
 def environment() -> str:
@@ -63,6 +68,28 @@ def deployment_for_flow(
 
 def get_deployments() -> List[RunnerDeployment]:
     return [
+        deployment_for_flow(hello_universe, description="A simple example pipeline, also used as a smoketest from CI"),
+        deployment_for_flow(
+            all_to_typesense_ingest_from_scratch_flow,
+            description="Orchestrates the ETL pipeline to ingest all data to Typesense",
+            job_variables_overrides={"memory": "4096Mi"},
+        ),
+        deployment_for_flow(
+            volunteering_to_typesense_ingest_updates_flow,
+            description="Orchestrates the ETL pipeline to move volunteering updates from BigQuery to Typesense",
+            schedules=[cron_schedule("30 6 * * *")],
+            job_variables_overrides={"memory": "4096Mi"},
+        ),
+        deployment_for_flow(
+            profiles_to_typesense_ingest_from_scratch_flow,
+            description="Ingests user profiles from Datastream-replicated Okuna into Typesense",
+            job_variables_overrides={"memory": "4096Mi"},
+        ),
+        deployment_for_flow(
+            spaces_to_typesense_ingest_from_scratch_flow,
+            description="Ingests spaces from Datastream-replicated Okuna into Typesense",
+            job_variables_overrides={"memory": "4096Mi"},
+        ),
         deployment_for_flow(
             crawl_voltastics,
             description="Crawls voltastics.com for volunteering opportunities and ingests them into BigQuery",
