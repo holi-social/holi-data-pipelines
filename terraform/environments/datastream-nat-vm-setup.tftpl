@@ -1,5 +1,8 @@
 #! /bin/bash
 
+# don't execute the startup script on reboots
+if [[ -f /etc/startup_script_was_run_successfully ]]; then exit 0; fi
+
 # adapted from https://cloud.google.com/datastream/docs/private-connectivity
 
 # Enable the VM to receive packets whose destinations do
@@ -36,3 +39,5 @@ iptables -t nat -A POSTROUTING \
 
 # Save iptables configuration:
 iptables-save
+
+touch /etc/startup_script_was_run_successfully

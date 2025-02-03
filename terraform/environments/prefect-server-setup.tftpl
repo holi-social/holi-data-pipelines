@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# don't execute the startup script on reboots
+if [[ -f /etc/startup_script_was_run_successfully ]]; then exit 0; fi
+
 # log script output to file for later inspection
 set -o errexit
 readonly LOG_FILE="/var/log/startup-script.log"
@@ -238,6 +241,8 @@ prefect version
 
 sleep 10 # wait for the server to start
 PREFECT_API_URL=http://${internal_domain}:${internal_port}/api prefect block register -m prefect_gcp
+
+touch /etc/startup_script_was_run_successfully
 
 # signal we're done to the log file
 echo "done"
