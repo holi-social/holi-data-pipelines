@@ -185,7 +185,7 @@ smoketest_staging:
 build_prefect_flow_docker_image_production:
   extends: .build_prefect_flow_docker_image
   needs: ["validate"]
-  stage: deploy_production
+  stage: deploy
   variables:
     ENVIRONMENT_SUFFIX: production
   rules:
