@@ -36,13 +36,17 @@ stages:
   - "build"
   - "test"
   - "deploy"
-  - "deploy_production"
 
 .rule_templates:
   only_main:
     - if: $CI_COMMIT_BRANCH == 'main' && $CI_PIPELINE_SOURCE == "push"
       when: on_success
-    - if: $CI_PIPELINE_SOURCE == "web"
+    - if: $CI_COMMIT_BRANCH == 'main' && $CI_PIPELINE_SOURCE == "web"
+      when: on_success
+  only_production:
+    - if: $CI_COMMIT_BRANCH == 'production' && $CI_PIPELINE_SOURCE == "push"
+      when: on_success
+    - if: $CI_COMMIT_BRANCH == 'production' && $CI_PIPELINE_SOURCE == "web"
       when: on_success
 
 .terraform_deploy:
@@ -87,7 +91,6 @@ stages:
     - source venv/bin/activate
     - PREFECT_API_URL="$(cat $PREFECT_SERVER_URL_PATH)/api" prefect shell watch --flow-run-name ci-test-$CI_PIPELINE_IID --tag ci-test "echo smoketesting"
     - PREFECT_API_URL="$(cat $PREFECT_SERVER_URL_PATH)/api" prefect deployment run --tag ci-test --watch hello-universe/example-deploy
-    # TODO should/could we roll back the service to the last working revision on test failure?
 
 .build_prefect_flow_docker_image:
   image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/docker:27"
@@ -105,14 +108,6 @@ stages:
     - docker build --cache-from "$GCR_IMAGE" -t "$GCR_IMAGE":latest -t "$GCR_IMAGE":"$CI_COMMIT_SHA" .
     - docker push "$GCR_IMAGE":"$CI_COMMIT_SHA" # we use latest in prefect, this is just extra information for humans.
     - docker push "$GCR_IMAGE":latest # for caching the build and for use by prefect pipelines
-  rules:
-    - if: $CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"
-      changes:
-        - requirements.txt
-        - src/**/*
-        - .gitlab-ci.yml
-    - if: $CI_PIPELINE_SOURCE == "web"
-      when: on_success
 
 install_dependencies:
   image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/python:3.12-slim"
@@ -124,13 +119,13 @@ install_dependencies:
     - pip install -r requirements.txt --exists-action s
     - pip install -r dev-requirements.txt --exists-action s
   rules:
+    - if: $CI_PIPELINE_SOURCE == "web"
+      when: on_success
     - if: $CI_COMMIT_BRANCH
       changes:
         - requirements.txt
         - dev-requirements.txt
         - .gitlab-ci.yml
-    - if: $CI_PIPELINE_SOURCE == "web"
-      when: on_success
 
 validate:
   image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/python:3.12-slim"
@@ -151,6 +146,14 @@ build_prefect_flow_docker_image_staging:
   needs: ["validate"]
   variables:
     ENVIRONMENT_SUFFIX: staging
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "web"
+      when: on_success
+    - if: $CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"
+      changes:
+        - requirements.txt
+        - src/**/*
+        - .gitlab-ci.yml
 
 ## staging environment
 terraform_deploy_staging:
@@ -181,19 +184,27 @@ smoketest_staging:
 ## production environment
 build_prefect_flow_docker_image_production:
   extends: .build_prefect_flow_docker_image
-  needs: ["smoketest_staging"]
-  stage: deploy_production
+  needs: ["validate"]
+  stage: deploy
   variables:
     ENVIRONMENT_SUFFIX: production
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "web"
+      when: on_success
+    - if: $CI_COMMIT_BRANCH == "production" && $CI_PIPELINE_SOURCE == "push"
+      changes:
+        - requirements.txt
+        - src/**/*
+        - .gitlab-ci.yml
 
 terraform_deploy_production:
   extends: .terraform_deploy
-  needs: ["smoketest_staging"]
-  stage: deploy_production
+  needs: ["validate"]
+  stage: deploy
   variables:
     ENVIRONMENT_ID: production
   rules:
-    - !reference [.rule_templates, only_main]
+    - !reference [.rule_templates, only_production]
 
 prefect_deploy_production:
   extends: .prefect_deploy
@@ -201,15 +212,15 @@ prefect_deploy_production:
     - job: "terraform_deploy_production"
     - job: "build_prefect_flow_docker_image_production"
       optional: true
-  stage: deploy_production
+  stage: deploy
   variables:
     ENVIRONMENT_ID: production
   rules:
-    - !reference [.rule_templates, only_main]
+    - !reference [.rule_templates, only_production]
 
 smoketest_production:
   extends: .smoketest
   needs: ["terraform_deploy_production", "prefect_deploy_production"]
-  stage: deploy_production
+  stage: deploy
   rules:
-    - !reference [.rule_templates, only_main]
+    - !reference [.rule_templates, only_production]

@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import functools
 from asyncio import Queue
-from typing import Any, Awaitable, Callable, Dict, cast, Coroutine
+from typing import Any, Awaitable, Callable, Coroutine, Dict, Optional, cast
 
 import prefect
 from prefect import task
@@ -16,30 +16,37 @@ from src.pipelines.crawlers.crawler_common_code import (
     bigquery_sink,
     has_run_successfully_for_day,
     is_cleanup_needed,
-    source_to_sink,
-    update_last_successful_day,
-    update_last_run_day,
     is_production_environment,
+    source_to_sink,
+    update_last_run_day,
+    update_last_successful_day,
 )
 from src.pipelines.crawlers.crawler_config import CrawlerConfig
 
 logger = prefect.logging.get_logger()
-_CONFIG: CrawlerConfig = CrawlerConfig(
-    state_variable_name="betterplace_crawler_state",
-    # FIXME remove casting once https://github.com/PrefectHQ/prefect/issues/16825 has a resolution
-    api_url=cast(str, variable_value_as(str, "betterplace_api_url")),
-    bigquery_table=cast(Dict[str, str], variable_value_as(Dict[str, str], "betterplace_crawler_table")),
-)
+_CONFIG: Optional[CrawlerConfig] = None
 _HEADERS: Dict[str, str] = {"X-Requested-With": "holi"}
 _STOP_DOC = object()
 
 
+def config() -> CrawlerConfig:
+    global _CONFIG
+    if _CONFIG is None:
+        _CONFIG = CrawlerConfig(
+            state_variable_name="betterplace_crawler_state",
+            # FIXME remove casting once https://github.com/PrefectHQ/prefect/issues/16825 has a resolution
+            api_url=cast(str, variable_value_as(str, "betterplace_api_url")),
+            bigquery_table=cast(Dict[str, str], variable_value_as(Dict[str, str], "betterplace_crawler_table")),
+        )
+    return _CONFIG
+
+
 def projects_url() -> str:
-    return f"{_CONFIG.api_url}/projects.json"
+    return f"{config().api_url}/projects.json"
 
 
 def categories_url(project_id: int) -> str:
-    return f"{_CONFIG.api_url}/projects/{project_id}/categories.json"
+    return f"{config().api_url}/projects/{project_id}/categories.json"
 
 
 # @task(cache_policy=TASK_SOURCE + RUN_ID)
@@ -100,27 +107,26 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, None]]:
     return crawl_to_queue
 
 
-# TODO can we somehow avoid silencing mypy here?
-@alerting_flow(context=_CONFIG)  # type: ignore
+@alerting_flow
 def crawl_betterplace(force_run: bool = False) -> None:
     # only run on production for days that have not been successfully crawled yet, or when forced
-    if (is_production_environment() and not has_run_successfully_for_day(_CONFIG)) or force_run:
+    if (is_production_environment() and not has_run_successfully_for_day(config())) or force_run:
         logger.info("Crawling did not run successfully for today, starting run.")
 
-        if is_cleanup_needed(_CONFIG):
-            if is_streaming_buffer_empty(*_CONFIG.get_bq_table_fqdn()) or force_run:
+        if is_cleanup_needed(config()):
+            if is_streaming_buffer_empty(*config().get_bq_table_fqdn()) or force_run:
                 logger.info("Unfinished run happened for today, clearing today's partition.")
-                delete_partition(*_CONFIG.get_bq_table_fqdn(), partition=_CONFIG.partition_date)
+                delete_partition(*config().get_bq_table_fqdn(), partition=config().partition_date)
             else:
                 logger.warning("Unfinished run happened for today, but streaming buffer is not empty. Aborting flow.")
                 return
 
-        update_last_run_day(_CONFIG)
-        asyncio.run(source_to_sink(crawl(), bigquery_sink(_CONFIG, _STOP_DOC)))
-        update_last_successful_day(_CONFIG)  # = finalize
+        update_last_run_day(config())
+        asyncio.run(source_to_sink(crawl(), bigquery_sink(config(), _STOP_DOC)))
+        update_last_successful_day(config())  # = finalize
     else:
         logger.info("Crawling already ran successfully for today, skipping run.")
 
 
 if __name__ == "__main__":
-    crawl_betterplace(True)
+    crawl_betterplace(True)  # type: ignore[call-overload]
