@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-# Promotes the given sha to production by merging it into master and pushing to origin
+# Promotes the given sha to production by merging it into the production branch and pushing to origin
 
 usage() {
     echo "Usage: $0 <SHA>"
