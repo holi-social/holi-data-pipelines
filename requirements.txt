@@ -1,5 +1,5 @@
 aiohttp-retry==2.9.1
-aiohttp==3.11.11
+aiohttp==3.11.12
 codetiming==1.4.0
 langdetect==1.0.9
 prefect==3.1.13
