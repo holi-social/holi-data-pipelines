@@ -150,9 +150,11 @@ async def asecret_value(key: str, default: Optional[str] = None) -> str:
     :return: The resolved value
     """
     try:
-        return _typechecked_value_or_raise(str, _get_environment_variable_parsed(key)) or (
-            await (await GcpSecret.aload(key)).read_secret()
-        ).decode("utf-8")
+        return _typechecked_value_or_raise(
+            str,
+            _get_environment_variable_parsed(key)
+            or (await (await GcpSecret.aload(key)).read_secret()).decode("utf-8"),
+        )
     except ValueError:
         # not found via environment variables or GcpSecret block
         return _secret_or_default_else_error(key, None, default)
@@ -170,9 +172,9 @@ def secret_value(key: str, default: Optional[str] = None) -> str:
     :return: The resolved value
     """
     try:
-        return _typechecked_value_or_raise(str, _get_environment_variable_parsed(key)) or GcpSecret.load(
-            key
-        ).read_secret().decode("utf-8")
+        return _typechecked_value_or_raise(
+            str, _get_environment_variable_parsed(key) or GcpSecret.load(key).read_secret().decode("utf-8")
+        )
     except ValueError:
         # not found via environment variables or GcpSecret block
         return _secret_or_default_else_error(key, None, default)
