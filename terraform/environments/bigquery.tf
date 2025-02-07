@@ -42,6 +42,10 @@ resource "google_bigquery_table" "volunteering_voltastics_raw" {
 EOF
 }
 
+output "volunteering_voltastics_raw_table" {
+  value = google_bigquery_table.volunteering_voltastics_raw.table_id
+}
+
 resource "google_bigquery_table" "donations_betterplace_raw" {
   project    = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
   dataset_id = local.dataset_id_datalake
@@ -155,4 +159,8 @@ resource "google_bigquery_table" "donations_betterplace_raw" {
    { "name": "updated_at", "type": "TIMESTAMP", "mode": "NULLABLE"}
 ]
 EOF
+}
+
+output "donations_betterplace_raw_table" {
+  value = google_bigquery_table.donations_betterplace_raw.table_id
 }
