@@ -3,17 +3,19 @@
 This project contains code and infrastructure definitions for all data pipelines.
 
 <!-- TOC -->
+
 * [holi Data Pipelines](#holi-data-pipelines)
-  * [(Local) Development Quickstart](#local-development-quickstart)
-    * [Troubleshooting](#troubleshooting)
-  * [Infrastructure](#infrastructure)
-  * [Setup](#setup)
-  * [Running](#running)
-  * [CI/CD](#cicd)
-  * [Typesense Cloud](#typesense-cloud)
-    * [Learnings / Good-to-Know](#learnings--good-to-know)
-    * [Current Cluster Hardware Setup (as of 02.12.2024)](#current-cluster-hardware-setup-as-of-02122024)
-    * [Security](#security)
+    * [(Local) Development Quickstart](#local-development-quickstart)
+        * [Troubleshooting](#troubleshooting)
+    * [Infrastructure](#infrastructure)
+    * [Setup](#setup)
+    * [Running](#running)
+    * [CI/CD](#cicd)
+    * [Typesense Cloud](#typesense-cloud)
+        * [Learnings / Good-to-Know](#learnings--good-to-know)
+        * [Current Cluster Hardware Setup (as of 02.12.2024)](#current-cluster-hardware-setup-as-of-02122024)
+        * [Security](#security)
+
 <!-- TOC -->
 
 ## (Local) Development Quickstart
@@ -27,7 +29,8 @@ make use of an SSH tunnel by following these steps (work for staging and product
   `127.0.0.1 prefect-server-staging.holi.internal prefect-server-production.holi.internal`
 
 Make sure you have this project checked out directly in a checkout of holi-meta. Executing `direnv allow` and
-`direnv reload` should lead to no errors and establish the ssh tunnels. If you run into errors, see the troubleshooting section.
+`direnv reload` should lead to no errors and establish the ssh tunnels. If you run into errors, see the troubleshooting
+section.
 
 Let's run an example pipeline:
 
@@ -55,6 +58,12 @@ can debug the failures:
 This project defines data pipeline infrastructure in the `terraform` folder and it's subfolders.
 
 ## Setup
+
+Install pyenv and install the defined python version:
+
+```commandline
+pyenv install $(cat .python-version)
+```
 
 Install terraform via https://github.com/tfutils/tfenv .
 

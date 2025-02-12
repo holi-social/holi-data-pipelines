@@ -91,6 +91,10 @@ resource "google_compute_instance" "datastream_nat_vm" {
       }
     })
   }
+  labels = {
+    purpose : "datastream"
+    environment : local.environment_name
+  }
 }
 
 resource "google_datastream_connection_profile" "okuna_source_connection_profile" {
