@@ -21,7 +21,6 @@ resource "google_compute_instance" "prefect_server_green" {
   name         = "prefect-server-${local.environment}-green"
   machine_type = "e2-small" # TODO re-evaluate (e.g. from observability data) whether this machine type is enough...
   zone         = "${local.default_region}-a"
-  tags         = ["http-server", "https-server", "team-matching", "data-pipeline", "prefect", local.environment_type]
 
   boot_disk {
     kms_key_self_link = data.terraform_remote_state.holi_data_pipeline_common_state.outputs.data_pipeline_key

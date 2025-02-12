@@ -37,7 +37,8 @@ set -e
 
 # Function to check if "done" is at the end of /var/log/startup-script.log
 check_log() {
-  gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" --command="tail -1 /var/log/startup-script.log" 2>/dev/null | grep -q "done"
+  gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" --command="ls /etc/startup_script_was_run_successfully > /dev/null 2>&1"
+  echo $?
 }
 
 # Start polling
@@ -45,7 +46,8 @@ echo "Polling for completion of startup script on instance '$INSTANCE_NAME' in z
 START_TIME=$(date +%s)
 
 while true; do
-  if check_log; then
+#  if check_log; then
+  if [ "$(check_log)" = "0" ] ; then
     echo "Startup script completed successfully on $INSTANCE_NAME."
     exit 0
   fi
