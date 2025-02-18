@@ -9,7 +9,8 @@ from src.common.extractors.bq_extractor import (
     extract_latest_partition_timestamp_from_bigquery,
 )
 from src.common.logging.PipelineLogger import PipelineLogger
-from src.common.monitoring.alerting import alerting_flow
+from src.common.monitoring.flow import monitored_flow
+from src.common.monitoring.metrics import report_number_of_processed_entities
 from src.common.typesense import extract_collection_name_from_schema, get_config
 from src.common.typesense_client import TypesenseClient, TypesenseClientConfig
 from src.pipelines.volunteering_to_typesense.tasks import (
@@ -22,7 +23,7 @@ from src.pipelines.volunteering_to_typesense.tasks import (
 logger = PipelineLogger(__name__)
 
 
-@alerting_flow
+@monitored_flow
 def volunteering_to_typesense_ingest_updates_flow() -> State:
     """
     Orchestrates the ETL pipeline to move volunteering data from BigQuery to Typesense.
@@ -34,17 +35,20 @@ def volunteering_to_typesense_ingest_updates_flow() -> State:
 
     active_collection = typesense_client.get_active_collection_name(alias_name)
 
-    result = volunteering_to_typesense_ingest_updates(
+    task_result = volunteering_to_typesense_ingest_updates(
         typesense_client=typesense_client,
         typesense_collection_name=active_collection,
         table_name=cast(str, config.get("volunteering_raw_deduped")),
         last_complete_ingestion_timestamp=load_last_complete_ingestion_timestamp(),
     )
-
-    if result.is_completed():
+    if isinstance(task_result, State):
+        return task_result
+    elif isinstance(task_result, int):
         store_last_complete_ingestion_timestamp(datetime.now())
-
-    return result
+        report_number_of_processed_entities(task_result)
+        return Completed()
+    else:
+        raise ValueError(f"Unexpected task result: {task_result}")
 
 
 @task(cache_policy=NONE)  # type: ignore[arg-type]
@@ -53,7 +57,7 @@ def volunteering_to_typesense_ingest_updates(
     typesense_collection_name: str,
     table_name: str,
     last_complete_ingestion_timestamp: datetime | None,
-) -> State:
+) -> State | int:
     latest_partition_timestamp = extract_latest_partition_timestamp_from_bigquery(table_name)
 
     # volunteering data is partitioned by day so we compare days only
@@ -64,9 +68,9 @@ def volunteering_to_typesense_ingest_updates(
         logger.info(
             f"Last complete ingestion ({last_complete_ingestion_timestamp}) ran on the same day as the newest partition ({latest_partition_timestamp}). Skipping ingestion."
         )
-        return Completed()
+        return 0
 
-    deletion_succeeded, upsert_succeeded = diff_ingest(
+    deletion_succeeded, upsert_succeeded, processed_item_count = diff_ingest(
         table_name=table_name,
         last_complete_ingestion_timestamp=last_complete_ingestion_timestamp,
         latest_partition_timestamp=latest_partition_timestamp,
@@ -79,7 +83,7 @@ def volunteering_to_typesense_ingest_updates(
         if validation_result.is_failed():
             return validation_result
         else:
-            return Completed()
+            return processed_item_count
     else:
         return Failed(message="Some volunteering documents failed ingestion. Please see error log.")
 
