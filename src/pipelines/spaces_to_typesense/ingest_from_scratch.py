@@ -7,7 +7,8 @@ from prefect.states import Failed, State, Completed
 from src.common.extractors.bq_extractor import extract_data_from_bigquery
 from src.common.loaders.typesense_loader import upsert_typesense_documents
 from src.common.logging.PipelineLogger import PipelineLogger
-from src.common.monitoring.alerting import alerting_flow
+from src.common.monitoring.flow import monitored_flow
+from src.common.monitoring.metrics import report_number_of_processed_entities
 from src.common.typesense_client import TypesenseClient, TypesenseClientConfig
 from src.common.variables import variable_value
 
@@ -55,18 +56,25 @@ def spaces_to_typesense_docs(spaces: list[SpaceRow]) -> list[SpaceDoc]:
     return [space_to_doc(space) for space in spaces]
 
 
-@alerting_flow
+@monitored_flow
 def spaces_to_typesense_ingest_from_scratch_flow() -> State:
     typesense_client = TypesenseClient(TypesenseClientConfig.from_env())
     typesense_collection = cast(str, variable_value("typesense_collection"))
     source_dataset = cast(str, variable_value("bigquery_okuna_dataset"))
-    return spaces_to_typesense_ingest_from_scratch(typesense_client, source_dataset, typesense_collection)
+    task_result = spaces_to_typesense_ingest_from_scratch(typesense_client, source_dataset, typesense_collection)
+    if isinstance(task_result, State):
+        return task_result
+    elif isinstance(task_result, int):
+        report_number_of_processed_entities(task_result)
+        return Completed()
+    else:
+        raise ValueError(f"Unexpected task result: {task_result}")
 
 
 @task(cache_policy=NONE)  # type: ignore[arg-type]
 def spaces_to_typesense_ingest_from_scratch(
     typesense_client: TypesenseClient, source_dataset: str, collection: str
-) -> State:
+) -> State | int:
     logger.info(f"Starting spaces ingestion from scratch into typesense collection '{collection}'")
 
     spaces = load_spaces(source_dataset)
@@ -79,4 +87,4 @@ def spaces_to_typesense_ingest_from_scratch(
     if not upsert_succeeded:
         return Failed(message="Some documents failed ingestion. Please see error log.")
     else:
-        return Completed(message=f"All {len(space_documents)} documents successfully ingested.")
+        return len(space_documents)

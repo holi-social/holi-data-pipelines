@@ -10,7 +10,8 @@ from prefect import task
 
 from src.common.extractors.rest_crawler import PagingInfo, RestCrawler
 from src.common.loaders.bq_loader import delete_partition, is_streaming_buffer_empty
-from src.common.monitoring.alerting import alerting_flow
+from src.common.monitoring.flow import monitored_flow
+from src.common.monitoring.metrics import report_number_of_processed_entities
 from src.common.variables import variable_value_as
 from src.pipelines.crawlers.crawler_common_code import (
     bigquery_sink,
@@ -51,7 +52,7 @@ def categories_url(project_id: int) -> str:
 
 # @task(cache_policy=TASK_SOURCE + RUN_ID)
 @task
-def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, None]]:
+def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
     def projects_paging_params(paging_info: PagingInfo) -> dict[str, Any]:
         return {
             "page": paging_info.page_number(),
@@ -59,8 +60,12 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, None]]:
             "order": "id:DESC",
         }
 
-    async def crawl_to_queue(queue: Queue[Any]) -> None:
+    async def crawl_to_queue(queue: Queue[Any]) -> int:
+        document_count = 0
+
         async def add_page_to_queue(projects_page: Any) -> None:
+            nonlocal document_count
+
             # we need to perform sub requests for fetching the categories
             async def fetch_categories(project_id: int, process_page: Callable[[Any], Awaitable[None]]) -> None:
                 default_page_size = 50
@@ -87,6 +92,7 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, None]]:
             else:
                 categories_queue: Queue[Any] = asyncio.Queue()
                 for document in projects_page.get("data"):
+                    document_count += 1
                     await fetch_categories(
                         document["id"],
                         functools.partial(get_project_with_categories, categories_queue, document),
@@ -103,11 +109,12 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, None]]:
             parallelism=20,
             stop_page=_STOP_DOC,
         ).crawl()
+        return document_count
 
     return crawl_to_queue
 
 
-@alerting_flow
+@monitored_flow
 def crawl_betterplace(force_run: bool = False) -> None:
     # only run on production for days that have not been successfully crawled yet, or when forced
     if (is_production_environment() and not has_run_successfully_for_day(config())) or force_run:
@@ -122,8 +129,9 @@ def crawl_betterplace(force_run: bool = False) -> None:
                 return
 
         update_last_run_day(config())
-        asyncio.run(source_to_sink(crawl(), bigquery_sink(config(), _STOP_DOC)))
+        processed_entities_count = asyncio.run(source_to_sink(crawl(), bigquery_sink(config(), _STOP_DOC)))
         update_last_successful_day(config())  # = finalize
+        report_number_of_processed_entities(processed_entities_count)
     else:
         logger.info("Crawling already ran successfully for today, skipping run.")
 

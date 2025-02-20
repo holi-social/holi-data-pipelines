@@ -118,7 +118,7 @@ def diff_ingest(
     latest_partition_timestamp: date,
     typesense_client: TypesenseClient,
     typesense_collection_name: str,
-) -> Tuple[bool, bool]:
+) -> Tuple[bool, bool, int]:
     """
     Incrementally ingests data into a Typesense collection by processing changed records.
 
@@ -143,6 +143,8 @@ def diff_ingest(
         latest_partition_timestamp,
     )
 
+    processed_items_count = 0
+
     # Step 2: Segregate records by change type
     new_or_updated_records = [record for record in changed_records if record["change_type"] == "new_or_updated"]
     document_ids_to_delete = [record["id"] for record in changed_records if record["change_type"] == "deleted"]
@@ -154,6 +156,8 @@ def diff_ingest(
     upsert_succeeded = upsert_typesense_documents(
         typesense_client, logger, typesense_collection_name, new_or_updated_documents
     )
+    if upsert_succeeded:
+        processed_items_count += len(new_or_updated_documents)
 
     # Step 5: Delete outdated documents from Typesense
     deletion_succeeded = True
@@ -161,5 +165,7 @@ def diff_ingest(
         deletion_succeeded = delete_typesense_documents(
             typesense_client, typesense_collection_name, document_ids_to_delete
         )
+        if deletion_succeeded:
+            processed_items_count += len(document_ids_to_delete)
 
-    return deletion_succeeded, upsert_succeeded
+    return deletion_succeeded, upsert_succeeded, processed_items_count

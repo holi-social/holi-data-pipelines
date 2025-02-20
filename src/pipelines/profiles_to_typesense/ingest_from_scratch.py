@@ -7,7 +7,8 @@ from prefect.states import Failed, State, Completed
 from src.common.extractors.bq_extractor import extract_data_from_bigquery
 from src.common.loaders.typesense_loader import upsert_typesense_documents
 from src.common.logging.PipelineLogger import PipelineLogger
-from src.common.monitoring.alerting import alerting_flow
+from src.common.monitoring.flow import monitored_flow
+from src.common.monitoring.metrics import report_number_of_processed_entities
 from src.common.typesense_client import TypesenseClient, TypesenseClientConfig
 from src.common.variables import variable_value
 
@@ -65,18 +66,25 @@ def users_to_typesense_docs(users: list[UserRow]) -> list[UserDoc]:
     return [user_doc for user_doc in map(user_to_doc, users) if user_doc is not None]
 
 
-@alerting_flow
+@monitored_flow
 def profiles_to_typesense_ingest_from_scratch_flow() -> State:
     typesense_client = TypesenseClient(TypesenseClientConfig.from_env())
     typesense_collection = cast(str, variable_value("typesense_collection"))
     source_dataset = cast(str, variable_value("bigquery_okuna_dataset"))
-    return profiles_to_typesense_ingest_from_scratch(typesense_client, source_dataset, typesense_collection)
+    task_result = profiles_to_typesense_ingest_from_scratch(typesense_client, source_dataset, typesense_collection)
+    if isinstance(task_result, State):
+        return task_result
+    elif isinstance(task_result, int):
+        report_number_of_processed_entities(task_result)
+        return Completed()
+    else:
+        raise ValueError(f"Unexpected task result: {task_result}")
 
 
 @task(cache_policy=NONE)  # type: ignore[arg-type]
 def profiles_to_typesense_ingest_from_scratch(
     typesense_client: TypesenseClient, source_dataset: str, collection: str
-) -> State:
+) -> State | int:
     logger.info(f"Starting profiles ingestion from scratch into typesense collection '{collection}'")
 
     users = load_users(source_dataset)
@@ -89,7 +97,7 @@ def profiles_to_typesense_ingest_from_scratch(
     if not upsert_succeeded:
         return Failed(message="Some documents failed ingestion. Please see error log.")
     else:
-        return Completed(message=f"All {len(user_documents)} documents successfully ingested.")
+        return len(user_documents)
 
 
 if __name__ == "__main__":
