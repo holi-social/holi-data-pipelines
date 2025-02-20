@@ -58,7 +58,7 @@ _common_counters = {
 }
 _common_gauges = {
     "pipeline_run.duration": _meter.create_gauge(
-        name="pipeline_run.duration", description="duration of pipeline runs", unit="ms"
+        name="pipeline_run.duration", description="duration of pipeline runs", unit="s"
     ),
     "pipeline_run.processed_entities": _meter.create_gauge(
         name="pipeline_run.processed_entities", description="number of processed entities in a pipeline run", unit="1"
@@ -152,7 +152,7 @@ def monitor(
     if start_time:
         full_timedelta = pendulum.now("utc") - start_time
         _common_gauges["pipeline_run.duration"].set(
-            full_timedelta.microseconds / 1000.0,
+            full_timedelta.total_seconds(),
             get_labels() | {"prefect_flow_state": _state.type.lower()},
         )
     else:
