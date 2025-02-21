@@ -12,7 +12,7 @@ terraform {
     }
     prefect = {
       source  = "prefecthq/prefect"
-      version = "2.16.0"
+      version = "2.17.1"
     }
     null = {
       source  = "hashicorp/null"
