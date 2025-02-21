@@ -1,4 +1,4 @@
-nohup gcloud compute ssh --zone "europe-north1-a" "nginx-proxy-old-domains-and-okuna-blue" --project "holi-shared" -- -L 54434:localhost:5439 "./cloud-sql-proxy --private-ip --port 5439 holi-shared:europe-north1:${database_server_name}" &
+nohup gcloud compute ssh --zone "europe-north1-a" "nginx-proxy-old-domains-and-okuna-blue" --tunnel-through-iap --project "holi-shared" -- -L 54434:localhost:5442 "./cloud-sql-proxy --private-ip --port 5442 holi-shared:europe-north1:${database_server_name}" &
 
 PROXY_PID=$!
 sleep 5
