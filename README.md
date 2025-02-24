@@ -69,6 +69,10 @@ Install terraform via https://github.com/tfutils/tfenv .
 
 Install direnv via https://direnv.net/docs/installation.html .
 
+Install flock on MacOS via `brew install flock`.
+
+Install ruff via https://docs.astral.sh/ruff/installation/.
+
 Allow direnv for the directory:
 
 ```
