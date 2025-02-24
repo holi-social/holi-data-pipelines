@@ -137,13 +137,13 @@ def get_labels() -> dict[str, str]:
     return _get_static_labels() | _get_prefect_runtime_labels()
 
 
-def monitor(
+def record_after_flow_metrics(
     _flow: Flow[Any, Any],
     _run: FlowRun,
     _state: State,
 ) -> None:
     """
-    This function is called whenever a flow is run, completed, cancelled, crashed or failed.
+    This function is called whenever a flow is completed, cancelled, crashed or failed.
     It increments the pipeline_runs counter.
     """
     _common_counters["pipeline_run.count"].add(1, get_labels() | {"prefect_flow_state": _state.type.lower()})

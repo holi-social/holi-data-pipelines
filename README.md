@@ -48,7 +48,7 @@ can debug the failures:
     * OR you need to have the env var unset and provide all configuration for your flow via environment variables
 * If you have `PREFECT_API_URL` set, you need an ssh tunnel to the prefect instance referenced by it.
   This normally is done for you via defaults in `.envrc.local`. For staging, you can do this manually via
-  `gcloud compute ssh --zone "europe-north1-a" prefect-server-staging-green --project "holi-shared" -- -L8421:localhost:8421`.
+  `gcloud compute ssh --zone "europe-north1-a" prefect-server-staging-green --tunnel-through-iap --project "holi-shared" -- -L8421:localhost:8421`.
   For Production, adapt the hostname and the port (see `.envrc.local.template` again).
 * The default tunnel only has a lifetime of a day. If you suspect it's gone, try `direnv reload`.
 *

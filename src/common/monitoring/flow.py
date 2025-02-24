@@ -7,7 +7,7 @@ from prefect.types import StrictVariableValue
 
 from src.common.logging.PipelineLogger import PipelineLogger
 from src.common.monitoring.alerting import alert
-from src.common.monitoring.metrics import monitor
+from src.common.monitoring.metrics import record_after_flow_metrics
 
 _logger = PipelineLogger(__name__)
 
@@ -16,10 +16,10 @@ _logger = PipelineLogger(__name__)
 _HOOK_CONFIGURATION: dict[
     str, Callable[[Mapping[str, StrictVariableValue]], list[Callable[[Flow[Any, Any], FlowRun, State], None]]]
 ] = {
-    "on_cancellation": lambda context: [monitor, partial(alert, context)],
-    "on_crashed": lambda context: [monitor, partial(alert, context)],
-    "on_failure": lambda context: [monitor, partial(alert, context)],
-    "on_completion": lambda context: [monitor],
+    "on_cancellation": lambda context: [record_after_flow_metrics, partial(alert, context)],
+    "on_crashed": lambda context: [record_after_flow_metrics, partial(alert, context)],
+    "on_failure": lambda context: [record_after_flow_metrics, partial(alert, context)],
+    "on_completion": lambda context: [record_after_flow_metrics],
 }
 
 

@@ -3,3 +3,4 @@
 .direnv
 .envrc.local
 *.pyc
+/.gitlab-ci-local
