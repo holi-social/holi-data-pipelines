@@ -28,7 +28,7 @@
 
 resource "null_resource" "prefect_server_available" {
   provisioner "local-exec" {
-    command = "scripts/wait-for-startup-script.sh -i ${google_compute_instance.prefect_server_green.name} -z ${google_compute_instance.prefect_server_green.zone} -t 600"
+    command = "scripts/wait-for-startup-script.sh -p ${local.default_project} -n ${google_compute_instance.prefect_server_green.name} -z ${google_compute_instance.prefect_server_green.zone} -t 600"
   }
 }
 
