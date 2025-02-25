@@ -3,17 +3,19 @@
 This project contains code and infrastructure definitions for all data pipelines.
 
 <!-- TOC -->
+
 * [holi Data Pipelines](#holi-data-pipelines)
-  * [(Local) Development Quickstart](#local-development-quickstart)
-    * [Troubleshooting](#troubleshooting)
-  * [Infrastructure](#infrastructure)
-  * [Setup](#setup)
-  * [Running](#running)
-  * [CI/CD](#cicd)
-  * [Typesense Cloud](#typesense-cloud)
-    * [Learnings / Good-to-Know](#learnings--good-to-know)
-    * [Current Cluster Hardware Setup (as of 02.12.2024)](#current-cluster-hardware-setup-as-of-02122024)
-    * [Security](#security)
+    * [(Local) Development Quickstart](#local-development-quickstart)
+        * [Troubleshooting](#troubleshooting)
+    * [Infrastructure](#infrastructure)
+    * [Setup](#setup)
+    * [Running](#running)
+    * [CI/CD](#cicd)
+    * [Typesense Cloud](#typesense-cloud)
+        * [Learnings / Good-to-Know](#learnings--good-to-know)
+        * [Current Cluster Hardware Setup (as of 02.12.2024)](#current-cluster-hardware-setup-as-of-02122024)
+        * [Security](#security)
+
 <!-- TOC -->
 
 ## (Local) Development Quickstart
@@ -27,7 +29,8 @@ make use of an SSH tunnel by following these steps (work for staging and product
   `127.0.0.1 prefect-server-staging.holi.internal prefect-server-production.holi.internal`
 
 Make sure you have this project checked out directly in a checkout of holi-meta. Executing `direnv allow` and
-`direnv reload` should lead to no errors and establish the ssh tunnels. If you run into errors, see the troubleshooting section.
+`direnv reload` should lead to no errors and establish the ssh tunnels. If you run into errors, see the troubleshooting
+section.
 
 Let's run an example pipeline:
 
@@ -45,7 +48,7 @@ can debug the failures:
     * OR you need to have the env var unset and provide all configuration for your flow via environment variables
 * If you have `PREFECT_API_URL` set, you need an ssh tunnel to the prefect instance referenced by it.
   This normally is done for you via defaults in `.envrc.local`. For staging, you can do this manually via
-  `gcloud compute ssh --zone "europe-north1-a" prefect-server-staging-green --project "holi-shared" -- -L8421:localhost:8421`.
+  `gcloud compute ssh --zone "europe-north1-a" prefect-server-staging-green --tunnel-through-iap --project "holi-shared" -- -L8421:localhost:8421`.
   For Production, adapt the hostname and the port (see `.envrc.local.template` again).
 * The default tunnel only has a lifetime of a day. If you suspect it's gone, try `direnv reload`.
 *
@@ -56,9 +59,19 @@ This project defines data pipeline infrastructure in the `terraform` folder and 
 
 ## Setup
 
+Install pyenv and install the defined python version:
+
+```commandline
+pyenv install $(cat .python-version)
+```
+
 Install terraform via https://github.com/tfutils/tfenv .
 
 Install direnv via https://direnv.net/docs/installation.html .
+
+Install flock on MacOS via `brew install flock`.
+
+Install ruff via https://docs.astral.sh/ruff/installation/.
 
 Allow direnv for the directory:
 

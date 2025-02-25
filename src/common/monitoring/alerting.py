@@ -1,11 +1,10 @@
 import json
-from functools import partial
-from typing import Any, Optional, List, Callable, cast, Mapping
+from typing import Any, Mapping
 
 from prefect import runtime
 from prefect.blocks.notifications import CustomWebhookNotificationBlock
 from prefect.client.schemas.objects import FlowRun, State, StateType
-from prefect.flows import Flow, flow, P, R
+from prefect.flows import Flow
 from prefect.types import StrictVariableValue
 from typing_extensions import assert_never
 
@@ -84,29 +83,3 @@ def alert(
             return
         case _:
             assert_never(state.type)
-
-
-def alerting_flow(
-    *args: Any,
-    context: Optional[dict[str, StrictVariableValue]] = None,
-    **kwargs: Any,
-) -> Flow[P, R]:
-    """
-    This decorator extends :func:`~prefect.flows.flow`. It takes a context and sets up the on_cancellation, on_crashed
-    and on_failure hooks to alert via this module.
-
-    :param args: any unnamed args to the function
-    :param context: The context information to include in alerts. Default None
-    :param kwargs: any arguments defined by :func:`~prefect.flows.flow`
-    :return: a configured :func:`~prefect.flows.flow` decorator.
-    """
-    safe_context = context if context else {}
-    for key in ["on_cancellation", "on_crashed", "on_failure"]:
-        passed_value: Optional[List[Callable[[Flow[P, R], FlowRun, State], None]]] = cast(
-            List[Callable[[Flow[P, R], FlowRun, State], None]], kwargs.pop(key, [])
-        )
-        kwargs[key] = [partial(alert, safe_context)] + (
-            [passed_value] if not isinstance(passed_value, list) else passed_value
-        )
-
-    return flow(*args, **kwargs)

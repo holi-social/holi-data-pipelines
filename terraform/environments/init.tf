@@ -1,24 +1,26 @@
 terraform {
+  # allow the lowest common version across all projects, so that the current CI docker image version suits all projects
   required_version = ">= 1.9"
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = ">= 5.12"
+      version = "6.21.0"
     }
     google-beta = {
       source  = "hashicorp/google-beta"
-      version = ">= 5.12"
+      version = "6.21.0"
     }
     prefect = {
-      source = "prefecthq/prefect"
+      source  = "prefecthq/prefect"
+      version = "2.17.1"
     }
     null = {
       source  = "hashicorp/null"
-      version = ">= 3.2.2"
+      version = "3.2.3"
     }
     docker = {
       source  = "kreuzwerker/docker"
-      version = ">= 3.0.2"
+      version = "3.0.2"
     }
   }
   backend "gcs" {

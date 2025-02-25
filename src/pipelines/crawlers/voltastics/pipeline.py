@@ -9,7 +9,8 @@ from prefect import task
 
 from src.common.extractors.rest_crawler import RestCrawler, PagingInfo
 from src.common.loaders.bq_loader import is_streaming_buffer_empty, delete_partition
-from src.common.monitoring.alerting import alerting_flow
+from src.common.monitoring.flow import monitored_flow
+from src.common.monitoring.metrics import report_number_of_processed_entities
 from src.common.variables import variable_value_as, secret_value
 from src.pipelines.crawlers.crawler_common_code import (
     update_last_successful_day,
@@ -41,7 +42,7 @@ def config() -> CrawlerConfig:
 
 
 @task
-def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, None]]:
+def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
     def paging_params(paging_info: PagingInfo) -> dict[str, Any]:
         return {
             "offset": paging_info.offset,
@@ -49,12 +50,17 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, None]]:
             "city": "ALL_CITIES",
         }
 
-    async def crawl_to_queue(queue: Queue[Any]) -> None:
+    async def crawl_to_queue(queue: Queue[Any]) -> int:
+        document_count = 0
+
         async def add_page_to_queue(page: Any) -> None:
+            nonlocal document_count
+
             if page is _STOP_DOC:  # stop signal, last element
                 queue.put_nowait(_STOP_DOC)
             else:
                 for document in page.get("entries"):
+                    document_count += 1
                     queue.put_nowait(document)
 
         await RestCrawler(
@@ -65,11 +71,12 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, None]]:
             headers={"x-voltastics-token": cast(str, secret_value("voltastics-api-key"))},
             stop_page=_STOP_DOC,
         ).crawl()
+        return document_count
 
     return crawl_to_queue
 
 
-@alerting_flow
+@monitored_flow
 def crawl_voltastics(force_run: bool = False) -> None:
     # only run on production for days that have not been successfully crawled yet, or when forced
     if (is_production_environment() and not has_run_successfully_for_day(config())) or force_run:
@@ -84,8 +91,9 @@ def crawl_voltastics(force_run: bool = False) -> None:
                 return
 
         update_last_run_day(config())
-        asyncio.run(source_to_sink(crawl(), bigquery_sink(config(), _STOP_DOC)))
+        processed_entities_count = asyncio.run(source_to_sink(crawl(), bigquery_sink(config(), _STOP_DOC)))
         update_last_successful_day(config())  # = finalize
+        report_number_of_processed_entities(processed_entities_count)
     else:
         logger.info("Crawling already ran successfully for today, skipping run.")
 

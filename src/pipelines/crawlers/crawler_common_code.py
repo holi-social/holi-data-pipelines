@@ -32,14 +32,15 @@ def has_run_successfully_for_day(config: CrawlerConfig) -> bool:
 
 
 async def source_to_sink(
-    source: Callable[[Queue[Any]], Coroutine[Any, Any, None]],
+    source: Callable[[Queue[Any]], Coroutine[Any, Any, int]],
     sink: Callable[[Queue[Any]], Coroutine[Any, Any, None]],
-) -> None:
+) -> int:
     # documents are transported from the source to the sink via this queue
     queue: Queue[Any] = asyncio.Queue()
     async with asyncio.TaskGroup() as group:
-        group.create_task(source(queue))
+        source_task = group.create_task(source(queue))
         group.create_task(sink(queue))
+    return source_task.result()
 
 
 def bigquery_sink(

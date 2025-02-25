@@ -37,7 +37,7 @@ set -e
 
 # Function to check if "done" is at the end of /var/log/startup-script.log
 check_log() {
-  gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" --command="ls /etc/startup_script_was_run_successfully > /dev/null 2>&1"
+  gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" --tunnel-through-iap --command="ls /etc/startup_script_was_run_successfully > /dev/null 2>&1"
   echo $?
 }
 

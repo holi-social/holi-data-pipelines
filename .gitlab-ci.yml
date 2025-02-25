@@ -73,24 +73,24 @@ stages:
   interruptible: false
 
 .prefect_deploy:
-  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.1.13-python3.12"
+  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.2.5-python3.12"
   stage: "deploy"
   variables:
     ENVIRONMENT_ID: $CI_ENVIRONMENT_SLUG
-  cache: !reference [.pip_cache_readonly]
+  cache: !reference [ .pip_cache_readonly ]
   script:
     - source venv/bin/activate
-    - PREFECT_API_URL="$(cat $PREFECT_SERVER_URL_PATH)/api" prefect deploy --all
+    - PREFECT_API_URL="$(cat $PREFECT_SERVER_URL_PATH)/api" PYTHONPATH=$PYTHONPATH:. python src/pipelines/deployments.py
   resource_group: $ENVIRONMENT_ID
 
 .smoketest:
-  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.1.13-python3.12"
+  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.2.5-python3.12"
   stage: "deploy"
-  cache: !reference [.pip_cache_readonly]
+  cache: !reference [ .pip_cache_readonly ]
   script:
     - source venv/bin/activate
     - PREFECT_API_URL="$(cat $PREFECT_SERVER_URL_PATH)/api" prefect shell watch --flow-run-name ci-test-$CI_PIPELINE_IID --tag ci-test "echo smoketesting"
-    - PREFECT_API_URL="$(cat $PREFECT_SERVER_URL_PATH)/api" prefect deployment run --tag ci-test --watch hello-universe/example-deploy
+    - PREFECT_API_URL="$(cat $PREFECT_SERVER_URL_PATH)/api" prefect deployment run --tag ci-test --watch hello-universe/hello-universe
 
 .build_prefect_flow_docker_image:
   image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/docker:27"
@@ -112,7 +112,7 @@ stages:
 install_dependencies:
   image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/python:3.12-slim"
   stage: "prepare"
-  cache: !reference [.pip_cache_rw]
+  cache: !reference [ .pip_cache_rw ]
   script:
     - python3 -m venv venv
     - source venv/bin/activate
@@ -133,7 +133,7 @@ validate:
   needs:
     - job: install_dependencies
       optional: true
-  cache: !reference [.pip_cache_readonly]
+  cache: !reference [ .pip_cache_readonly ]
   script:
     - source venv/bin/activate
     - ruff check
@@ -143,7 +143,7 @@ validate:
 
 build_prefect_flow_docker_image_staging:
   extends: .build_prefect_flow_docker_image
-  needs: ["validate"]
+  needs: [ "validate" ]
   variables:
     ENVIRONMENT_SUFFIX: staging
   rules:
@@ -158,11 +158,11 @@ build_prefect_flow_docker_image_staging:
 ## staging environment
 terraform_deploy_staging:
   extends: .terraform_deploy
-  needs: ["validate"]
+  needs: [ "validate" ]
   variables:
     ENVIRONMENT_ID: staging
   rules:
-    - !reference [.rule_templates, only_main]
+    - !reference [ .rule_templates, only_main ]
 
 prefect_deploy_staging:
   extends: .prefect_deploy
@@ -173,18 +173,18 @@ prefect_deploy_staging:
   variables:
     ENVIRONMENT_ID: staging
   rules:
-    - !reference [.rule_templates, only_main]
+    - !reference [ .rule_templates, only_main ]
 
 smoketest_staging:
   extends: .smoketest
-  needs: ["terraform_deploy_staging", "prefect_deploy_staging"]
+  needs: [ "terraform_deploy_staging", "prefect_deploy_staging" ]
   rules:
-    - !reference [.rule_templates, only_main]
+    - !reference [ .rule_templates, only_main ]
 
 ## production environment
 build_prefect_flow_docker_image_production:
   extends: .build_prefect_flow_docker_image
-  needs: ["validate"]
+  needs: [ "validate" ]
   stage: deploy
   variables:
     ENVIRONMENT_SUFFIX: production
@@ -199,12 +199,12 @@ build_prefect_flow_docker_image_production:
 
 terraform_deploy_production:
   extends: .terraform_deploy
-  needs: ["validate"]
+  needs: [ "validate" ]
   stage: deploy
   variables:
     ENVIRONMENT_ID: production
   rules:
-    - !reference [.rule_templates, only_production]
+    - !reference [ .rule_templates, only_production ]
 
 prefect_deploy_production:
   extends: .prefect_deploy
@@ -216,11 +216,11 @@ prefect_deploy_production:
   variables:
     ENVIRONMENT_ID: production
   rules:
-    - !reference [.rule_templates, only_production]
+    - !reference [ .rule_templates, only_production ]
 
 smoketest_production:
   extends: .smoketest
-  needs: ["terraform_deploy_production", "prefect_deploy_production"]
+  needs: [ "terraform_deploy_production", "prefect_deploy_production" ]
   stage: deploy
   rules:
-    - !reference [.rule_templates, only_production]
+    - !reference [ .rule_templates, only_production ]

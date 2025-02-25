@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import cast, Any
+from typing import cast
 
 from prefect import State, Task
 from prefect.futures import PrefectFuture
@@ -7,7 +7,8 @@ from prefect.states import Failed, Completed
 from typesense.exceptions import ObjectNotFound
 
 from src.common.logging.PipelineLogger import PipelineLogger
-from src.common.monitoring.alerting import alerting_flow
+from src.common.monitoring.flow import monitored_flow
+from src.common.monitoring.metrics import report_number_of_processed_entities
 from src.common.typesense import extract_collection_name_from_schema, get_config
 from src.common.typesense_client import TypesenseClient, TypesenseClientConfig
 from src.common.variables import variable_value
@@ -19,7 +20,7 @@ from src.pipelines.volunteering_to_typesense.tasks import store_last_complete_in
 logger = PipelineLogger(__name__)
 
 
-@alerting_flow
+@monitored_flow
 def all_to_typesense_ingest_from_scratch_flow() -> State:
     """
     Orchestrates the ETL pipeline to ingest all search data into Typesense from scratch.
@@ -45,21 +46,17 @@ def all_to_typesense_ingest_from_scratch_flow() -> State:
         schema_file_path=cast(str, config["schema_path"]), collection_name=next_collection
     )
 
-    profiles_future: PrefectFuture[Any] = cast(
-        Task[[TypesenseClient, str, str], State], profiles_to_typesense_ingest_from_scratch
+    profiles_future: PrefectFuture[State | int] = cast(
+        Task[[TypesenseClient, str, str], State | int], profiles_to_typesense_ingest_from_scratch
     ).submit(typesense_client, source_dataset, next_collection)
-    spaces_future: PrefectFuture[Any] = cast(
-        Task[[TypesenseClient, str, str], State], spaces_to_typesense_ingest_from_scratch
+    spaces_future: PrefectFuture[State | int] = cast(
+        Task[[TypesenseClient, str, str], State | int], spaces_to_typesense_ingest_from_scratch
     ).submit(typesense_client, source_dataset, next_collection)
-    volunteering_future: PrefectFuture[Any] = cast(
-        Task[[TypesenseClient, str, str, datetime | None], State], volunteering_to_typesense_ingest_updates
+    volunteering_future: PrefectFuture[State | int] = cast(
+        Task[[TypesenseClient, str, str, datetime | None], State | int], volunteering_to_typesense_ingest_updates
     ).submit(typesense_client, next_collection, cast(str, config.get("volunteering_raw_deduped")), None)
 
     logger.info("Submitted tasks for parallel execution (profiles, spaces, volunteering). Waiting for results...")
-
-    profiles_result = profiles_future.result(raise_on_failure=False)
-    spaces_result = spaces_future.result(raise_on_failure=False)
-    volunteering_result = volunteering_future.result(raise_on_failure=False)
 
     if (
         not profiles_future.state.is_completed()
@@ -69,9 +66,9 @@ def all_to_typesense_ingest_from_scratch_flow() -> State:
         logger.error(
             "One or multiple of the ingestion tasks did not complete successfully. %s",
             {
-                "profiles": str(profiles_result),
-                "spaces": str(spaces_result),
-                "volunteering": str(volunteering_result),
+                "profiles": profiles_future.state,
+                "spaces": spaces_future.state,
+                "volunteering": volunteering_future.state,
             },
         )
         return Failed(message="One of the ingestion tasks did not complete successfully. Check logs for details.")
@@ -81,6 +78,13 @@ def all_to_typesense_ingest_from_scratch_flow() -> State:
     if active_collection is not None:
         typesense_client.drop_collection(active_collection)
     store_last_complete_ingestion_timestamp(datetime.now())
+
+    report_number_of_processed_entities(
+        cast(int, profiles_future.result())
+        + cast(int, spaces_future.result())
+        + cast(int, volunteering_future.result())
+    )
+
     return Completed()
 
 
