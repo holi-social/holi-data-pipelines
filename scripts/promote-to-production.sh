@@ -38,10 +38,12 @@ echo "Promoting $SHA_TO_PROMOTE to production"
 # merge the sha into production and push it to origin
 git checkout production
 git pull --ff-only
-git merge "$SHA_TO_PROMOTE"
+git merge --no-edit --no-ff "$SHA_TO_PROMOTE"
 
+set +e
 git diff origin/production..main requirements.txt|grep +prefect==
 retval=$?
+set -e
 if [ $retval -eq 0 ]; then
     echo "prefect version changed, you now need to do some manual changes:"
     echo '* Check if there are any running flows in production, potentially wait for them to finish ( http://prefect-server-production.holi.internal:8420/runs )'
@@ -75,3 +77,5 @@ fi
 git push
 # reset the git repository
 git checkout "$CURRENT_SHA"
+
+echo done

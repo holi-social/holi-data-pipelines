@@ -25,12 +25,13 @@ _logger = PipelineLogger(__name__)
 
 def _get_resource() -> Resource:
     try:
-        return GoogleCloudResourceDetector(raise_on_error=True).detect()  # type: ignore[no-untyped-call]
+        gcp_resource = GoogleCloudResourceDetector(raise_on_error=True).detect()  # type: ignore[no-untyped-call]
+        _logger.info(f"GCP resource attributes: ${gcp_resource.attributes.keys()}")
+        return gcp_resource
     except NoGoogleResourcesFound:
         return Resource.create(
             {
-                ResourceAttributes.HOST_NAME: platform.node(),
-                ResourceAttributes.SERVICE_NAMESPACE: "prefect_local",
+                ResourceAttributes.HOST_NAME: f"local:{platform.node()}",
             }
         )
 
@@ -112,9 +113,6 @@ def _get_prefect_runtime_labels() -> dict[str, str]:
     :return: the labels that are prefect runtime specific.
     """
     labels: dict[str, str] = {}
-    deployment_name = runtime.deployment.get_name()
-    if deployment_name:
-        labels.update({"prefect_deployment_name": deployment_name})
     task_name = runtime.task_run.get_task_name()
     if task_name:
         labels.update({"prefect_task_name": task_name})
