@@ -29,8 +29,7 @@ def _get_resource() -> Resource:
     except NoGoogleResourcesFound:
         return Resource.create(
             {
-                ResourceAttributes.HOST_NAME: platform.node(),
-                ResourceAttributes.SERVICE_NAMESPACE: "prefect_local",
+                ResourceAttributes.HOST_NAME: f"local:{platform.node()}",
             }
         )
 
@@ -92,6 +91,8 @@ def _get_static_labels() -> dict[str, str]:
     """
     global _STATIC_LABELS
     if _STATIC_LABELS is None:
+        # resource_attributes = _get_resource().attributes
+        # print(resource_attributes.keys())
         environment = variable_value("prefect_environment")
         if not isassignable(environment, str):
             environment = "undefined"
@@ -112,9 +113,6 @@ def _get_prefect_runtime_labels() -> dict[str, str]:
     :return: the labels that are prefect runtime specific.
     """
     labels: dict[str, str] = {}
-    deployment_name = runtime.deployment.get_name()
-    if deployment_name:
-        labels.update({"prefect_deployment_name": deployment_name})
     task_name = runtime.task_run.get_task_name()
     if task_name:
         labels.update({"prefect_task_name": task_name})
