@@ -25,7 +25,9 @@ _logger = PipelineLogger(__name__)
 
 def _get_resource() -> Resource:
     try:
-        return GoogleCloudResourceDetector(raise_on_error=True).detect()  # type: ignore[no-untyped-call]
+        gcp_resource = GoogleCloudResourceDetector(raise_on_error=True).detect()  # type: ignore[no-untyped-call]
+        _logger.info(f"GCP resource attributes: ${gcp_resource.attributes.keys()}")
+        return gcp_resource
     except NoGoogleResourcesFound:
         return Resource.create(
             {
@@ -91,8 +93,6 @@ def _get_static_labels() -> dict[str, str]:
     """
     global _STATIC_LABELS
     if _STATIC_LABELS is None:
-        # resource_attributes = _get_resource().attributes
-        # print(resource_attributes.keys())
         environment = variable_value("prefect_environment")
         if not isassignable(environment, str):
             environment = "undefined"
