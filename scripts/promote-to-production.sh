@@ -38,33 +38,44 @@ echo "Promoting $SHA_TO_PROMOTE to production"
 # merge the sha into production and push it to origin
 git checkout production
 git pull --ff-only
-git merge "$SHA_TO_PROMOTE"
+git merge --no-edit --no-ff "$SHA_TO_PROMOTE"
 
-echo 'You now need to do some manual changes:'
-echo '* Check if there are any running flows, potentially wait for them to finish'
-echo 'Ensure you'"'"'re in the right terraform workspace'
-# shellcheck disable=SC2016
-echo '* execute `terraform destroy -target=google_compute_instance.prefect_server_green`'
-# shellcheck disable=SC2016
-echo '* execute `terraform apply -target=google_compute_instance.prefect_server_green -target=google_dns_record_set.prefect_server_holi_internal`'
-# shellcheck disable=SC2016
-echo '* execute `terraform apply -target=null_resource.prefect_server_available` (repeat once if this fails)'
-# shellcheck disable=SC2016
-echo '* you probably will need to execute \`direnv reload\` now in the project root for re-enabling the ssh tunnels'
-# shellcheck disable=SC2016
-echo '* execute `terraform apply`'
-echo
-while true; do
-    read -r "Did you execute these steps, can I continue and push to production? (y/n)" yn
-    case $yn in
-        [Yy]* ) make install; break;;
-        [Nn]* ) exit;;
-        * ) echo "Please answer (y)es or (n)no.";;
-    esac
-done
+set +e
+git diff origin/production..main requirements.txt|grep +prefect==
+retval=$?
+set -e
+if [ $retval -eq 0 ]; then
+    echo "prefect version changed, you now need to do some manual changes:"
+    echo '* Check if there are any running flows in production, potentially wait for them to finish ( http://prefect-server-production.holi.internal:8420/runs )'
+    # shellcheck disable=SC2016
+    echo '* Switch to the terraform environments directory `cd terraform/environments`. You might need to run `terraform init -upgrade`, too.'
+    # shellcheck disable=SC2016
+    echo '* Ensure you'"'"'re in the right terraform workspace `terraform workspace select production`'
+    # shellcheck disable=SC2016
+    echo '* execute `terraform destroy -target=google_compute_instance.prefect_server_green`'
+    # shellcheck disable=SC2016
+    echo '* execute `terraform apply -target=google_compute_instance.prefect_server_green -target=google_dns_record_set.prefect_server_holi_internal`'
+    # shellcheck disable=SC2016
+    echo '* execute `terraform apply -target=null_resource.prefect_server_available` (repeat once if this fails)'
+    # shellcheck disable=SC2016
+    echo '* you probably will need to execute \`direnv reload\` now in the project root for re-enabling the ssh tunnels'
+    # shellcheck disable=SC2016
+    echo '* execute `terraform apply`'
+    echo
+    while true; do
+        read -r "Did you execute these steps, can I continue and push to production? (y/n)" yn
+        case $yn in
+            [Yy]* ) break;;
+            [Nn]* ) exit;;
+            * ) echo "Please answer (y)es or (n)no.";;
+        esac
+    done
+fi
 
 
 
 git push
 # reset the git repository
 git checkout "$CURRENT_SHA"
+
+echo done
