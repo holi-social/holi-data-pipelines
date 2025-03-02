@@ -26,7 +26,7 @@ _logger = PipelineLogger(__name__)
 def _get_resource() -> Resource:
     try:
         gcp_resource = GoogleCloudResourceDetector(raise_on_error=True).detect()  # type: ignore[no-untyped-call]
-        _logger.info(f"GCP resource attributes: ${gcp_resource.attributes.keys()}")
+        _logger.warning(f"GCP resource attributes: ${gcp_resource.attributes.keys()}")
         return gcp_resource
     except NoGoogleResourcesFound:
         return Resource.create(
