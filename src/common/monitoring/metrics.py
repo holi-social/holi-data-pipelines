@@ -66,6 +66,7 @@ def _get_resource() -> Resource:
         )
     else:
         metadata = _metadata.get_metadata()
+        _logger.warning(f"metadata: {metadata}")  # my
         attributes: Mapping[str, AttributeValue] = {
             "host.id": metadata["instance"]["id"],
             "gcp.resource_type": "generic_task",
