@@ -20,10 +20,9 @@ from opentelemetry.util.types import AttributeValue
 from prefect import runtime
 from prefect.client.schemas.objects import FlowRun, State
 from prefect.flows import Flow
-from trycast import isassignable, checkcast  # type: ignore
 
 from src.common.logging.PipelineLogger import PipelineLogger
-from src.common.variables import variable_value
+from src.common.variables import variable_value_as
 
 _logger = PipelineLogger(__name__)
 
@@ -52,10 +51,7 @@ def _get_prefect_runtime_labels() -> dict[str, str]:
 def _get_resource() -> Resource:
     flow_run_name = runtime.flow_run.get_name() or "unknown"
     flow_name = runtime.flow_run.get_flow_name() or "unknown"
-    environment_value = variable_value("prefect_environment")
-    environment = (
-        checkcast(str, environment_value) if isassignable(environment_value, str) else "undefined"
-    ) or "undefined"
+    environment_value = variable_value_as(str, "prefect_environment", "undefined")
     if not _metadata.is_available():  # we're not running in GCP, probably a developer's environment
         return Resource.create(
             {
@@ -63,7 +59,7 @@ def _get_resource() -> Resource:
                 "gcp.resource_type": "generic_task",
                 "project_id": "holi-shared",  # hardcoded, can't be determined on a resource outside GCP
                 "location": "global",
-                "namespace": environment,
+                "namespace": environment_value,
                 "job": flow_name,
                 "task_id": flow_run_name,
             }
@@ -75,7 +71,7 @@ def _get_resource() -> Resource:
             "gcp.resource_type": "generic_task",
             "project_id": metadata["project"]["projectId"],
             "location": metadata["instance"]["region"].split("/")[-1],
-            "namespace": environment,  # this could be the flow or environment
+            "namespace": environment_value,  # this could be the flow or environment
             "job": flow_name,  # this should be the flow name
             "task_id": flow_run_name,  # this should be the flow run id
         }
@@ -177,12 +173,10 @@ class Metrics:
         :return: the labels that are static over the lifetime of the process.
         """
         if self._static_labels is None:
-            environment_value = variable_value("prefect_environment")
-            environment = environment_value if isassignable(environment_value, str) else "undefined"
             self._static_labels = {
                 "service": "prefect",
                 "component": "pipeline",
-                "prefect_environment": checkcast(str, environment),
+                "prefect_environment": variable_value_as(str, "prefect_environment", "undefined"),
             }
         return self._static_labels
 
