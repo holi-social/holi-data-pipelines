@@ -71,7 +71,9 @@ def _get_resource() -> Resource:
             "host.id": metadata["instance"]["id"],
             "gcp.resource_type": "generic_task",
             "project_id": metadata["project"]["projectId"],
-            "location": metadata["instance"].get("region", "/unknown").split("/")[-1],
+            "location": metadata["instance"]
+            .get("region", metadata["instance"].get("zone", "/unknown"))
+            .split("/")[-1],
             "namespace": environment_value,  # this could be the flow or environment
             "job": flow_name,  # this should be the flow name
             "task_id": flow_run_name,  # this should be the flow run id
