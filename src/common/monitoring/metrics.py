@@ -1,5 +1,5 @@
 import platform
-from typing import Any, Optional
+from typing import Any, Optional, Mapping
 
 import pendulum
 from opentelemetry import metrics
@@ -7,11 +7,17 @@ from opentelemetry.exporter.cloud_monitoring import (
     CloudMonitoringMetricsExporter,
 )
 from opentelemetry.metrics import Meter
-from opentelemetry.resourcedetector.gcp_resource_detector import GoogleCloudResourceDetector, NoGoogleResourcesFound
+from opentelemetry.resourcedetector.gcp_resource_detector import (
+    _metadata,  # noqa
+)
+from opentelemetry.resourcedetector.gcp_resource_detector._detector import (  # noqa
+    _make_resource,  # noqa
+)
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.semconv.resource import ResourceAttributes
+from opentelemetry.util.types import AttributeValue
 from prefect import runtime
 from prefect.client.schemas.objects import FlowRun, State
 from prefect.flows import Flow
@@ -21,87 +27,6 @@ from src.common.logging.PipelineLogger import PipelineLogger
 from src.common.variables import variable_value
 
 _logger = PipelineLogger(__name__)
-
-
-def _get_resource() -> Resource:
-    try:
-        gcp_resource = GoogleCloudResourceDetector(raise_on_error=True).detect()  # type: ignore[no-untyped-call]
-        _logger.warning(f"GCP resource attributes: ${gcp_resource.attributes.keys()}")
-        return gcp_resource
-    except NoGoogleResourcesFound:
-        return Resource.create(
-            {
-                ResourceAttributes.HOST_NAME: f"local:{platform.node()}",
-            }
-        )
-
-
-metrics.set_meter_provider(
-    MeterProvider(
-        metric_readers=[
-            PeriodicExportingMetricReader(
-                # https://cloud.google.com/monitoring/api/metrics_other
-                CloudMonitoringMetricsExporter(prefix="external.googleapis.com/user"),
-                export_interval_millis=5000,
-            )
-        ],
-        resource=_get_resource(),
-    ),
-)
-_meter = metrics.get_meter("opentelemetry.instrumentation.pipelines")
-
-_common_counters = {
-    "pipeline_run.count": _meter.create_counter(
-        name="pipeline_run.count",
-        description="number of pipeline runs",
-        unit="1",
-    ),
-}
-_common_gauges = {
-    "pipeline_run.duration": _meter.create_gauge(
-        name="pipeline_run.duration", description="duration of pipeline runs", unit="s"
-    ),
-    "pipeline_run.processed_entities": _meter.create_gauge(
-        name="pipeline_run.processed_entities", description="number of processed entities in a pipeline run", unit="1"
-    ),
-}
-
-
-def get_meter() -> Meter:
-    """
-    Get the meter in order to create custom metrics. Before creating custom metrics, try to design metrics common to all
-    pipelines and keep them contained in this module, accessible via a report_* function.
-    See report_number_of_processed_entities
-    :return: the meter instance for creating custom metrics
-    """
-    return _meter
-
-
-def report_number_of_processed_entities(no_processed: int) -> None:
-    _common_gauges["pipeline_run.processed_entities"].set(no_processed, get_labels())
-
-
-_STATIC_LABELS: Optional[dict[str, str]] = None
-
-
-def _get_static_labels() -> dict[str, str]:
-    """
-    Get the static labels that are common to all metrics. These labels are set once and are not changed during the
-    lifetime of the process in order to avoid querying prefect variables every time a metric is reported.
-
-    :return: the labels that are static over the lifetime of the process.
-    """
-    global _STATIC_LABELS
-    if _STATIC_LABELS is None:
-        environment = variable_value("prefect_environment")
-        if not isassignable(environment, str):
-            environment = "undefined"
-        _STATIC_LABELS = {
-            "service": "prefect",
-            "component": "pipeline",
-            "prefect_environment": checkcast(str, environment),
-        }
-    return _STATIC_LABELS
 
 
 def _get_prefect_runtime_labels() -> dict[str, str]:
@@ -125,33 +50,133 @@ def _get_prefect_runtime_labels() -> dict[str, str]:
     return labels
 
 
-def get_labels() -> dict[str, str]:
-    """
-    Get the labels that are common to all metrics. Combine these with any custom labels when you define custom metrics.
-    Some labels included are the prefect environment, deployment name, task name, flow run name and flow name.
-
-    :return: the labels that are common to all metrics.
-    """
-    return _get_static_labels() | _get_prefect_runtime_labels()
-
-
-def record_after_flow_metrics(
-    _flow: Flow[Any, Any],
-    _run: FlowRun,
-    _state: State,
-) -> None:
-    """
-    This function is called whenever a flow is completed, cancelled, crashed or failed.
-    It increments the pipeline_runs counter.
-    """
-    _common_counters["pipeline_run.count"].add(1, get_labels() | {"prefect_flow_state": _state.type.lower()})
-
-    start_time = _run.start_time
-    if start_time:
-        full_timedelta = pendulum.now("utc") - start_time
-        _common_gauges["pipeline_run.duration"].set(
-            full_timedelta.total_seconds(),
-            get_labels() | {"prefect_flow_state": _state.type.lower()},
+def _get_resource() -> Resource:
+    flow_run_name = runtime.flow_run.get_name() or "unknown"
+    flow_name = runtime.flow_run.get_flow_name() or "unknown"
+    environment_value = variable_value("prefect_environment")
+    environment = (
+        checkcast(str, environment_value) if isassignable(environment_value, str) else "undefined"
+    ) or "undefined"
+    if not _metadata.is_available():  # we're not running in GCP, probably a developer's environment
+        return Resource.create(
+            {
+                ResourceAttributes.HOST_ID: f"local:{platform.node()}",
+                "gcp.resource_type": "generic_task",
+                "project_id": "holi-shared",  # hardcoded, can't be determined on a resource outside GCP
+                "location": "global",
+                "namespace": environment,
+                "job": flow_name,
+                "task_id": flow_run_name,
+            }
         )
     else:
-        _logger.warning(f"Flow run has no start time, cannot calculate duration. State {_state.type}")
+        metadata = _metadata.get_metadata()
+        attributes: Mapping[str, AttributeValue] = {
+            "host.id": metadata["instance"]["id"],
+            "gcp.resource_type": "generic_task",
+            "project_id": metadata["project"]["projectId"],
+            "location": metadata["instance"]["region"].split("/")[-1],
+            "namespace": environment,  # this could be the flow or environment
+            "job": flow_name,  # this should be the flow name
+            "task_id": flow_run_name,  # this should be the flow run id
+        }
+        _logger.warning(f"GCP resource attributes: ${attributes.keys()}")
+        return _make_resource(attributes)
+
+
+class Metrics:
+    _meter: Meter = metrics.get_meter("opentelemetry.instrumentation.pipelines")
+    _common_counters: dict[str, Any] = {
+        "pipeline_run.count": _meter.create_counter(
+            name="pipeline_run.count",
+            description="number of pipeline runs",
+            unit="1",
+        ),
+    }
+    _common_gauges: dict[str, Any] = {
+        "pipeline_run.duration": _meter.create_gauge(
+            name="pipeline_run.duration", description="duration of pipeline runs", unit="s"
+        ),
+        "pipeline_run.processed_entities": _meter.create_gauge(
+            name="pipeline_run.processed_entities",
+            description="number of processed entities in a pipeline run",
+            unit="1",
+        ),
+    }
+    _static_labels: Optional[dict[str, str]] = None
+
+    def __init__(self) -> None:
+        metrics.set_meter_provider(
+            MeterProvider(
+                metric_readers=[
+                    PeriodicExportingMetricReader(
+                        # https://cloud.google.com/monitoring/api/metrics_other
+                        CloudMonitoringMetricsExporter(prefix="external.googleapis.com/user"),
+                        export_interval_millis=5000,
+                    )
+                ],
+                resource=_get_resource(),
+            ),
+        )
+
+    def get_meter(self) -> Meter:
+        """
+        Get the meter in order to create custom metrics. Before creating custom metrics, try to design metrics common to all
+        pipelines and keep them contained in this module, accessible via a report_* function.
+        See report_number_of_processed_entities
+        :return: the meter instance for creating custom metrics
+        """
+        return self._meter
+
+    def report_number_of_processed_entities(self, no_processed: int) -> None:
+        self._common_gauges["pipeline_run.processed_entities"].set(no_processed, self.get_labels())
+
+    def _get_static_labels(self) -> dict[str, str]:
+        """
+        Get the static labels that are common to all metrics. These labels are set once and are not changed during the
+        lifetime of the process in order to avoid querying prefect variables every time a metric is reported.
+
+        :return: the labels that are static over the lifetime of the process.
+        """
+        if self._static_labels is None:
+            environment_value = variable_value("prefect_environment")
+            environment = environment_value if isassignable(environment_value, str) else "undefined"
+            self._static_labels = {
+                "service": "prefect",
+                "component": "pipeline",
+                "prefect_environment": checkcast(str, environment),
+            }
+        return self._static_labels
+
+    def get_labels(self) -> dict[str, str]:
+        """
+        Get the labels that are common to all metrics. Combine these with any custom labels when you define custom metrics.
+        Some labels included are the prefect environment, deployment name, task name, flow run name and flow name.
+
+        :return: the labels that are common to all metrics.
+        """
+        return self._get_static_labels() | _get_prefect_runtime_labels()
+
+    def record_after_flow_metrics(
+        self,
+        _flow: Flow[Any, Any],
+        _run: FlowRun,
+        _state: State,
+    ) -> None:
+        """
+        This function is called whenever a flow is completed, cancelled, crashed or failed.
+        It increments the pipeline_runs counter.
+        """
+        self._common_counters["pipeline_run.count"].add(
+            1, self.get_labels() | {"prefect_flow_state": _state.type.lower()}
+        )
+
+        start_time = _run.start_time
+        if start_time:
+            full_timedelta = pendulum.now("utc") - start_time
+            self._common_gauges["pipeline_run.duration"].set(
+                full_timedelta.total_seconds(),
+                self.get_labels() | {"prefect_flow_state": _state.type.lower()},
+            )
+        else:
+            _logger.warning(f"Flow run has no start time, cannot calculate duration. State {_state.type}")
