@@ -1,5 +1,5 @@
 import platform
-from typing import Any, Optional, Mapping
+from typing import Any, Optional, Mapping, Type
 
 import pendulum
 from opentelemetry import metrics
@@ -16,7 +16,6 @@ from opentelemetry.resourcedetector.gcp_resource_detector._detector import (  # 
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 from opentelemetry.sdk.resources import Resource
-from opentelemetry.semconv.resource import ResourceAttributes
 from opentelemetry.util.types import AttributeValue
 from prefect import runtime
 from prefect.client.schemas.objects import FlowRun, State
@@ -60,7 +59,7 @@ def _get_resource() -> Resource:
     if not _metadata.is_available():  # we're not running in GCP, probably a developer's environment
         return Resource.create(
             {
-                ResourceAttributes.HOST_ID: f"local:{platform.node()}",
+                "host.id": f"local:{platform.node()}",
                 "gcp.resource_type": "generic_task",
                 "project_id": "holi-shared",  # hardcoded, can't be determined on a resource outside GCP
                 "location": "global",
@@ -84,28 +83,51 @@ def _get_resource() -> Resource:
         return _make_resource(attributes)
 
 
-class Metrics:
-    _meter: Meter = metrics.get_meter("opentelemetry.instrumentation.pipelines")
-    _common_counters: dict[str, Any] = {
-        "pipeline_run.count": _meter.create_counter(
-            name="pipeline_run.count",
-            description="number of pipeline runs",
-            unit="1",
-        ),
-    }
-    _common_gauges: dict[str, Any] = {
-        "pipeline_run.duration": _meter.create_gauge(
-            name="pipeline_run.duration", description="duration of pipeline runs", unit="s"
-        ),
-        "pipeline_run.processed_entities": _meter.create_gauge(
-            name="pipeline_run.processed_entities",
-            description="number of processed entities in a pipeline run",
-            unit="1",
-        ),
-    }
-    _static_labels: Optional[dict[str, str]] = None
+def record_after_flow_metrics(
+    _flow: Flow[Any, Any],
+    _run: FlowRun,
+    _state: State,
+) -> None:
+    """
+    This function is called whenever a flow is completed, cancelled, crashed or failed.
+    It increments the pipeline_runs counter.
+    """
+    metrics_instance = Metrics()
+    counter = metrics_instance._common_counters["pipeline_run.count"].add(  # noqa
+        1, metrics_instance.get_labels() | {"prefect_flow_state": _state.type.lower()}
+    )
 
-    def __init__(self) -> None:
+    start_time = _run.start_time
+    if start_time:
+        full_timedelta = pendulum.now("utc") - start_time
+        metrics_instance._common_gauges["pipeline_run.duration"].set(  # noqa
+            full_timedelta.total_seconds(),
+            metrics_instance.get_labels() | {"prefect_flow_state": _state.type.lower()},
+        )
+    else:
+        _logger.warning(f"Flow run has no start time, cannot calculate duration. State {_state.type}")
+
+
+def report_number_of_processed_entities(no_processed: int) -> None:
+    metrics_instance = Metrics()
+    metrics_instance._common_gauges["pipeline_run.processed_entities"].set(no_processed, metrics_instance.get_labels())  # noqa
+
+
+class Metrics:
+    """
+    This class is a singleton that provides access to the meter for creating custom metrics. It must not be
+    instantiated outside a flow, because it uses prefect.runtime objects to determine the labels for the metrics.
+    """
+
+    _instance: Optional["Metrics"] = None
+
+    def __new__(cls: Type["Metrics"]) -> "Metrics":
+        if not isinstance(cls._instance, cls):
+            cls._instance = object.__new__(cls)
+            cls._instance._initialize_once()
+        return cls._instance
+
+    def _initialize_once(self) -> None:
         metrics.set_meter_provider(
             MeterProvider(
                 metric_readers=[
@@ -118,6 +140,25 @@ class Metrics:
                 resource=_get_resource(),
             ),
         )
+        self._meter: Meter = metrics.get_meter("opentelemetry.instrumentation.pipelines")
+        self._common_counters: dict[str, Any] = {
+            "pipeline_run.count": self._meter.create_counter(
+                name="pipeline_run.count",
+                description="number of pipeline runs",
+                unit="1",
+            ),
+        }
+        self._common_gauges: dict[str, Any] = {
+            "pipeline_run.duration": self._meter.create_gauge(
+                name="pipeline_run.duration", description="duration of pipeline runs", unit="s"
+            ),
+            "pipeline_run.processed_entities": self._meter.create_gauge(
+                name="pipeline_run.processed_entities",
+                description="number of processed entities in a pipeline run",
+                unit="1",
+            ),
+        }
+        self._static_labels: Optional[dict[str, str]] = None
 
     def get_meter(self) -> Meter:
         """
@@ -127,9 +168,6 @@ class Metrics:
         :return: the meter instance for creating custom metrics
         """
         return self._meter
-
-    def report_number_of_processed_entities(self, no_processed: int) -> None:
-        self._common_gauges["pipeline_run.processed_entities"].set(no_processed, self.get_labels())
 
     def _get_static_labels(self) -> dict[str, str]:
         """
