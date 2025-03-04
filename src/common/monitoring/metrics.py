@@ -66,20 +66,21 @@ def _get_resource() -> Resource:
         )
     else:
         metadata = _metadata.get_metadata()
-        region_or_zone = (
-            metadata["instance"].get("region", metadata["instance"].get("zone", "/unknown")).split("/")[-1]
-        )
         attributes: Mapping[str, AttributeValue] = {
             "host.id": metadata["instance"]["id"],
             "gcp.resource_type": "generic_task",
             "project_id": metadata["project"]["projectId"],
-            "location": region_or_zone,
+            "location": _get_location_from_metadata(metadata),
             "namespace": environment_value,  # this could be the flow or environment
             "job": flow_name,  # this should be the flow name
             "task_id": flow_run_name,  # this should be the flow run id
         }
         _logger.warning(f"GCP resource attributes: ${attributes.keys()}")
         return _make_resource(attributes)
+
+
+def _get_location_from_metadata(metadata: Mapping[str, Any]) -> str:
+    return metadata["instance"].get("region", metadata["instance"].get("zone", "/unknown")).split("/")[-1]
 
 
 def record_after_flow_metrics(
