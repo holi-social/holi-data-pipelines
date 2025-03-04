@@ -53,6 +53,28 @@ can debug the failures:
 * The default tunnel only has a lifetime of a day. If you suspect it's gone, try `direnv reload`.
 *
 
+## Remote Development (running developed pipelines/flows in GCP)
+
+After developing a pipeline locally, you should test whether it works in the GCP environment, on the staging instance of
+prefect. In order to do that, follow these steps:
+
+* Make sure you developed a flow that works when running it locally.
+* Add a deployment for the flow via the `src/pipelines/deployments.py` file. You can keep it simple and copy the
+  deployment of the example pipeline ("hello universe"). This will allow you to run the flow in the prefect environment.
+* Create a branch and merge request for your flow and deployment, so it can be code reviewed later.
+* Merge the MR to main, so the staging prefect environment gets deployed with the new code.
+* Wait for the GitLab CI pipeline to successfully
+  finish: https://gitlab.holi.team/app/holi-data-pipelines/-/pipelines?ref=main
+* Run the flow (via the deployment) in the prefect UI.
+  Visit https://http://prefect-server-staging.holi.internal:8421/deployments and find your flow. Press the
+  "three-buttons-menu" at the right and select "Quick run" for a run without specifying any parameters, or select
+  "Custom run" to specify parameters for the run.
+* Go to the run details (either by clicking "View run" in the notification that appears or by navigating to
+  http://prefect-server-staging.holi.internal:8421/runs and to the run detail page). You can monitor it's progress
+  and status there.
+* If you need to inspect further, once a flow has finished, prefect provides a link to GCP logs at the end of the run
+  details page. This link might only show up after a reload of the page.
+
 ## Infrastructure
 
 This project defines data pipeline infrastructure in the `terraform` folder and it's subfolders.
