@@ -66,9 +66,9 @@ prefect. In order to do that, follow these steps:
 * Wait for the GitLab CI pipeline to successfully
   finish: https://gitlab.holi.team/app/holi-data-pipelines/-/pipelines?ref=main
 * Run the flow (via the deployment) in the prefect UI.
-  Visit https://http://prefect-server-staging.holi.internal:8421/deployments and find your flow. Press the
-  "three-buttons-menu" at the right and select "Quick run" for a run without specifying any parameters, or select
-  "Custom run" to specify parameters for the run.
+  Visit http://prefect-server-staging.holi.internal:8421/deployments and find your flow. Press the "three-buttons-menu"
+  at the right and select "Quick run" for a run without specifying any parameters, or select "Custom run" to specify
+  parameters for the run.
 * Go to the run details (either by clicking "View run" in the notification that appears or by navigating to
   http://prefect-server-staging.holi.internal:8421/runs and to the run detail page). You can monitor it's progress
   and status there.
