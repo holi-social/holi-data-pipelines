@@ -2,7 +2,7 @@ aiohttp-retry==2.9.1
 aiohttp==3.11.13
 codetiming==1.4.0
 langdetect==1.0.9
-prefect==3.2.5
+prefect==3.2.11
 prefect-gcp[all_extras]==0.6.3
 pyarrow>=3.0.0
 pydantic==2.10.6
