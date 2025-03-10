@@ -8,7 +8,8 @@ from opentelemetry.exporter.cloud_monitoring import (
 )
 from opentelemetry.metrics import Meter
 from opentelemetry.resourcedetector.gcp_resource_detector import (
-    _metadata,  # noqa
+    _metadata,
+    _get_google_metadata_and_common_attributes,  # noqa
 )
 from opentelemetry.resourcedetector.gcp_resource_detector._detector import (  # noqa
     _make_resource,  # noqa
@@ -16,7 +17,6 @@ from opentelemetry.resourcedetector.gcp_resource_detector._detector import (  # 
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 from opentelemetry.sdk.resources import Resource
-from opentelemetry.util.types import AttributeValue
 from prefect import runtime
 from prefect.client.schemas.objects import FlowRun, State
 from prefect.flows import Flow
@@ -52,6 +52,9 @@ def _get_resource() -> Resource:
     flow_run_name = runtime.flow_run.get_name() or "unknown"
     flow_name = runtime.flow_run.get_flow_name() or "unknown"
     environment_value = variable_value_as(str, "prefect_environment", "undefined")
+    # we want to record metrics using generic_task as resource type. This does not work right now
+    # debugging needed. the auto resource detector is a good source for debugging.
+    # https://cloud.google.com/monitoring/api/resources#tag_generic_task
     if not _metadata.is_available():  # we're not running in GCP, probably a developer's environment
         return Resource.create(
             {
@@ -65,18 +68,23 @@ def _get_resource() -> Resource:
             }
         )
     else:
-        metadata = _metadata.get_metadata()
-        attributes: Mapping[str, AttributeValue] = {
-            "host.id": metadata["instance"]["id"],
-            "gcp.resource_type": "generic_task",
-            "project_id": metadata["project"]["projectId"],
-            "location": _get_location_from_metadata(metadata),
-            "namespace": environment_value,  # this could be the flow or environment
-            "job": flow_name,  # this should be the flow name
-            "task_id": flow_run_name,  # this should be the flow run id
-        }
-        _logger.warning(f"GCP resource attributes: ${attributes.keys()}")
-        return _make_resource(attributes)
+        (
+            common_attributes,
+            all_metadata,
+        ) = _get_google_metadata_and_common_attributes()  # type: ignore
+        common_attributes.update(
+            {
+                "host.id": all_metadata["instance"]["id"],
+                "gcp.resource_type": "generic_task",
+                "project_id": all_metadata["project"]["projectId"],
+                "location": _get_location_from_metadata(all_metadata),
+                "namespace": environment_value,  # this could be the flow or environment
+                "job": flow_name,  # this should be the flow name
+                "task_id": flow_run_name,  # this should be the flow run id
+            }
+        )
+        _logger.warning(f"GCP resource attributes: ${common_attributes.keys()}")
+        return _make_resource(common_attributes)
 
 
 def _get_location_from_metadata(metadata: Mapping[str, Any]) -> str:
