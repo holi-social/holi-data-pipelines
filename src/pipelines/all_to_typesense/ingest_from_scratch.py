@@ -58,6 +58,10 @@ def all_to_typesense_ingest_from_scratch_flow() -> State:
 
     logger.info("Submitted tasks for parallel execution (profiles, spaces, volunteering). Waiting for results...")
 
+    profiles_future.wait()
+    spaces_future.wait()
+    volunteering_future.wait()
+
     if (
         not profiles_future.state.is_completed()
         or not spaces_future.state.is_completed()

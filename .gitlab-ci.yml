@@ -54,7 +54,7 @@ stages:
     name: "europe-north1-docker.pkg.dev/holi-shared/docker/holi-docker/terraform-docker"
   stage: build
   services:
-    - name: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/docker:27-dind"
+    - name: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/docker:28-dind"
       alias: "docker"
   stage: "deploy"
   variables:
@@ -73,7 +73,7 @@ stages:
   interruptible: false
 
 .prefect_deploy:
-  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.2.5-python3.12"
+  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.2.11-python3.12"
   stage: "deploy"
   variables:
     ENVIRONMENT_ID: $CI_ENVIRONMENT_SLUG
@@ -84,7 +84,7 @@ stages:
   resource_group: $ENVIRONMENT_ID
 
 .smoketest:
-  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.2.5-python3.12"
+  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.2.11-python3.12"
   stage: "deploy"
   cache: !reference [ .pip_cache_readonly ]
   script:
@@ -93,10 +93,10 @@ stages:
     - PREFECT_API_URL="$(cat $PREFECT_SERVER_URL_PATH)/api" prefect deployment run --tag ci-test --watch hello-universe/hello-universe
 
 .build_prefect_flow_docker_image:
-  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/docker:27"
+  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/docker:28"
   stage: "build"
   services:
-    - name: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/docker:27-dind"
+    - name: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/docker:28-dind"
       alias: "docker"
   variables:
     # this could be fetched via terraform output ("gcr_location" in infra project), but then we would need an extra job for terraform

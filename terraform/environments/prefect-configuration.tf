@@ -159,11 +159,8 @@ resource "prefect_block" "rocketchat_alert" {
     "method" : "POST",
     "url" : "https://projectholi.rocket.chat/hooks/6751e64714a4b1e7ecdb0eb8/KDnELf9iki8Emm8Gvwh46TcTfSTXxiWaZ2zuxtmChYRdnGs4?channel=${local.environment == "production" ? "66fd2e1cfd9d814af0fb30d0" : "66fd2e46fd9d814af0fb30d3"}",
     "json_data" : {
-      "subject" : "{{subject}}",
-      "name" : "{{name}}",
-      "body" : "{{body}}",
-    },
-    "headers" : {
+      "subject" : "{{subject}}", "name" : "{{name}}", "body" : "{{body}}",
+      }, "headers" : {
       "Content-Type" : "application/json"
     }
   })
@@ -174,17 +171,14 @@ resource "prefect_work_pool" "cloud_run" {
   name   = "cloud-run-v2"
   type   = "cloud-run-v2"
   paused = false
-  base_job_template = templatefile(
-    "./cloud-run-work-pool-base-job-template.json",
-    {
-      name_prefix = "match-${substr(local.environment_name, 0, 1)}"
-    }
-  )
+  base_job_template = templatefile("./cloud-run-work-pool-base-job-template.json", {
+    name_prefix = "match-${substr(local.environment_name, 0, 1)}"
+  })
   depends_on = [null_resource.prefect_server_available]
 }
 
 resource "docker_image" "prefect" {
-  name = "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.2.5-python3.12"
+  name = "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.2.11-python3.12"
 }
 
 resource "google_cloud_run_v2_service" "work_pool_cloud_run_worker" {
@@ -196,7 +190,10 @@ resource "google_cloud_run_v2_service" "work_pool_cloud_run_worker" {
     service_account = data.terraform_remote_state.holi_data_pipeline_common_state.outputs.data_pipeline_service_account_email
     containers {
       image = docker_image.prefect.name
-      args  = ["prefect", "worker", "start", "--install-policy", "never", "--with-healthcheck", "-p", "${prefect_work_pool.cloud_run.name}", "-t", "${prefect_work_pool.cloud_run.type}"]
+      args = [
+        "prefect", "worker", "start", "--install-policy", "never", "--with-healthcheck", "-p",
+        prefect_work_pool.cloud_run.name, "-t", prefect_work_pool.cloud_run.type
+      ]
       env {
         name  = "PREFECT_API_URL"
         value = "http://${local.prefect_internal_domain}:${local.prefect_internal_port}/api"
@@ -206,7 +203,7 @@ resource "google_cloud_run_v2_service" "work_pool_cloud_run_worker" {
       # See https://linen.prefect.io/t/23212478/when-i-use-a-prefect-worker-gcp-cloud-run-v2-worker-to-be-pr for inspiration to this fix.
       env {
         name  = "EXTRA_PIP_PACKAGES"
-        value = "prefect-gcp[all_extras]"
+        value = "prefect-gcp[all_extras]==0.6.2"
       }
       resources {
         cpu_idle          = false
