@@ -1,6 +1,7 @@
 from typing import List, Optional, Any, cast
 
 from prefect import deploy, Flow
+from prefect.client.schemas.objects import ConcurrencyLimitConfig, ConcurrencyLimitStrategy
 from prefect.client.schemas.schedules import CronSchedule
 from prefect.deployments.runner import RunnerDeployment
 from prefect.deployments.schedules import FlexibleScheduleList
@@ -57,7 +58,10 @@ def deployment_for_flow(
         name=flow.name,
         schedules=schedules,
         paused=paused,
-        concurrency_limit=1,
+        # avoid having multiple runs of the same flow running concurrently.
+        # Sometimes, flow runs get stuck. Then they occupy the concurrency limit and no new runs can start.
+        # You can cancel these stuck runs with `prefect flow-run ls --state Running` and `prefect flow-run cancel <id>`.
+        concurrency_limit=ConcurrencyLimitConfig(limit=1, collision_strategy=ConcurrencyLimitStrategy.CANCEL_NEW),
         description=description,
         enforce_parameter_schema=True,
         work_pool_name="cloud-run-v2",
