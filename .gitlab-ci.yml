@@ -119,8 +119,10 @@ install_dependencies:
     - pip install -r requirements.txt --exists-action s
     - pip install -r dev-requirements.txt --exists-action s
   rules:
-    - if: $CI_PIPELINE_SOURCE == "web"
+    # always run when triggered manually
+    - if: $CI_COMMIT_BRANCH && $CI_PIPELINE_SOURCE == "web"
       when: on_success
+    # only run on specific file changes when triggered by git push
     - if: $CI_COMMIT_BRANCH
       changes:
         - requirements.txt
@@ -147,8 +149,10 @@ build_prefect_flow_docker_image_staging:
   variables:
     ENVIRONMENT_SUFFIX: staging
   rules:
+    # always run when triggered manually
     - if: $CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "web"
       when: on_success
+    # only run on specific file changes when triggered by git push
     - if: $CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"
       changes:
         - requirements.txt
@@ -189,8 +193,10 @@ build_prefect_flow_docker_image_production:
   variables:
     ENVIRONMENT_SUFFIX: production
   rules:
+    # always run when triggered manually
     - if: $CI_COMMIT_BRANCH == "production" && $CI_PIPELINE_SOURCE == "web"
       when: on_success
+    # only run on specific file changes when triggered by git push
     - if: $CI_COMMIT_BRANCH == "production" && $CI_PIPELINE_SOURCE == "push"
       changes:
         - requirements.txt
