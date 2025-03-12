@@ -61,6 +61,7 @@ def deployment_for_flow(
         # avoid having multiple runs of the same flow running concurrently.
         # Sometimes, flow runs get stuck. Then they occupy the concurrency limit and no new runs can start.
         # You can cancel these stuck runs with `prefect flow-run ls --state Running` and `prefect flow-run cancel <id>`.
+        # If the run then gets stuck in 'Cancelling' state, you might need to delete it `prefect flow-run delete <id>`
         concurrency_limit=ConcurrencyLimitConfig(limit=1, collision_strategy=ConcurrencyLimitStrategy.CANCEL_NEW),
         description=description,
         enforce_parameter_schema=True,
