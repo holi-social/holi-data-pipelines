@@ -8,7 +8,7 @@ from opentelemetry.exporter.cloud_monitoring import (
 )
 from opentelemetry.metrics import Meter
 from opentelemetry.resourcedetector.gcp_resource_detector import (
-    _metadata,
+    _metadata,  # noqa
     _get_google_metadata_and_common_attributes,  # noqa
 )
 from opentelemetry.resourcedetector.gcp_resource_detector._detector import (  # noqa
