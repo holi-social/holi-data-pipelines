@@ -41,6 +41,7 @@ def transform_data(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     logger.info(f"Transformed {len(rows)} rows of data")
     return transformed
 
+
 @task
 def delete_typesense_documents(
     typesense_client: TypesenseClient,
@@ -63,12 +64,12 @@ def delete_typesense_documents(
             return True
 
         prefixed_ids = [f"volunteering_{doc_id}" for doc_id in document_ids_to_delete]
-        filter_str = f'id: [{", ".join(prefixed_ids)}]'
-        
+        filter_str = f"id: [{', '.join(prefixed_ids)}]"
+
         response = typesense_client.client.collections[typesense_collection_name].documents.delete(
             {"filter_by": filter_str}
         )
-        
+
         num_deleted = response.get("num_deleted")
         success = num_deleted == len(prefixed_ids)
 
@@ -77,10 +78,9 @@ def delete_typesense_documents(
         else:
             missing = len(prefixed_ids) - num_deleted
             logger.warning(
-                f"Partial deletion: {num_deleted}/{len(prefixed_ids)} "
-                f"({missing} missing). IDs: {prefixed_ids}"
+                f"Partial deletion: {num_deleted}/{len(prefixed_ids)} ({missing} missing). IDs: {prefixed_ids}"
             )
-            
+
         return success
     except Exception as e:
         logger.error(
