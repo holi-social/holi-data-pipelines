@@ -41,15 +41,13 @@ def transform_data(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     logger.info(f"Transformed {len(rows)} rows of data")
     return transformed
 
-
 @task
 def delete_typesense_documents(
     typesense_client: TypesenseClient,
     typesense_collection_name: str,
     document_ids_to_delete: list[str],
 ) -> bool:
-    """
-    Deletes documents with the given IDs from the Typesense collection.
+    """Deletes documents with the given IDs from the Typesense collection.
 
     Args:
         typesense_client (TypesenseClient): Typesense client
@@ -60,17 +58,36 @@ def delete_typesense_documents(
         bool: True if deletion was successful, False otherwise
     """
     try:
-        typesense_client.client.collections[typesense_collection_name].documents.delete(
-            {"filter_by": f"id:={','.join([str(doc_id) for doc_id in document_ids_to_delete])}"}
+        if not document_ids_to_delete:
+            logger.info("No documents to delete")
+            return True
+
+        prefixed_ids = [f"volunteering_{doc_id}" for doc_id in document_ids_to_delete]
+        filter_str = f'id: [{", ".join(prefixed_ids)}]'
+        
+        response = typesense_client.client.collections[typesense_collection_name].documents.delete(
+            {"filter_by": filter_str}
         )
-        logger.info(f"Deleted {len(document_ids_to_delete)} documents from Typesense.")
-        return True
+        
+        num_deleted = response.get("num_deleted")
+        success = num_deleted == len(prefixed_ids)
+
+        if success:
+            logger.info(f"Deleted {num_deleted} volunteer documents")
+        else:
+            missing = len(prefixed_ids) - num_deleted
+            logger.warning(
+                f"Partial deletion: {num_deleted}/{len(prefixed_ids)} "
+                f"({missing} missing). IDs: {prefixed_ids}"
+            )
+            
+        return success
     except Exception as e:
         logger.error(
-            f"Error deleting {len(document_ids_to_delete)} documents from Typesense: "
+            f"Error deleting {len(prefixed_ids)} documents from Typesense: "
             + str(e)
             + "\nFailed document ids: "
-            + ",".join(document_ids_to_delete)
+            + ",".join(prefixed_ids)
         )
         return False
 
