@@ -43,7 +43,6 @@ def extract_changed_records(
     return data
 
 
-@task
 def transform_data(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """Transform raw data by processing each row."""
     transformed = [transform_row(row) for row in rows]
