@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import cast
 
 from prefect import State
-from prefect.states import Completed
+from prefect.states import Completed, Failed
 from typesense.exceptions import ObjectNotFound
 
 from src.common.logging.PipelineLogger import PipelineLogger
@@ -47,14 +47,20 @@ def all_to_typesense_ingest_from_scratch_flow() -> State:
 
     logger.info("Ingesting profiles from scratch")
     profiles_result = profiles_to_typesense_ingest_from_scratch(typesense_client, source_dataset, next_collection)
+    if isinstance(profiles_result, State) and profiles_result.is_failed():
+        return Failed(message=profiles_result.message)
 
     logger.info("Ingesting spaces from scratch")
     spaces_result = spaces_to_typesense_ingest_from_scratch(typesense_client, source_dataset, next_collection)
+    if isinstance(spaces_result, State) and spaces_result.is_failed():
+        return Failed(message=spaces_result.message)
 
     logger.info("Ingesting volunteering from scratch")
     volunteering_result = volunteering_to_typesense_ingest_updates(
         typesense_client, next_collection, cast(str, config.get("volunteering_raw_deduped")), None
     )
+    if isinstance(volunteering_result, State) and volunteering_result.is_failed():
+        return Failed(message=volunteering_result.message)
 
     logger.info(f'Swapping alias {alias_name} to point to newly ingested collection "{next_collection}"')
     typesense_client.set_active_collection(alias_name, next_collection)
