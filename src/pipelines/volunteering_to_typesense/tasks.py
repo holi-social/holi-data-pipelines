@@ -58,14 +58,10 @@ def delete_typesense_documents(
     Returns:
         bool: True if deletion was successful, False otherwise
     """
+    prefixed_ids = [f"volunteering_{doc_id}" for doc_id in document_ids_to_delete]
+    filter_str = f"id: [{', '.join(prefixed_ids)}]"
+
     try:
-        if not document_ids_to_delete:
-            logger.info("No documents to delete")
-            return True
-
-        prefixed_ids = [f"volunteering_{doc_id}" for doc_id in document_ids_to_delete]
-        filter_str = f"id: [{', '.join(prefixed_ids)}]"
-
         response = typesense_client.client.collections[typesense_collection_name].documents.delete(
             {"filter_by": filter_str}
         )
@@ -74,13 +70,12 @@ def delete_typesense_documents(
         success = num_deleted == len(prefixed_ids)
 
         if success:
-            logger.info(f"Deleted {num_deleted} volunteer documents")
+            logger.info(f"Deleted {num_deleted} volunteering documents")
         else:
             missing = len(prefixed_ids) - num_deleted
-            logger.warning(
+            logger.error(
                 f"Partial deletion: {num_deleted}/{len(prefixed_ids)} ({missing} missing). IDs: {prefixed_ids}"
             )
-
         return success
     except Exception as e:
         logger.error(
