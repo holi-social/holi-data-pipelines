@@ -38,7 +38,8 @@ def load_spaces(source_dataset: str) -> List[SpaceRow]:
 
 
 def to_location_lat_lng(geojson: Any) -> List[float]:
-    return [geojson["coordinates"][0], geojson["coordinates"][1]]
+    # GeoJSON uses X (longitude), Y (latitude) order, we need to reverse it to match the lat, lng "standard"
+    return [geojson["coordinates"][1], geojson["coordinates"][0]]
 
 
 def space_to_doc(space: SpaceRow) -> SpaceDoc:
