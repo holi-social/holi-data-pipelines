@@ -1,4 +1,5 @@
 import math
+import json
 
 from typing import cast
 
@@ -11,6 +12,9 @@ from src.common.typesense_client import TypesenseClientConfig, TypesenseClient
 from src.common.variables import variable_value
 
 logger = PipelineLogger(__name__)
+
+DEVIATION_TOLERANCE_FACTOR = 0.01
+DEVIATION_TOLERANCE_IN_PERCENT = 1
 
 
 @task
@@ -71,30 +75,35 @@ def typesense_qc() -> State:
 
     profile_count_bq = get_profile_count_bq()
     profile_count_ts = get_count_ts(ts_client, ts_collection, "profile")
-    profile_count_deviates = math.isclose(profile_count_bq, profile_count_ts, rel_tol=0.01)
+    profile_count_deviates = not math.isclose(profile_count_bq, profile_count_ts, rel_tol=DEVIATION_TOLERANCE_FACTOR)
 
     space_count_bq = get_space_count_bq()
     space_count_ts = get_count_ts(ts_client, ts_collection, "space")
-    space_count_deviates = math.isclose(profile_count_bq, profile_count_ts, rel_tol=0.01)
+    space_count_deviates = not math.isclose(space_count_bq, space_count_ts, rel_tol=DEVIATION_TOLERANCE_FACTOR)
 
     volunteering_count_bq = get_volunteering_count_bq()
     volunteering_count_ts = get_count_ts(ts_client, ts_collection, "volunteering")
-    volunteering_count_deviates = math.isclose(profile_count_bq, profile_count_ts, rel_tol=0.01)
+    volunteering_count_deviates = not math.isclose(
+        volunteering_count_bq, volunteering_count_ts, rel_tol=DEVIATION_TOLERANCE_FACTOR
+    )
+
+    counts = {
+        "profile_count_bq": profile_count_bq,
+        "profile_count_ts": profile_count_ts,
+        "space_count_bq": space_count_bq,
+        "space_count_ts": space_count_ts,
+        "volunteering_count_bq": volunteering_count_bq,
+        "volunteering_count_ts": volunteering_count_ts,
+    }
 
     if profile_count_deviates or space_count_deviates or volunteering_count_deviates:
-        deviations = {
-            profile_count_bq: profile_count_bq,
-            profile_count_ts: profile_count_ts,
-            profile_count_deviates: profile_count_deviates,
-            space_count_bq: space_count_bq,
-            space_count_ts: space_count_ts,
-            space_count_deviates: space_count_deviates,
-            volunteering_count_bq: volunteering_count_bq,
-            volunteering_count_ts: volunteering_count_ts,
-            volunteering_count_deviates: volunteering_count_deviates,
-        }
-        logger.error(f"Counts deviate: {deviations}")
-        return Failed(message=f"Counts deviate: {deviations}")
+        message = f"Some counts deviate by more than {DEVIATION_TOLERANCE_IN_PERCENT}%: {json.dumps(counts, indent=4)}"
+        logger.error(message)
+        return Failed(message=message)
+
+    logger.info(
+        f"Counts are within tolerance range of {DEVIATION_TOLERANCE_IN_PERCENT}% deviation: {json.dumps(counts, indent=4)}"
+    )
 
     return Completed()
 

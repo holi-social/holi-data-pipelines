@@ -98,9 +98,8 @@ def get_deployments() -> List[RunnerDeployment]:
         deployment_for_flow(
             crawl_voltastics,
             description="Crawls voltastics.com for volunteering opportunities and ingests them into BigQuery",
-            schedules=[cron_schedule("40 1 * * *")],
+            schedules=[cron_schedule("40 1 * * *") if environment() == "production" else cron_schedule("40 2 * * *")],
             job_variables_overrides={"memory": "1024Mi"},
-            paused=not environment() == "production",
         ),
         deployment_for_flow(
             crawl_betterplace,
