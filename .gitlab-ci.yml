@@ -1,9 +1,7 @@
 default:
   before_script:
     - set -e
-    # env -0 | sort -z | tr '\0' '\n': Sort env output alphabetically, keeping multiline variables intact
-    # egrep: Remove sensitive information from the output of env
-    #- env -0 | sort -z | tr '\0' '\n' | egrep -ve '^(DOCKER_AUTH_CONFIG|GOOGLE_APPLICATION_CREDENTIALS)=.*'
+    # DANGER don't use `set -x` or print the environment via e.g. `env` in pipeline runs, this might leak credentials (has leaked them)
   interruptible: true
   tags:
     - 1cpu-4gb
@@ -54,7 +52,7 @@ stages:
     name: "europe-north1-docker.pkg.dev/holi-shared/docker/holi-docker/terraform-docker"
   stage: build
   services:
-    - name: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/docker:27-dind"
+    - name: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/docker:28-dind"
       alias: "docker"
   stage: "deploy"
   variables:
@@ -73,7 +71,7 @@ stages:
   interruptible: false
 
 .prefect_deploy:
-  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.2.5-python3.12"
+  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.2.11-python3.12"
   stage: "deploy"
   variables:
     ENVIRONMENT_ID: $CI_ENVIRONMENT_SLUG
@@ -84,7 +82,7 @@ stages:
   resource_group: $ENVIRONMENT_ID
 
 .smoketest:
-  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.2.5-python3.12"
+  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.2.11-python3.12"
   stage: "deploy"
   cache: !reference [ .pip_cache_readonly ]
   script:
@@ -93,10 +91,10 @@ stages:
     - PREFECT_API_URL="$(cat $PREFECT_SERVER_URL_PATH)/api" prefect deployment run --tag ci-test --watch hello-universe/hello-universe
 
 .build_prefect_flow_docker_image:
-  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/docker:27"
+  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/docker:28"
   stage: "build"
   services:
-    - name: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/docker:27-dind"
+    - name: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/docker:28-dind"
       alias: "docker"
   variables:
     # this could be fetched via terraform output ("gcr_location" in infra project), but then we would need an extra job for terraform
@@ -119,8 +117,10 @@ install_dependencies:
     - pip install -r requirements.txt --exists-action s
     - pip install -r dev-requirements.txt --exists-action s
   rules:
-    - if: $CI_PIPELINE_SOURCE == "web"
+    # always run when triggered manually
+    - if: $CI_COMMIT_BRANCH && $CI_PIPELINE_SOURCE == "web"
       when: on_success
+    # only run on specific file changes when triggered by git push
     - if: $CI_COMMIT_BRANCH
       changes:
         - requirements.txt
@@ -147,8 +147,10 @@ build_prefect_flow_docker_image_staging:
   variables:
     ENVIRONMENT_SUFFIX: staging
   rules:
+    # always run when triggered manually
     - if: $CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "web"
       when: on_success
+    # only run on specific file changes when triggered by git push
     - if: $CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"
       changes:
         - requirements.txt
@@ -189,8 +191,10 @@ build_prefect_flow_docker_image_production:
   variables:
     ENVIRONMENT_SUFFIX: production
   rules:
+    # always run when triggered manually
     - if: $CI_COMMIT_BRANCH == "production" && $CI_PIPELINE_SOURCE == "web"
       when: on_success
+    # only run on specific file changes when triggered by git push
     - if: $CI_COMMIT_BRANCH == "production" && $CI_PIPELINE_SOURCE == "push"
       changes:
         - requirements.txt

@@ -13,8 +13,10 @@
   "packageRules": [
     {
       "matchJsonata": [
+        "$match(depName,/prefect-gcp$/)",
         "$match(depName,/prefect$/)"
       ],
+      "group": {"branchTopic": "{{{groupSlug}}}", "commitMessageTopic": "{{{groupName}}} ⚠️NEEDS REDEPLOY OF PREFECT SERVER!"},
       "groupName": "prefect",
       "automerge": false
     },

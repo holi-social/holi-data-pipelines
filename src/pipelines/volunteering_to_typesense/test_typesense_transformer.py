@@ -11,8 +11,7 @@ fake = Faker()
 RowFixture = dict[str, Any]
 
 
-@pytest.fixture
-def row() -> RowFixture:
+def _row() -> RowFixture:
     """Generates a random row with all fields set"""
     return {
         "id": fake.uuid4(),
@@ -24,6 +23,11 @@ def row() -> RowFixture:
         "image": fake.image_url(),
         "link": fake.url(),
     }
+
+
+@pytest.fixture
+def row() -> RowFixture:
+    return _row()
 
 
 def test_german_all_fields(row: RowFixture) -> None:

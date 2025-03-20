@@ -4,15 +4,15 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "6.22.0"
+      version = "6.25.0"
     }
     google-beta = {
       source  = "hashicorp/google-beta"
-      version = "6.22.0"
+      version = "6.25.0"
     }
     prefect = {
       source  = "prefecthq/prefect"
-      version = "2.17.1"
+      version = "2.21.0"
     }
     null = {
       source  = "hashicorp/null"

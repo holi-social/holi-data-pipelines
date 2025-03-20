@@ -32,7 +32,7 @@ fi
 
 CURRENT_SHA=$(git rev-parse --abbrev-ref HEAD)
 
-set -eux
+set -eu
 
 echo "Promoting $SHA_TO_PROMOTE to production"
 # merge the sha into production and push it to origin

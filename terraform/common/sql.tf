@@ -1,3 +1,4 @@
+# TODO decide whether to move these to the environments folder
 data "google_secret_manager_secret_version_access" "prefect_database_username_development" {
   secret  = "PREFECT_DB_USERNAME_DEVELOPMENT"
   project = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id

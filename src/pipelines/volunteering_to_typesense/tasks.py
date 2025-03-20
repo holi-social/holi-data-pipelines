@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Any, List, Dict, Optional, cast, Tuple
 
@@ -13,6 +14,14 @@ from src.common.variables import variable_value
 from src.pipelines.volunteering_to_typesense.typesense_transformer import transform_row
 
 logger = PipelineLogger(__name__)
+
+
+@dataclass
+class TypesenseDocId:
+    id: str
+
+    def __str__(self) -> str:
+        return f"volunteering_{self.id}"
 
 
 @task
@@ -34,7 +43,6 @@ def extract_changed_records(
     return data
 
 
-@task
 def transform_data(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """Transform raw data by processing each row."""
     transformed = [transform_row(row) for row in rows]
@@ -46,31 +54,42 @@ def transform_data(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 def delete_typesense_documents(
     typesense_client: TypesenseClient,
     typesense_collection_name: str,
-    document_ids_to_delete: list[str],
+    document_ids_to_delete: list[TypesenseDocId],
 ) -> bool:
-    """
-    Deletes documents with the given IDs from the Typesense collection.
+    """Deletes documents with the given IDs from the Typesense collection.
 
     Args:
         typesense_client (TypesenseClient): Typesense client
         typesense_collection_name (str): name of the collection
-        document_ids_to_delete (list(int)): IDs of documents to delete
+        document_ids_to_delete (list(TypesenseDocId)): IDs of documents to delete
 
     Returns:
         bool: True if deletion was successful, False otherwise
     """
+    filter_str = f"id: [{', '.join([str(doc_id) for doc_id in document_ids_to_delete])}]"
+
     try:
-        typesense_client.client.collections[typesense_collection_name].documents.delete(
-            {"filter_by": f"id:={','.join([str(doc_id) for doc_id in document_ids_to_delete])}"}
+        response = typesense_client.client.collections[typesense_collection_name].documents.delete(
+            {"filter_by": filter_str}
         )
-        logger.info(f"Deleted {len(document_ids_to_delete)} documents from Typesense.")
-        return True
+
+        num_deleted = response.get("num_deleted")
+        success = num_deleted == len(document_ids_to_delete)
+
+        if success:
+            logger.info(f"Deleted {num_deleted} volunteering documents")
+        else:
+            missing = len(document_ids_to_delete) - num_deleted
+            logger.error(
+                f"Partial deletion: {num_deleted}/{len(document_ids_to_delete)} ({missing} missing). IDs: {document_ids_to_delete}"
+            )
+        return success
     except Exception as e:
         logger.error(
             f"Error deleting {len(document_ids_to_delete)} documents from Typesense: "
             + str(e)
             + "\nFailed document ids: "
-            + ",".join(document_ids_to_delete)
+            + ",".join([str(doc_id) for doc_id in document_ids_to_delete])
         )
         return False
 
@@ -147,7 +166,9 @@ def diff_ingest(
 
     # Step 2: Segregate records by change type
     new_or_updated_records = [record for record in changed_records if record["change_type"] == "new_or_updated"]
-    document_ids_to_delete = [record["id"] for record in changed_records if record["change_type"] == "deleted"]
+    document_ids_to_delete: list[TypesenseDocId] = [
+        TypesenseDocId(record["id"]) for record in changed_records if record["change_type"] == "deleted"
+    ]
 
     # Step 3: Transform new or updated records
     new_or_updated_documents = transform_data(new_or_updated_records)
