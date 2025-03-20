@@ -17,7 +17,6 @@ from src.pipelines.crawlers.crawler_common_code import (
     bigquery_sink,
     has_run_successfully_for_day,
     is_cleanup_needed,
-    is_production_environment,
     source_to_sink,
     update_last_run_day,
     update_last_successful_day,
@@ -116,8 +115,8 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
 
 @monitored_flow
 def crawl_betterplace(force_run: bool = False) -> None:
-    # only run on production for days that have not been successfully crawled yet, or when forced
-    if (is_production_environment() and not has_run_successfully_for_day(config())) or force_run:
+    # only run for days that have not been successfully crawled yet, or when forced
+    if not has_run_successfully_for_day(config()) or force_run:
         logger.info("Crawling did not run successfully for today, starting run.")
 
         if is_cleanup_needed(config()):

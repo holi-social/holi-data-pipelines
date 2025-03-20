@@ -20,7 +20,7 @@ def _getenv_case_insensitive(key: str, default: Optional[str] = None) -> str | N
 
 def _get_environment_variable_parsed(key: str) -> StrictVariableValue | None:
     environment_var = _getenv_case_insensitive(key)
-    if environment_var is not None:
+    if environment_var is not None and environment_var.strip() != "":
         try:
             return json.loads(environment_var)
         except JSONDecodeError as decode_error:

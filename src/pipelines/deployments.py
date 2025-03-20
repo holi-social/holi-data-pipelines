@@ -13,6 +13,7 @@ from src.pipelines.crawlers.voltastics.pipeline import crawl_voltastics
 from src.pipelines.example.pipeline import hello_universe
 from src.pipelines.profiles_to_typesense.ingest_from_scratch import profiles_to_typesense_ingest_from_scratch_flow
 from src.pipelines.spaces_to_typesense.ingest_from_scratch import spaces_to_typesense_ingest_from_scratch_flow
+from src.pipelines.typesense_qc.typesense_qc import typesense_qc
 from src.pipelines.volunteering_to_typesense.ingest_updates import volunteering_to_typesense_ingest_updates_flow
 
 
@@ -98,15 +99,19 @@ def get_deployments() -> List[RunnerDeployment]:
         deployment_for_flow(
             crawl_voltastics,
             description="Crawls voltastics.com for volunteering opportunities and ingests them into BigQuery",
-            schedules=[cron_schedule("40 1 * * *")],
+            schedules=[cron_schedule("40 1 * * *") if environment() == "production" else cron_schedule("40 2 * * *")],
             job_variables_overrides={"memory": "1024Mi"},
-            paused=not environment() == "production",
         ),
         deployment_for_flow(
             crawl_betterplace,
             description="Crawls betterplace.org for charity projects and ingests them into BigQuery",
             job_variables_overrides={"memory": "1024Mi"},
             paused=True,
+        ),
+        deployment_for_flow(
+            typesense_qc,
+            description="Quality check for the state of replication of entities into Typesense",
+            schedules=[cron_schedule("30 6 * * *")],
         ),
     ]
 
