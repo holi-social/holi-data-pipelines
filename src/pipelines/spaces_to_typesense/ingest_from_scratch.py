@@ -1,4 +1,4 @@
-from typing import Any, cast
+from typing import Any, cast, List
 
 from prefect import task
 from prefect.cache_policies import NONE
@@ -19,7 +19,7 @@ SpaceDoc = dict[str, Any | None]
 
 
 @task(cache_policy=NONE)  # type: ignore[arg-type]
-def load_spaces(source_dataset: str) -> list[SpaceRow]:
+def load_spaces(source_dataset: str) -> List[SpaceRow]:
     return extract_data_from_bigquery(f"""
         SELECT
           id,
@@ -29,6 +29,7 @@ def load_spaces(source_dataset: str) -> list[SpaceRow]:
           location,
           avatar,
           avatar_blurhash,
+          geolocation_geojson,
         FROM
           `{source_dataset}.openbook_communities_community`
         WHERE
@@ -36,7 +37,12 @@ def load_spaces(source_dataset: str) -> list[SpaceRow]:
     """)  # noqa: S608
 
 
+def to_location_lat_lng(geojson: Any) -> List[float]:
+    return [geojson["coordinates"][0], geojson["coordinates"][1]]
+
+
 def space_to_doc(space: SpaceRow) -> SpaceDoc:
+    geojson = space.get("geolocation_geojson")
     return {
         "id": f"space_{str(space.get('id'))}",
         "type": "space",
@@ -45,7 +51,7 @@ def space_to_doc(space: SpaceRow) -> SpaceDoc:
         "description_de": space.get("description"),
         "description_en": space.get("description"),
         "location": space.get("location"),
-        "location_lat_lng": None,
+        "location_lat_lng": to_location_lat_lng(geojson) if geojson else None,
         "image_url": space.get("avatar"),
         "link_locators": {"space": space.get("id")},
     }
@@ -88,3 +94,7 @@ def spaces_to_typesense_ingest_from_scratch(
         return Failed(message="Some documents failed ingestion. Please see error log.")
     else:
         return len(space_documents)
+
+
+if __name__ == "__main__":
+    spaces_to_typesense_ingest_from_scratch_flow()
