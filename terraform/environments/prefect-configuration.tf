@@ -32,6 +32,11 @@ resource "null_resource" "prefect_server_available" {
   }
 }
 
+resource "prefect_variable" "volunteering_with_classification" {
+  name  = "volunteering_with_classification"
+  value = local.environment == "production" ? "holi-shared.datapool_production.volunteering_voltastics_with_classification_enriched" : "holi-shared.datapool_development.volunteering_voltastics_with_classification_enriched"
+}
+
 # crawler / voltastics
 resource "prefect_variable" "voltastics_crawler_table" {
   name = "voltastics_crawler_table"

@@ -61,8 +61,6 @@ def transform_row(row: Dict[str, Optional[str]]) -> Dict[str, Optional[Any]]:
         "location_lat_lng": [latitude, longitude] if latitude is not None and longitude is not None else None,
         "image_url": row.get("image"),
         "link_locators": {"volunteering": row.get("id")},
-        "topics_skills_embedding_v2": row.get("topics_skills_embedding_v2"),
-        "similarity_embedding": row.get("similarity_embedding"),
     }
 
     title_lang = _lang_for(row.get("title"), row.get("id"))

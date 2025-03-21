@@ -42,31 +42,6 @@ resource "google_bigquery_table" "volunteering_voltastics_raw" {
 EOF
 }
 
-resource "google_bigquery_table" "volunteering_voltastics_classified_enriched_partitioned" {
-  project    = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
-  dataset_id = local.dataset_id_datalake
-  table_id   = "volunteering_voltastics_classified_enriched_partitioned"
-  description = "View holding all (partitioned) volunteering data, together with topics&skill classification, similarity classification and location enrichment. Used by the volunteering-to-typesense pipeline."
-
-  view {
-    use_legacy_sql = false
-    query          = <<SQL
-      SELECT
-        raw_deduped_enriched.*,
-        classifications_v2.embedding_array AS topics_skills_embedding_v2,
-        similarities.embedding_array AS similarity_embedding
-      FROM `${local.datalake}.volunteering_voltastics_raw_deduped_location_enriched` AS raw_deduped_enriched
-      LEFT OUTER JOIN `${local.datalake}.volunteering_voltastics_classification_v2` AS classifications_v2
-        ON raw_deduped_enriched.id = classifications_v2.id
-        AND raw_deduped_enriched.hash = classifications_v2.hash
-      LEFT OUTER JOIN `${local.datalake}.volunteering_voltastics_similar_embeddings` AS similarities
-        ON raw_deduped_enriched.id = similarities.id
-        AND raw_deduped_enriched.hash = similarities.hash
-    SQL
-  }
-}
-
-
 output "volunteering_voltastics_raw_table" {
   value = google_bigquery_table.volunteering_voltastics_raw.table_id
 }
