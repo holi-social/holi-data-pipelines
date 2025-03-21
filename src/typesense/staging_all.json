@@ -75,13 +75,13 @@
             "name": "topics_skills_embedding_v2",
             "type": "float[]",
             "optional": true,
-            "num_dim": 49
+            "num_dim": 53
         },
         {
             "name": "similarity_embedding",
             "type": "float[]",
             "optional": true,
-            "num_dim": 74
+            "num_dim": 256
         }
     ]
 }
