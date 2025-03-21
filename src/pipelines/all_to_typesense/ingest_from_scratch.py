@@ -57,7 +57,10 @@ def all_to_typesense_ingest_from_scratch_flow() -> State:
 
     logger.info("Ingesting volunteering from scratch")
     volunteering_result = volunteering_to_typesense_ingest_updates(
-        typesense_client, next_collection, cast(str, config.get("volunteering_raw_deduped")), None
+        typesense_client=typesense_client,
+        typesense_collection_name=next_collection,
+        table_name=cast(str, config.get("volunteering_raw_deduped")),
+        last_complete_ingestion_timestamp=None,
     )
     if isinstance(volunteering_result, State) and volunteering_result.is_failed():
         return Failed(message=volunteering_result.message)
