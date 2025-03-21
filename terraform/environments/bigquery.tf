@@ -42,7 +42,7 @@ resource "google_bigquery_table" "volunteering_voltastics_raw" {
 EOF
 }
 
-resource "google_bigquery_table" "volunteering_voltastics_raw_deduped_location_enriched" {
+resource "google_bigquery_table" "volunteering_voltastics_classified_enriched_partitioned" {
   project    = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
   dataset_id = local.dataset_id_datalake
   table_id   = "volunteering_voltastics_classified_enriched_partitioned"

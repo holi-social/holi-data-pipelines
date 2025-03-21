@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import cast
 
 from prefect import task, State
 from prefect.cache_policies import NONE
@@ -11,8 +10,9 @@ from src.common.extractors.bq_extractor import (
 from src.common.logging.PipelineLogger import PipelineLogger
 from src.common.monitoring.flow import monitored_flow
 from src.common.monitoring.metrics import report_number_of_processed_entities
-from src.common.typesense import extract_collection_name_from_schema, get_config
+from src.common.typesense import extract_collection_name_from_schema
 from src.common.typesense_client import TypesenseClient, TypesenseClientConfig
+from src.pipelines.bigquery import volunteering_voltastics_classified_enriched_partitioned
 from src.pipelines.typesense import schema_path
 from src.pipelines.volunteering_to_typesense.tasks import (
     validate_collection,
@@ -29,7 +29,6 @@ def volunteering_to_typesense_ingest_updates_flow() -> State:
     """
     Orchestrates the ETL pipeline to move volunteering data from BigQuery to Typesense.
     """
-    config = get_config()
     typesense_client = TypesenseClient(TypesenseClientConfig.from_env())
 
     alias_name = extract_collection_name_from_schema(schema_path=schema_path)
@@ -39,7 +38,7 @@ def volunteering_to_typesense_ingest_updates_flow() -> State:
     task_result = volunteering_to_typesense_ingest_updates(
         typesense_client=typesense_client,
         typesense_collection_name=active_collection,
-        table_name=cast(str, config.get("volunteering_raw_deduped")),
+        table_name=volunteering_voltastics_classified_enriched_partitioned,
         last_complete_ingestion_timestamp=load_last_complete_ingestion_timestamp(),
     )
     if isinstance(task_result, State):
