@@ -13,6 +13,7 @@ from src.common.monitoring.flow import monitored_flow
 from src.common.monitoring.metrics import report_number_of_processed_entities
 from src.common.typesense import extract_collection_name_from_schema, get_config
 from src.common.typesense_client import TypesenseClient, TypesenseClientConfig
+from src.pipelines.typesense import schema_path
 from src.pipelines.volunteering_to_typesense.tasks import (
     validate_collection,
     diff_ingest,
@@ -31,7 +32,7 @@ def volunteering_to_typesense_ingest_updates_flow() -> State:
     config = get_config()
     typesense_client = TypesenseClient(TypesenseClientConfig.from_env())
 
-    alias_name = extract_collection_name_from_schema(cast(str, config["schema_path"]))
+    alias_name = extract_collection_name_from_schema(schema_path=schema_path)
 
     active_collection = typesense_client.get_active_collection_name(alias_name)
 

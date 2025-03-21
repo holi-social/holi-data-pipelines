@@ -13,6 +13,7 @@ from src.common.typesense_client import TypesenseClient, TypesenseClientConfig
 from src.common.variables import variable_value
 from src.pipelines.profiles_to_typesense.ingest_from_scratch import profiles_to_typesense_ingest_from_scratch
 from src.pipelines.spaces_to_typesense.ingest_from_scratch import spaces_to_typesense_ingest_from_scratch
+from src.pipelines.typesense import schema_path
 from src.pipelines.volunteering_to_typesense.ingest_updates import volunteering_to_typesense_ingest_updates
 from src.pipelines.volunteering_to_typesense.tasks import store_last_complete_ingestion_timestamp
 
@@ -27,7 +28,7 @@ def all_to_typesense_ingest_from_scratch_flow() -> State:
     config = get_config()
     typesense_client = TypesenseClient(TypesenseClientConfig.from_env())
     source_dataset = cast(str, variable_value("bigquery_okuna_dataset"))
-    alias_name = extract_collection_name_from_schema(cast(str, config["schema_path"]))
+    alias_name = extract_collection_name_from_schema(schema_path=schema_path)
 
     try:
         active_collection = typesense_client.get_active_collection_name(alias_name)
@@ -41,9 +42,7 @@ def all_to_typesense_ingest_from_scratch_flow() -> State:
     next_collection = f"{alias_name}_{datetime.now().isoformat()}"
 
     typesense_client.drop_collection(next_collection)
-    typesense_client.create_collection(
-        schema_file_path=cast(str, config["schema_path"]), collection_name=next_collection
-    )
+    typesense_client.create_collection(schema_file_path=schema_path, collection_name=next_collection)
 
     logger.info("Ingesting profiles from scratch")
     profiles_result = profiles_to_typesense_ingest_from_scratch(typesense_client, source_dataset, next_collection)

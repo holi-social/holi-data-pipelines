@@ -16,7 +16,4 @@ def extract_collection_name_from_schema(schema_path: str) -> str:
 
 
 def get_config() -> dict[str, Any]:
-    return {
-        "volunteering_raw_deduped": variable_value("volunteering_voltastics_raw_deduped"),
-        "schema_path": f"src/typesense/{variable_value('prefect_environment')}_all.json",
-    }
+    return {"volunteering_raw_deduped": variable_value("volunteering_voltastics_raw_deduped")}
