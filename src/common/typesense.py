@@ -1,7 +1,4 @@
 import json
-from typing import Any
-
-from src.common.variables import variable_value
 
 
 def extract_collection_name_from_schema(schema_path: str) -> str:
@@ -13,11 +10,3 @@ def extract_collection_name_from_schema(schema_path: str) -> str:
         raise ValueError("Schema is missing a 'name' field.")
 
     return collection_name
-
-
-def get_config() -> dict[str, Any]:
-    return {
-        "volunteering_with_classification": variable_value("volunteering_with_classification"),
-        "volunteering_raw_deduped": variable_value("volunteering_voltastics_raw_deduped"),
-        "schema_path": f"src/typesense/{variable_value('prefect_environment')}_all.json",
-    }
