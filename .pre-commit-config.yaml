@@ -10,7 +10,7 @@ repos:
       - id: ruff-format
         name: ruff-format
         language: system
-        entry: ruff format --check
+        entry: ruff format
         pass_filenames: false
         always_run: true
       - id: gitleaks

@@ -14,6 +14,9 @@ from src.common.variables import variable_value
 from src.pipelines.bigquery import volunteering_voltastics_classified_enriched_partitioned
 from src.pipelines.profiles_to_typesense.ingest_from_scratch import profiles_to_typesense_ingest_from_scratch
 from src.pipelines.spaces_to_typesense.ingest_from_scratch import spaces_to_typesense_ingest_from_scratch
+from src.pipelines.tasks_to_typesense.ingest_from_scratch import (
+    tasks_to_typesense_ingest_from_scratch,
+)
 from src.pipelines.typesense import schema_path
 from src.pipelines.volunteering_to_typesense.ingest_updates import volunteering_to_typesense_ingest_updates
 from src.pipelines.volunteering_to_typesense.tasks import store_last_complete_ingestion_timestamp
@@ -53,6 +56,11 @@ def all_to_typesense_ingest_from_scratch_flow() -> State:
     spaces_result = spaces_to_typesense_ingest_from_scratch(typesense_client, source_dataset, next_collection)
     if isinstance(spaces_result, State) and spaces_result.is_failed():
         return Failed(message=spaces_result.message)
+
+    logger.info("Ingesting tasks from scratch")
+    tasks_result = tasks_to_typesense_ingest_from_scratch(typesense_client, source_dataset, next_collection)
+    if isinstance(tasks_result, State) and tasks_result.is_failed():
+        return Failed(message=tasks_result.message)
 
     logger.info("Ingesting volunteering from scratch")
     volunteering_result = volunteering_to_typesense_ingest_updates(
