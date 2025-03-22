@@ -111,7 +111,8 @@ def get_deployments() -> List[RunnerDeployment]:
         deployment_for_flow(
             typesense_qc,
             description="Quality check for the state of replication of entities into Typesense",
-            schedules=[cron_schedule("30 6 * * *")],
+            schedules=[cron_schedule("00 7 * * *")],
+            job_variables_overrides={"memory": "1024Mi"},
         ),
     ]
 
