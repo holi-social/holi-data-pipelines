@@ -20,8 +20,7 @@ SpaceDoc = dict[str, Any | None]
 
 @task(cache_policy=NONE)  # type: ignore[arg-type]
 def load_spaces(source_dataset: str) -> List[SpaceRow]:
-    # TODO revert to use this simple query once geolocation_geojson is available in production
-    simple_query = f"""
+    return extract_data_from_bigquery(f"""
         SELECT
           id,
           name,
@@ -35,38 +34,7 @@ def load_spaces(source_dataset: str) -> List[SpaceRow]:
           `{source_dataset}.openbook_communities_community`
         WHERE
           is_deleted=false
-    """  # noqa: F841, S608
-    backwards_compatible_query = f"""
-        DECLARE geolocation_geojson_exists BOOL;
-        
-        -- Check if the geolocation_geojson column exists
-        SET geolocation_geojson_exists = (
-          SELECT COUNT(*) > 0
-          FROM `{source_dataset}.INFORMATION_SCHEMA.COLUMNS`
-          WHERE table_name = 'openbook_communities_community'
-          AND column_name = 'geolocation_geojson'
-        );
-        
-        -- Execute appropriate SQL based on whether geolocation_geojson exists
-        EXECUTE IMMEDIATE FORMAT(\"\"\"
-          SELECT
-            id,
-            name,
-            title,
-            description,
-            location,
-            avatar,
-            avatar_blurhash,
-            %s
-          FROM
-            `{source_dataset}.openbook_communities_community`
-          WHERE
-            is_deleted=false
-        \"\"\",
-          IF(geolocation_geojson_exists, 'geolocation_geojson', 'NULL AS geolocation_geojson')
-        );
-    """  # noqa: S608
-    return extract_data_from_bigquery(backwards_compatible_query)
+    """)  # noqa: S608
 
 
 def to_location_lat_lng(geojson: Any) -> List[float]:
