@@ -13,6 +13,7 @@ from src.pipelines.crawlers.voltastics.pipeline import crawl_voltastics
 from src.pipelines.example.pipeline import hello_universe
 from src.pipelines.profiles_to_typesense.ingest_from_scratch import profiles_to_typesense_ingest_from_scratch_flow
 from src.pipelines.spaces_to_typesense.ingest_from_scratch import spaces_to_typesense_ingest_from_scratch_flow
+from src.pipelines.tasks_to_typesense.ingest_from_scratch import tasks_to_typesense_ingest_from_scratch_flow
 from src.pipelines.typesense_qc.typesense_qc import typesense_qc
 from src.pipelines.volunteering_to_typesense.ingest_updates import volunteering_to_typesense_ingest_updates_flow
 
@@ -94,6 +95,11 @@ def get_deployments() -> List[RunnerDeployment]:
         deployment_for_flow(
             spaces_to_typesense_ingest_from_scratch_flow,
             description="Ingests spaces from Datastream-replicated Okuna into Typesense",
+            job_variables_overrides={"memory": "4096Mi"},
+        ),
+        deployment_for_flow(
+            tasks_to_typesense_ingest_from_scratch_flow,
+            description="Ingests tasks from Datastream-replicated Okuna into Typesense",
             job_variables_overrides={"memory": "4096Mi"},
         ),
         deployment_for_flow(
