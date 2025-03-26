@@ -72,6 +72,18 @@
             }
         },
         {
+            "name": "topics_v2",
+            "type": "string[]",
+            "optional": true,
+            "index": false
+        },
+        {
+            "name": "skills_v2",
+            "type": "string[]",
+            "optional": true,
+            "index": false
+        },
+        {
             "name": "topics_skills_embedding_v2",
             "type": "float[]",
             "optional": true,

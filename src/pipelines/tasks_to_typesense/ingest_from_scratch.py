@@ -81,7 +81,8 @@ SKILLS_V2_VECTOR_INDICES = {
 def load_tasks(source_dataset: str) -> List[TaskRow]:
     query = f"""
         SELECT
-          task.*
+          task.*,
+          community.topics_v2 as topics_v2
         FROM `{source_dataset}.openbook_communities_task` AS task
         JOIN `{source_dataset}.openbook_communities_community` AS community
           ON task.community_id = community.id
@@ -97,10 +98,16 @@ def to_location_lat_lng(geojson: Any) -> List[float]:
     return [geojson["coordinates"][1], geojson["coordinates"][0]]
 
 
-def to_topics_skills_embedding_v2(skills_v2: List[str] | None) -> List[float]:
+def to_topics_skills_embedding_v2(topics_v2: List[str] | None, skills_v2: List[str] | None) -> List[float]:
     # create a zero-filled vector with length equal to the number of skills
     vector_size = len(TOPICS_V2_VECTOR_INDICES) + len(SKILLS_V2_VECTOR_INDICES)
     embedding = [0.0] * vector_size
+
+    # for each topic in the list, set its corresponding position to 1.0
+    if topics_v2:
+        for topic in topics_v2:
+            if topic in TOPICS_V2_VECTOR_INDICES:
+                embedding[TOPICS_V2_VECTOR_INDICES[topic]] = 1.0
 
     # for each skill in the list, set its corresponding position to 1.0
     if skills_v2:
@@ -124,7 +131,11 @@ def task_to_doc(row: TaskRow) -> TaskDoc:
         "location_lat_lng": to_location_lat_lng(geojson) if geojson else None,
         "image_url": row.get("thumbnail"),
         "link_locators": {"space": row.get("community_id"), "task": row.get("id")},
-        "topics_skills_embedding_v2": to_topics_skills_embedding_v2(cast(List[str], row.get("skills_v2"))),
+        "topics_v2": row.get("topics_v2"),
+        "skills_v2": row.get("skills_v2"),
+        "topics_skills_embedding_v2": to_topics_skills_embedding_v2(
+            cast(List[str], row.get("topics_v2")), cast(List[str], row.get("skills_v2"))
+        ),
         "similarity_embedding": None,
     }
 
@@ -160,6 +171,7 @@ def tasks_to_typesense_ingest_from_scratch(
 
     task_documents = tasks_to_typesense_docs(tasks)
     logger.info("Transformed %s documents", len(task_documents))
+    logger.info(task_documents)
 
     upsert_succeeded = upsert_typesense_documents(typesense_client, logger, collection, task_documents)
     if not upsert_succeeded:
