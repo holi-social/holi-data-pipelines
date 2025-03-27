@@ -76,10 +76,12 @@ resource "prefect_variable" "betterplace_api_url" {
   value = "https://api.betterplace.org/de/api_v4"
 }
 
-# deprecated
-resource "prefect_variable" "volunteering_voltastics_raw_deduped" {
-  name  = "volunteering_voltastics_raw_deduped"
-  value = local.environment == "production" ? "holi-shared.datalake_production.volunteering_voltastics_raw_deduped_location_enriched" : "holi-shared.datalake_development.volunteering_voltastics_raw_deduped_location_enriched"
+resource "prefect_variable" "bigquery_datalake" {
+  name = "bigquery_datalake"
+  value = {
+    project = local.default_project
+    dataset = local.dataset_datalake
+  }
 }
 
 resource "prefect_variable" "volunteering_to_typesense_state" {

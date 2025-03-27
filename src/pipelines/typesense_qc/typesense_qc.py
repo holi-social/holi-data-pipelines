@@ -10,6 +10,7 @@ from src.common.extractors.bq_extractor import extract_data_from_bigquery
 from src.common.logging.PipelineLogger import PipelineLogger
 from src.common.typesense_client import TypesenseClientConfig, TypesenseClient
 from src.common.variables import variable_value
+from src.pipelines.bigquery import volunteering_voltastics_classified_enriched_partitioned
 
 logger = PipelineLogger(__name__)
 
@@ -46,10 +47,9 @@ def get_space_count_bq() -> int:
 
 @task
 def get_volunteering_count_bq() -> int:
-    source_dataset = cast(str, variable_value("volunteering_voltastics_raw_deduped"))
     result = extract_data_from_bigquery(f"""
         SELECT count(*) as volunteering_count
-        FROM `{source_dataset}`
+        FROM `{volunteering_voltastics_classified_enriched_partitioned}`
         WHERE TIMESTAMP_TRUNC(partitiontime, DAY) = TIMESTAMP_TRUNC(CURRENT_TIMESTAMP(), DAY)
     """)  # noqa: S608
     return cast(int, result[0]["volunteering_count"])

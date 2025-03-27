@@ -16,6 +16,9 @@ from src.pipelines.spaces_to_typesense.ingest_from_scratch import spaces_to_type
 from src.pipelines.tasks_to_typesense.ingest_from_scratch import tasks_to_typesense_ingest_from_scratch_flow
 from src.pipelines.typesense_qc.typesense_qc import typesense_qc
 from src.pipelines.volunteering_to_typesense.ingest_updates import volunteering_to_typesense_ingest_updates_flow
+from src.pipelines.volunteering_to_typesense.ingest_from_scratch import (
+    volunteering_to_typesense_ingest_from_scratch_flow,
+)
 
 
 def environment() -> str:
@@ -85,6 +88,11 @@ def get_deployments() -> List[RunnerDeployment]:
             volunteering_to_typesense_ingest_updates_flow,
             description="Orchestrates the ETL pipeline to move volunteering updates from BigQuery to Typesense",
             schedules=[cron_schedule("30 6 * * *")],
+            job_variables_overrides={"memory": "4096Mi"},
+        ),
+        deployment_for_flow(
+            volunteering_to_typesense_ingest_from_scratch_flow,
+            description="Ingests volunteering opportunities from BigQuery into Typesense",
             job_variables_overrides={"memory": "4096Mi"},
         ),
         deployment_for_flow(
