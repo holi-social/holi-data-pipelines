@@ -88,7 +88,7 @@ def load_tasks(source_dataset: str) -> List[TaskRow]:
           ON task.community_id = community.id
         WHERE community.is_deleted IS FALSE
           AND visibility="PUBLIC"
-          AND deleted_at IS NOT NULL
+          AND deleted_at IS NULL
     """  # noqa: S608
     return extract_data_from_bigquery(query)
 

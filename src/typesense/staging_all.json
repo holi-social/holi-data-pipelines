@@ -75,13 +75,13 @@
             "name": "topics_v2",
             "type": "string[]",
             "optional": true,
-            "index": false
+            "index": true
         },
         {
             "name": "skills_v2",
             "type": "string[]",
             "optional": true,
-            "index": false
+            "index": true
         },
         {
             "name": "topics_skills_embedding_v2",
