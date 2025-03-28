@@ -134,7 +134,7 @@ def get_deployments() -> List[RunnerDeployment]:
             triggers=[
                 DeploymentEventTrigger(
                     enabled=True,
-                    match={"prefect.resource.name": hello_universe.name},  # type: ignore
+                    match_related={"prefect.resource.name": hello_universe.name},  # type: ignore
                     expect=["prefect.flow-run.Completed"],  # type: ignore
                     parameters={},
                 )
@@ -147,7 +147,7 @@ def get_deployments() -> List[RunnerDeployment]:
             triggers=[
                 DeploymentEventTrigger(
                     enabled=True,
-                    match={"prefect.resource.name": hello_universe.name},  # type: ignore
+                    match_related={"prefect.resource.name": hello_universe.name},  # type: ignore
                     expect=["prefect.flow-run.Completed"],  # type: ignore
                     parameters={},
                 )
@@ -164,12 +164,12 @@ def get_deployments() -> List[RunnerDeployment]:
                     triggers=[
                         {  # type: ignore
                             "type": "event",
-                            "match": {"prefect.resource.name": volunteering_classification.name},
+                            "match_related": {"prefect.resource.name": volunteering_classification.name},
                             "expect": ["prefect.flow-run.Completed"],
                         },
                         {  # type: ignore
                             "type": "event",
-                            "match": {"prefect.resource.name": volunteering_geo_enrichment.name},
+                            "match_related": {"prefect.resource.name": volunteering_geo_enrichment.name},
                             "expect": ["prefect.flow-run.Completed"],
                         },
                     ],
