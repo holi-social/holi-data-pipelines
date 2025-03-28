@@ -5,7 +5,7 @@ from prefect.client.schemas.objects import ConcurrencyLimitConfig, ConcurrencyLi
 from prefect.client.schemas.schedules import CronSchedule
 from prefect.deployments.runner import RunnerDeployment
 from prefect.deployments.schedules import FlexibleScheduleList
-from prefect.events import DeploymentEventTrigger, DeploymentTriggerTypes, TriggerTypes, DeploymentCompoundTrigger
+from prefect.events import DeploymentEventTrigger, DeploymentTriggerTypes, TriggerTypes, Posture
 
 from src.common.variables import variable_value_as
 from src.pipelines.all_to_typesense.ingest_from_scratch import all_to_typesense_ingest_from_scratch_flow
@@ -158,22 +158,15 @@ def get_deployments() -> List[RunnerDeployment]:
             description="Orchestrates the ETL pipeline to move volunteering updates from BigQuery to Typesense",
             job_variables_overrides={"memory": "4096Mi"},
             triggers=[
-                DeploymentCompoundTrigger(
+                DeploymentEventTrigger(
                     enabled=True,
-                    require="all",
-                    triggers=[
-                        {  # type: ignore
-                            "type": "event",
-                            "match_related": {"prefect.resource.name": volunteering_classification.name},
-                            "expect": ["prefect.flow-run.Completed"],
-                        },
-                        {  # type: ignore
-                            "type": "event",
-                            "match_related": {"prefect.resource.name": volunteering_geo_enrichment.name},
-                            "expect": ["prefect.flow-run.Completed"],
-                        },
-                    ],
+                    match_related={
+                        "prefect.resource.name": [volunteering_classification.name, volunteering_geo_enrichment.name]
+                    },  # type: ignore
+                    expect=["prefect.flow-run.Completed"],  # type: ignore
                     parameters={},
+                    posture=Posture.Reactive,
+                    threshold=2,
                 )
             ],
         ),
