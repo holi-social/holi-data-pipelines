@@ -1,4 +1,4 @@
-from prefect.state import State, Completed
+from prefect.states import State, Completed
 from src.common.monitoring.flow import monitored_flow
 
 
