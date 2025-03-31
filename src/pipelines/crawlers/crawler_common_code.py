@@ -75,7 +75,7 @@ def update_last_successful_day(config: CrawlerConfig) -> None:
     state.persist_to_variable()
 
 
-@task(timeout_seconds=60 * 30)
+@task(timeout_seconds=60 * 90)
 def wait_for_bigquery_data_to_be_accessible(config: CrawlerConfig) -> None:
     while True:
         if is_streaming_buffer_empty(*config.get_bq_table_fqdn()):
