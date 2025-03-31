@@ -1,6 +1,7 @@
 import asyncio
 from asyncio import Queue
 from typing import Any, Callable, Coroutine
+import time
 
 import prefect
 from prefect import task
@@ -75,8 +76,8 @@ def update_last_successful_day(config: CrawlerConfig) -> None:
 
 
 @task(timeout_seconds=60 * 30)
-async def wait_for_bigquery_data_to_be_accessible(config: CrawlerConfig) -> None:
+def wait_for_bigquery_data_to_be_accessible(config: CrawlerConfig) -> None:
     while True:
         if is_streaming_buffer_empty(*config.get_bq_table_fqdn()):
             break
-        await asyncio.sleep(60)
+        time.sleep(60)
