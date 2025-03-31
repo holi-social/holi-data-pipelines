@@ -6,7 +6,7 @@ import prefect
 from prefect import task
 from prefect.variables import Variable
 
-from src.common.loaders.bq_loader import stream_to_bigquery
+from src.common.loaders.bq_loader import stream_to_bigquery, is_streaming_buffer_empty
 from src.pipelines.crawlers.crawler_config import CrawlerConfig
 from src.pipelines.crawlers.crawler_state import CrawlerState
 
@@ -72,3 +72,11 @@ def update_last_successful_day(config: CrawlerConfig) -> None:
     state = _get_state(config)
     state.last_successful_day = config.partition_date
     state.persist_to_variable()
+
+
+@task(timeout_seconds=60 * 30)
+async def wait_for_bigquery_data_to_be_accessible(config: CrawlerConfig) -> None:
+    while True:
+        if is_streaming_buffer_empty(*config.get_bq_table_fqdn()):
+            break
+        await asyncio.sleep(60)
