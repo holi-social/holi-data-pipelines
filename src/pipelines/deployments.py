@@ -134,7 +134,7 @@ def get_deployments() -> List[RunnerDeployment]:
             triggers=[
                 DeploymentEventTrigger(
                     enabled=True,
-                    match_related={"prefect.resource.name": hello_universe.name},  # type: ignore
+                    match_related={"prefect.resource.name": crawl_voltastics.name},  # type: ignore
                     expect=["prefect.flow-run.Completed"],  # type: ignore
                     parameters={},
                 )
@@ -147,7 +147,7 @@ def get_deployments() -> List[RunnerDeployment]:
             triggers=[
                 DeploymentEventTrigger(
                     enabled=True,
-                    match_related={"prefect.resource.name": hello_universe.name},  # type: ignore
+                    match_related={"prefect.resource.name": crawl_voltastics.name},  # type: ignore
                     expect=["prefect.flow-run.Completed"],  # type: ignore
                     parameters={},
                 )

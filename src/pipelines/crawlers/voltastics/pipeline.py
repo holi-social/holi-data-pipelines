@@ -19,6 +19,7 @@ from src.pipelines.crawlers.crawler_common_code import (
     has_run_successfully_for_day,
     is_cleanup_needed,
     update_last_run_day,
+    wait_for_bigquery_data_to_be_accessible,
 )
 from src.pipelines.crawlers.crawler_config import CrawlerConfig
 
@@ -93,6 +94,7 @@ def crawl_voltastics(force_run: bool = False) -> None:
         processed_entities_count = asyncio.run(source_to_sink(crawl(), bigquery_sink(config(), _STOP_DOC)))
         update_last_successful_day(config())  # = finalize
         report_number_of_processed_entities(processed_entities_count)
+        wait_for_bigquery_data_to_be_accessible(config())
     else:
         logger.info("Crawling already ran successfully for today, skipping run.")
 
