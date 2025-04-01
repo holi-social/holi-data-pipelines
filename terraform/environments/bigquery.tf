@@ -42,6 +42,69 @@ resource "google_bigquery_table" "volunteering_voltastics_raw" {
 EOF
 }
 
+resource "google_bigquery_table" "classifications" {
+  project    = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
+  dataset_id = local.dataset_id_datalake
+  table_id   = "classifications"
+
+  time_partitioning {
+    type = "DAY"
+  }
+
+  schema = <<EOF
+  [
+    { "name": "type", "type": "STRING", "mode": "REQUIRED"},
+    { "name": "id", "type": "STRING", "mode": "REQUIRED"},
+    { "name": "hash", "type": "STRING", "mode": "REQUIRED"},
+    { "name": "topics_skills_embedding_v2", "type": "FLOAT", "mode": "REPEATED"},
+    { "name": "topics_v2", "type": "STRING", "mode": "REPEATED"},
+    { "name": "skills_v2", "type": "STRING", "mode": "REPEATED"},
+    { "name": "similarity_embedding", "type": "FLOAT", "mode": "REPEATED"}
+  ]
+  EOF
+
+  lifecycle {
+    ignore_changes = [encryption_configuration]
+  }
+}
+
+resource "google_bigquery_table" "volunteering_voltastics_without_classifications" {
+  project    = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
+  dataset_id = local.dataset_id_datapool
+  table_id   = "volunteering_voltastics_without_classifications"
+
+  view {
+    use_legacy_sql = false
+    query          = <<SQL
+      SELECT
+        raw_deduped.*,
+        classifications.topics_skills_embedding_v2,
+        classifications.similarity_embedding
+      FROM `${local.datalake}.volunteering_voltastics_raw_deduped` raw_deduped
+      LEFT OUTER JOIN `${google_bigquery_table.classifications.dataset_id}.${google_bigquery_table.classifications.table_id}` classifications
+      ON
+        CAST(raw_deduped.id AS STRING) = classifications.id AND
+        raw_deduped.hash = classifications.hash AND
+        classifications.type = 'volunteering'
+      WHERE DATE(raw_deduped.partitiontime) = (
+          SELECT MAX(DATE(partitiontime))
+          FROM `${local.datalake}.volunteering_voltastics_raw_deduped`
+          WHERE partitiontime IS NOT NULL
+      )
+      AND (
+          classifications.hash IS NULL OR
+          classifications.topics_skills_embedding_v2 IS NULL OR
+          classifications.similarity_embedding IS NULL
+      )
+    SQL
+  }
+}
+
+
+# TODO migrate volunteering_voltastics_raw_deduped_aggregated_images from holi-data-classification once it is "shut down"
+# TODO migrate volunteering_voltastics_raw_deduped from holi-data-classification once it is "shut down"
+# TODO migrate location_cache from holi-data-classification once it is "shut down"
+
 resource "google_bigquery_table" "volunteering_voltastics_classified_enriched_partitioned" {
   project    = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
   dataset_id = local.dataset_id_datalake

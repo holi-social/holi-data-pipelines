@@ -8,7 +8,9 @@ from src.pipelines.volunteering_classification.topics_skills_classification_v2 i
 
 @monitored_flow
 def volunteering_classification() -> State:
+    # TODO location enrichment
     compute_topics_skills_classifications_v2()
+    # TODO similarity classifications
     return Completed()
 
 

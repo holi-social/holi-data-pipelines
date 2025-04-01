@@ -22,17 +22,19 @@ from tenacity import retry, stop_after_attempt, RetryError
 
 Item: TypeAlias = Any
 
-STOP_AFTER_BATCH = 0
+STOP_AFTER_BATCH = 1  # TODO set to 0 after development
 PROJECT_ID = "holi-shared"  # TODO via variables
 ENVIRONMENT = cast(str, variable_value("prefect_environment"))
 BQ_DATALAKE = f"{PROJECT_ID}.datalake_{'development' if ENVIRONMENT == 'staging' else ENVIRONMENT}"
 BQ_DATAPOOL = f"{PROJECT_ID}.datapool_{'development' if ENVIRONMENT == 'staging' else ENVIRONMENT}"
-TABLE_NAME_CLASSIFICATIONS = f"{BQ_DATALAKE}.volunteering_voltastics_classification_v2"
-TABLE_NAME_UPDATES = f"{BQ_DATAPOOL}.volunteering_voltastics_classification_updates_v2"
+
+TABLE_NAME_CLASSIFICATIONS = f"{BQ_DATALAKE}.classifications"
+VIEW_NAME_WITHOUT_CLASSIFICATIONS = f"{BQ_DATAPOOL}.volunteering_voltastics_without_classifications"
+
 MODEL_NAME = "gemini-2.0-flash-001"
 GCLOUD_LOCATION = "europe-north1"  # TODO via variables ?
 GEMINI_RATE_LIMIT_PER_MINUTE = 2000
-BATCH_SIZE = 1000
+BATCH_SIZE = 10  # TODO increase after development
 RETRY_ATTEMPTS = 3
 ENGAGEMENT_TYPE = "volunteering_voltastics"
 
@@ -63,9 +65,13 @@ class TermClassificationResult:
 
 @dataclass
 class ClassificationResult:
+    type: str
     id: str
     hash: str
-    embedding_array: List[float]
+    topics_skills_embedding_v2: List[float]
+    topics_v2: List[str]
+    skills_v2: List[str]
+    similarity_embedding: List[float]
 
 
 @task
@@ -75,22 +81,18 @@ def compute_topics_skills_classifications_v2() -> None:
     vertexai.init(project=PROJECT_ID, location=GCLOUD_LOCATION)
     generation_config = GenerationConfig()
     model = GenerativeModel(MODEL_NAME, generation_config=generation_config)
-
-    # noqa: S608
-    # noqa: S608
     pool = ThreadPoolExecutor()
-
     batch_nr = 0
-
-    bqclient = GcpCredentials(project=PROJECT_ID).get_bigquery_client(project=PROJECT_ID, location=GCLOUD_LOCATION)
-    bqclient_writing = GcpCredentials(project=PROJECT_ID).get_bigquery_client(
-        project=PROJECT_ID, location=GCLOUD_LOCATION
-    )
+    gcp_credentials = GcpCredentials(project=PROJECT_ID)
+    bqclient = gcp_credentials.get_bigquery_client(project=PROJECT_ID, location=GCLOUD_LOCATION)
+    bqclient_writing = gcp_credentials.get_bigquery_client(project=PROJECT_ID, location=GCLOUD_LOCATION)
 
     while not STOP_AFTER_BATCH or batch_nr < STOP_AFTER_BATCH:  # TODO remove STOP_AFTER_BATCH after testing
         logger.info(f"Batch {batch_nr} - starting batch (of size {BATCH_SIZE})")
 
-        total_items_count_result = bqclient.query(f"SELECT count(*) FROM `{TABLE_NAME_UPDATES}`").result()  # noqa: S608
+        total_items_count_result = bqclient.query(
+            f"SELECT count(*) FROM `{VIEW_NAME_WITHOUT_CLASSIFICATIONS}`"  # noqa: S608
+        ).result()
         total_items_count = next(total_items_count_result)[0]
         logger.info(f"Batch {batch_nr} - found {total_items_count} items to classify")
 
@@ -99,8 +101,12 @@ def compute_topics_skills_classifications_v2() -> None:
             logger.info(f"Batch {batch_nr} - all items classified")
             break  # exit while loop
 
-        batch_items = bqclient.query(f"SELECT * FROM `{TABLE_NAME_UPDATES}` LIMIT {BATCH_SIZE}").result()  # noqa: S608
+        batch_items = bqclient.query(
+            f"SELECT * FROM `{VIEW_NAME_WITHOUT_CLASSIFICATIONS}` LIMIT {BATCH_SIZE}"  # noqa: S608
+        ).result()
         logger.info(f"Batch {batch_nr} - starting classification for {batch_items.total_rows} items")
+
+        # TODO check if this embedding type is already saved, otherwise calculate it
 
         classify_and_store_item = lambda item, batch_nr: _classify_and_store_item(  # noqa: E731
             model,
@@ -123,7 +129,7 @@ def _classify_and_store_item(
 ) -> None:
     logger.debug(f"Batch {batch_nr} - item id={item.id} - classifying item")
     try:
-        classification = _classify_item_v2(model, batch_nr, item)
+        classification = _classify_item(model, batch_nr, item)
         if classification is None:
             logger.debug(f"Batch {batch_nr} - item id={item.id} - failed to classify item, skipping")
             return
@@ -139,12 +145,34 @@ def _classify_and_store_item(
         )
 
 
-def _classify_item_v2(model: GenerativeModel, batch_nr: int, item: Item) -> ClassificationResult | None:
+def _get_similarity_embedding(item: Item) -> List[float]:
+    # TODO implement me
+    return []
+
+
+def _classify_item(model: GenerativeModel, batch_nr: int, item: Item) -> ClassificationResult | None:
     try:
-        topics_result = _get_topic_classification(model, item)
-        skills_result = _get_skill_classification(model, item)
-        embedding_array = topics_result.embedding + skills_result.embedding
-        return ClassificationResult(item.id, item.hash, embedding_array)
+        if not item.get("topics_skills_v2_embedding"):
+            topics_result = _get_topic_v2_classification(model, item)
+            skills_result = _get_skill_v2_classification(model, item)
+            topics_skills_v2_embedding = topics_result.embedding + skills_result.embedding
+        else:
+            topics_result = TermClassificationResult(item.topics_v2, [])  # TODO cleanup!
+            skills_result = TermClassificationResult(item.skills_v2, [])  # TODO cleanup!
+            topics_skills_v2_embedding = item.topics_skills_v2_embedding
+        if not item.get("similarity_embedding"):
+            similarity_embedding = _get_similarity_embedding(item)
+        else:
+            similarity_embedding = item.similarity_embedding
+        return ClassificationResult(
+            type="volunteering",
+            id=item.id,
+            hash=item.hash,
+            topics_skills_embedding_v2=topics_skills_v2_embedding,
+            topics_v2=topics_result.slugs,
+            skills_v2=skills_result.slugs,
+            similarity_embedding=similarity_embedding,
+        )
     except RetryError as e:
         last_attempt = e.last_attempt
         last_response = last_attempt.result() if last_attempt.result() else "No response"
@@ -159,7 +187,7 @@ def _classify_item_v2(model: GenerativeModel, batch_nr: int, item: Item) -> Clas
 
 
 @retry(stop=stop_after_attempt(RETRY_ATTEMPTS))
-def _get_skill_classification(model: GenerativeModel, item: Item) -> TermClassificationResult:
+def _get_skill_v2_classification(model: GenerativeModel, item: Item) -> TermClassificationResult:
     prompt = _create_skills_prompt_volunteering(item)
     response = _invoke_model(model, prompt)
     logger.debug(f"raw skill classification response: {response}")
@@ -172,7 +200,7 @@ def _get_skill_classification(model: GenerativeModel, item: Item) -> TermClassif
 
 
 @retry(stop=stop_after_attempt(RETRY_ATTEMPTS))
-def _get_topic_classification(model: GenerativeModel, item: Item) -> TermClassificationResult:
+def _get_topic_v2_classification(model: GenerativeModel, item: Item) -> TermClassificationResult:
     prompt = _create_topics_prompt_volunteering(item)
     response = _invoke_model(model, prompt)
     logger.debug(f"raw topic classification response: {response}")
