@@ -36,7 +36,7 @@ def default_docker_image_tag() -> str:
 def cron_schedule(expression: str) -> CronSchedule:
     return CronSchedule(
         cron=expression,
-        timezone="Europe/Berlin",
+        timezone="Etc/UTC",
         day_or=True,
     )
 
