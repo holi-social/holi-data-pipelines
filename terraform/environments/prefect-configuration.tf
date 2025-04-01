@@ -84,6 +84,14 @@ resource "prefect_variable" "bigquery_datalake" {
   }
 }
 
+resource "prefect_variable" "bigquery_datapool" {
+  name = "bigquery_datapool"
+  value = {
+    project = local.default_project
+    dataset = local.dataset_datapool
+  }
+}
+
 resource "prefect_variable" "volunteering_to_typesense_state" {
   name  = "volunteering_to_typesense_state"
   value = {}

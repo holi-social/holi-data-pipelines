@@ -13,6 +13,7 @@ import vertexai
 from src.common.logging.PipelineLogger import PipelineLogger
 from src.common.monitoring.flow import monitored_flow
 from src.common.variables import variable_value
+from src.pipelines.bigquery import bigquery_datalake, bigquery_datapool
 from src.pipelines.volunteering_classification.similarity_classification import SimilarityClassifier
 from src.pipelines.volunteering_classification.topics_skills_classification_v2 import (
     Item,
@@ -22,15 +23,17 @@ from src.pipelines.volunteering_classification.topics_skills_classification_v2 i
 
 logger = PipelineLogger("volunteering_classification")
 
-GCLOUD_PROJECT_ID = "holi-shared"  # TODO via variables
-GCLOUD_LOCATION = "europe-north1"  # TODO via variables
+GCLOUD_PROJECT_ID = "holi-shared"
+GCLOUD_LOCATION = "europe-north1"
 
 ENVIRONMENT = cast(str, variable_value("prefect_environment"))
-BQ_DATAPOOL = f"{GCLOUD_PROJECT_ID}.datapool_{'development' if ENVIRONMENT == 'staging' else ENVIRONMENT}"
+
+TABLE_NAME_CLASSIFICATIONS = f"{bigquery_datalake.project}.{bigquery_datalake.dataset}.classifications"
+VIEW_NAME_WITHOUT_CLASSIFICATIONS = (
+    f"{bigquery_datapool.project}.{bigquery_datapool.dataset}.volunteering_voltastics_without_classifications"
+)
+
 STOP_AFTER_BATCH = 1  # TODO set to 0 after development
-BQ_DATALAKE = f"{GCLOUD_PROJECT_ID}.datalake_{'development' if ENVIRONMENT == 'staging' else ENVIRONMENT}"
-TABLE_NAME_CLASSIFICATIONS = f"{BQ_DATALAKE}.classifications"
-VIEW_NAME_WITHOUT_CLASSIFICATIONS = f"{BQ_DATAPOOL}.volunteering_voltastics_without_classifications"
 BATCH_SIZE = 10  # TODO increase after development
 
 
@@ -127,7 +130,7 @@ class VolunteeringClassifier:
         pool = ThreadPoolExecutor()
         batch_nr = 0
 
-        while not STOP_AFTER_BATCH or batch_nr < STOP_AFTER_BATCH:  # TODO remove STOP_AFTER_BATCH after testing
+        while not STOP_AFTER_BATCH or batch_nr < STOP_AFTER_BATCH:
             logger.info(f"Batch {batch_nr} - starting batch (of size {BATCH_SIZE})")
 
             total_items_count_result = self.bqclient.query(
