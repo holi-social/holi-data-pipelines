@@ -8,11 +8,12 @@ from google.cloud.bigquery import Client
 from prefect.states import State, Completed
 from prefect_gcp import GcpCredentials
 from tenacity import RetryError
+import vertexai
 
 from src.common.logging.PipelineLogger import PipelineLogger
 from src.common.monitoring.flow import monitored_flow
 from src.common.variables import variable_value
-from src.pipelines.volunteering_classification.similarity_classification import _get_similarity_embedding
+from src.pipelines.volunteering_classification.similarity_classification import SimilarityClassifier
 from src.pipelines.volunteering_classification.topics_skills_classification_v2 import (
     Item,
     TopicsSkillsClassifierV2,
@@ -46,11 +47,14 @@ class ClassificationResult:
 
 class VolunteeringClassifier:
     topics_skills_v2_classifier: TopicsSkillsClassifierV2
+    similarity_classifier: SimilarityClassifier
     bqclient: Client
     bqclient_writing: Client
 
     def __init__(self) -> None:
-        self.topics_skills_v2_classifier = TopicsSkillsClassifierV2(GCLOUD_PROJECT_ID, GCLOUD_LOCATION)
+        vertexai.init(project=GCLOUD_PROJECT_ID, location=GCLOUD_LOCATION)
+        self.topics_skills_v2_classifier = TopicsSkillsClassifierV2()
+        self.similarity_classifier = SimilarityClassifier()
         gcp_credentials = GcpCredentials(project=GCLOUD_PROJECT_ID)
         self.bqclient = gcp_credentials.get_bigquery_client(project=GCLOUD_PROJECT_ID, location=GCLOUD_LOCATION)
         self.bqclient_writing = gcp_credentials.get_bigquery_client(
@@ -71,9 +75,9 @@ class VolunteeringClassifier:
                 )
             if not item.get("similarity_embedding"):
                 logger.debug(f"[{item.id}] no existing similarity classification found, running classifier")
-                similarity_embedding = _get_similarity_embedding(item)
+                similarity_embedding = self.similarity_classifier.classify(item)
             else:
-                logger.debug(f"[{item.id}] using existing similarity V2 classification")
+                logger.debug(f"[{item.id}] using existing similarity classification")
                 similarity_embedding = item.similarity_embedding
             return ClassificationResult(
                 type="volunteering",
@@ -161,4 +165,5 @@ def volunteering_classification() -> State:
 if __name__ == "__main__":
     logging.getLogger("volunteering_classification").setLevel(logging.DEBUG)
     logging.getLogger("volunteering_topics_skills_classification_v2").setLevel(logging.DEBUG)
+    logging.getLogger("similarity_classification").setLevel(logging.DEBUG)
     volunteering_classification()

@@ -4,7 +4,6 @@ from typing import List, Dict, TypeAlias, Any
 import re
 import yaml
 
-import vertexai
 from vertexai.preview.generative_models import GenerativeModel
 from vertexai.generative_models import GenerationConfig
 
@@ -57,8 +56,7 @@ class TopicsSkillsClassificationV2:
 class TopicsSkillsClassifierV2:
     model: GenerativeModel
 
-    def __init__(self, gcloud_project_id: str, gcloud_location: str):
-        vertexai.init(project=gcloud_project_id, location=gcloud_location)
+    def __init__(self) -> None:
         self.model = GenerativeModel(MODEL_NAME, generation_config=(GenerationConfig()))
 
     def get_classification(self, item: Item) -> TopicsSkillsClassificationV2:
