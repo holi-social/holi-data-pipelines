@@ -10,6 +10,7 @@ from prefect_gcp import GcpCredentials
 from tenacity import RetryError
 import vertexai
 
+from src.common.loaders.bq_loader import wait_for_bigquery_data_to_be_accessible
 from src.common.logging.PipelineLogger import PipelineLogger
 from src.common.monitoring.flow import monitored_flow
 from src.common.variables import variable_value
@@ -159,9 +160,11 @@ class VolunteeringClassifier:
 
 
 @monitored_flow
-def volunteering_classification() -> State:
+def volunteering_classification(wait_for_bq: bool = True) -> State:
     classifier = VolunteeringClassifier()
     classifier.compute_classifications()
+    if wait_for_bq:
+        wait_for_bigquery_data_to_be_accessible(TABLE_NAME_CLASSIFICATIONS)
     return Completed()
 
 
@@ -169,4 +172,4 @@ if __name__ == "__main__":
     logging.getLogger("volunteering_classification").setLevel(logging.DEBUG)
     logging.getLogger("volunteering_topics_skills_classification_v2").setLevel(logging.DEBUG)
     logging.getLogger("similarity_classification").setLevel(logging.DEBUG)
-    volunteering_classification()
+    volunteering_classification(wait_for_bq=False)  # type: ignore[call-overload]
