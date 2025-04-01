@@ -2,7 +2,7 @@ import json
 from typing import Any, Mapping
 
 from prefect import runtime
-from prefect.blocks.notifications import CustomWebhookNotificationBlock
+from prefect.blocks.notifications import CustomWebhookNotificationBlock, SlackWebhook
 from prefect.client.schemas.objects import FlowRun, State, StateType
 from prefect.flows import Flow
 from prefect.types import StrictVariableValue
@@ -68,7 +68,9 @@ def alert(
     # These runs don't have a deployment and are not auto-scheduled
     if run.deployment_id is None and not run.auto_scheduled:
         return
-    alerter: CustomWebhookNotificationBlock = CustomWebhookNotificationBlock.load("rocketchat-alert")  # type: ignore[assignment]
+    # FIXME delete this once the slack alerter is working
+    rocketchat_alerter: CustomWebhookNotificationBlock = CustomWebhookNotificationBlock.load("rocketchat-alert")  # type: ignore[assignment]
+    alerter: SlackWebhook = SlackWebhook.load("slack-alert")  # type: ignore[assignment]
     subject = f"Run `{run.name}` of flow `{flow.name}` is in state `{state.name}`."
     match state.type:
         case StateType.SCHEDULED | StateType.PENDING | StateType.RUNNING | StateType.COMPLETED:
@@ -76,10 +78,12 @@ def alert(
             return
         # PAUSED and CANCELLING are maybe not interesting to us, but for now we include them
         case StateType.FAILED | StateType.CANCELLED | StateType.CRASHED | StateType.PAUSED | StateType.CANCELLING:
-            alerter.notify(  # type: ignore[unused-coroutine]
+            # FIXME delete this once the slack alerter is working
+            rocketchat_alerter.notify(  # type: ignore[unused-coroutine]
                 subject=subject,
                 body=_compile_context_info(context, run, state),
             )
+            alerter.notify(f"{subject}\n{_compile_context_info(context, run, state)}")  # type: ignore[unused-coroutine]
             return
         case _:
             assert_never(state.type)
