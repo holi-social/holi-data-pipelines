@@ -143,6 +143,20 @@ resource "prefect_block" "typesense_admin_api_key" {
   depends_on = [null_resource.prefect_server_available]
 }
 
+resource "prefect_block" "geoapify-api-key" {
+  name      = "geoapify-api-key"
+  type_slug = "gcpsecret"
+
+  data = jsonencode({
+    "gcp_credentials" = {
+      "project" = "holi-shared"
+    }
+    "secret_name"    = local.environment == "production" ? "GEOAPIFY_API_KEY_PRODUCTION" : "GEOAPIFY_API_KEY_DEVELOPMENT"
+    "secret_version" = "latest"
+  })
+  depends_on = [null_resource.prefect_server_available]
+}
+
 resource "prefect_block" "bigquery_warehouse" {
   name      = "bigquery-warehouse"
   type_slug = "bigquery-warehouse"
