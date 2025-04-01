@@ -5,7 +5,6 @@ from dataclasses import dataclass, asdict
 from typing import List, cast
 
 from google.cloud.bigquery import Client
-from prefect import task
 from prefect.states import State, Completed
 from prefect_gcp import GcpCredentials
 from tenacity import RetryError
@@ -45,126 +44,117 @@ class ClassificationResult:
     similarity_embedding: List[float]
 
 
-def _classify_item(
-    topics_skills_v2_classifier: TopicsSkillsClassifierV2, batch_nr: int, item: Item
-) -> ClassificationResult | None:
-    try:
-        if not item.get("topics_skills_embedding_v2"):
-            logger.debug(f"[{item.id}] no existing topics&skills V2 classification found, running classifier")
-            topics_skills_classification = topics_skills_v2_classifier.get_classification(item)
-        else:
-            logger.debug(f"[{item.id}] using existing topics&skills V2 classification")
-            topics_skills_classification = TopicsSkillsClassificationV2(
-                topics_skills_embedding_v2=item.topics_skills_embedding_v2,
-                topics_v2=item.topics_v2,
-                skills_v2=item.skills_v2,
+class VolunteeringClassifier:
+    topics_skills_v2_classifier: TopicsSkillsClassifierV2
+    bqclient: Client
+    bqclient_writing: Client
+
+    def __init__(self) -> None:
+        self.topics_skills_v2_classifier = TopicsSkillsClassifierV2(GCLOUD_PROJECT_ID, GCLOUD_LOCATION)
+        gcp_credentials = GcpCredentials(project=GCLOUD_PROJECT_ID)
+        self.bqclient = gcp_credentials.get_bigquery_client(project=GCLOUD_PROJECT_ID, location=GCLOUD_LOCATION)
+        self.bqclient_writing = gcp_credentials.get_bigquery_client(
+            project=GCLOUD_PROJECT_ID, location=GCLOUD_LOCATION
+        )
+
+    def _classify_item(self, batch_nr: int, item: Item) -> ClassificationResult | None:
+        try:
+            if not item.get("topics_skills_embedding_v2"):
+                logger.debug(f"[{item.id}] no existing topics&skills V2 classification found, running classifier")
+                topics_skills_classification = self.topics_skills_v2_classifier.get_classification(item)
+            else:
+                logger.debug(f"[{item.id}] using existing topics&skills V2 classification")
+                topics_skills_classification = TopicsSkillsClassificationV2(
+                    topics_skills_embedding_v2=item.topics_skills_embedding_v2,
+                    topics_v2=item.topics_v2,
+                    skills_v2=item.skills_v2,
+                )
+            if not item.get("similarity_embedding"):
+                logger.debug(f"[{item.id}] no existing similarity classification found, running classifier")
+                similarity_embedding = _get_similarity_embedding(item)
+            else:
+                logger.debug(f"[{item.id}] using existing similarity V2 classification")
+                similarity_embedding = item.similarity_embedding
+            return ClassificationResult(
+                type="volunteering",
+                id=item.id,
+                hash=item.hash,
+                topics_skills_embedding_v2=topics_skills_classification.topics_skills_embedding_v2,
+                topics_v2=topics_skills_classification.topics_v2,
+                skills_v2=topics_skills_classification.skills_v2,
+                similarity_embedding=similarity_embedding,
             )
-        if not item.get("similarity_embedding"):
-            logger.debug(f"[{item.id}] no existing similarity classification found, running classifier")
-            similarity_embedding = _get_similarity_embedding(item)
-        else:
-            logger.debug(f"[{item.id}] using existing similarity V2 classification")
-            similarity_embedding = item.similarity_embedding
-        return ClassificationResult(
-            type="volunteering",
-            id=item.id,
-            hash=item.hash,
-            topics_skills_embedding_v2=topics_skills_classification.topics_skills_embedding_v2,
-            topics_v2=topics_skills_classification.topics_v2,
-            skills_v2=topics_skills_classification.skills_v2,
-            similarity_embedding=similarity_embedding,
-        )
-    except RetryError as e:
-        last_attempt = e.last_attempt
-        last_response = last_attempt.result() if last_attempt.result() else "No response"
-        logger.error(
-            f"Batch {batch_nr} - item {item.id} - failed to classify. Last model response: {last_response}.",
-            exc_info=e,
-        )
-        return None
-    except Exception as e:
-        logger.error(f"Batch {batch_nr} - item {item.id} - failed to classify", exc_info=e)
-        return None
-
-
-def _classify_and_store_item(
-    topics_skills_v2_classifier: TopicsSkillsClassifierV2,
-    table_name_classifications: str,
-    batch_nr: int,
-    item: Item,
-    bqclient_writing: Client,
-) -> None:
-    logger.debug(f"Batch {batch_nr} - item id={item.id} - classifying item")
-    try:
-        classification = _classify_item(topics_skills_v2_classifier, batch_nr, item)
-        if classification is None:
-            logger.debug(f"Batch {batch_nr} - item id={item.id} - failed to classify item, skipping")
-            return
-        errors = bqclient_writing.insert_rows_json(table_name_classifications, [asdict(classification)])
-        logger.debug(f"Batch {batch_nr} - item id={item.id} - written to BigQuery")
-        if len(errors) > 0:
-            raise Exception(f"Failed to insert classification {classification}: {errors}")
-    except Exception as e:
-        logger.error(
-            f"Error while classifying item id={item.id}, skipping, Error: %s",
-            str(e),
-            exc_info=e,
-        )
-
-
-@task
-def compute_classifications() -> None:
-    topics_skills_v2_classifier = TopicsSkillsClassifierV2(GCLOUD_PROJECT_ID, GCLOUD_LOCATION)
-    logger.info(f"Starting classification for volunteering in {ENVIRONMENT}")
-    pool = ThreadPoolExecutor()
-    batch_nr = 0
-    gcp_credentials = GcpCredentials(project=GCLOUD_PROJECT_ID)
-    bqclient = gcp_credentials.get_bigquery_client(project=GCLOUD_PROJECT_ID, location=GCLOUD_LOCATION)
-    bqclient_writing = gcp_credentials.get_bigquery_client(project=GCLOUD_PROJECT_ID, location=GCLOUD_LOCATION)
-
-    while not STOP_AFTER_BATCH or batch_nr < STOP_AFTER_BATCH:  # TODO remove STOP_AFTER_BATCH after testing
-        logger.info(f"Batch {batch_nr} - starting batch (of size {BATCH_SIZE})")
-
-        total_items_count_result = bqclient.query(
-            f"SELECT count(*) FROM `{VIEW_NAME_WITHOUT_CLASSIFICATIONS}`"  # noqa: S608
-        ).result()
-        total_items_count = next(total_items_count_result)[0]
-        logger.info(f"Batch {batch_nr} - found {total_items_count} items to classify")
-
-        # exit early if there are no items to classify
-        if total_items_count == 0:
-            logger.info(f"Batch {batch_nr} - all items classified")
-            break  # exit while loop
-
-        batch_items = bqclient.query(
-            f"SELECT * FROM `{VIEW_NAME_WITHOUT_CLASSIFICATIONS}` LIMIT {BATCH_SIZE}"  # noqa: S608
-        ).result()
-        logger.info(f"Batch {batch_nr} - starting classification of {batch_items.total_rows} items")
-
-        futures = [
-            pool.submit(
-                _classify_and_store_item,
-                topics_skills_v2_classifier,
-                TABLE_NAME_CLASSIFICATIONS,
-                batch_nr,
-                item,
-                bqclient_writing,
+        except RetryError as e:
+            last_attempt = e.last_attempt
+            last_response = last_attempt.result() if last_attempt.result() else "No response"
+            logger.error(
+                f"Batch {batch_nr} - item {item.id} - failed to classify. Last model response: {last_response}.",
+                exc_info=e,
             )
-            for item in batch_items
-        ]
-        wait(futures, return_when=ALL_COMPLETED)
+            return None
+        except Exception as e:
+            logger.error(f"Batch {batch_nr} - item {item.id} - failed to classify", exc_info=e)
+            return None
 
-        logger.info(f"Batch {batch_nr} - finished classification of {batch_items.total_rows} items")
-        batch_nr += 1
+    def _classify_and_store_item(
+        self,
+        batch_nr: int,
+        item: Item,
+    ) -> None:
+        logger.debug(f"Batch {batch_nr} - item id={item.id} - classifying item")
+        try:
+            classification = self._classify_item(batch_nr, item)
+            if classification is None:
+                logger.debug(f"Batch {batch_nr} - item id={item.id} - failed to classify item, skipping")
+                return
+            errors = self.bqclient_writing.insert_rows_json(TABLE_NAME_CLASSIFICATIONS, [asdict(classification)])
+            logger.debug(f"Batch {batch_nr} - item id={item.id} - written to BigQuery")
+            if len(errors) > 0:
+                raise Exception(f"Failed to insert classification {classification}: {errors}")
+        except Exception as e:
+            logger.error(
+                f"Error while classifying item id={item.id}, skipping, Error: %s",
+                str(e),
+                exc_info=e,
+            )
 
-    logger.info("Finished classification of volunteering")
+    def compute_classifications(self) -> None:
+        logger.info(f"Starting classification for volunteering in {ENVIRONMENT}")
+        pool = ThreadPoolExecutor()
+        batch_nr = 0
+
+        while not STOP_AFTER_BATCH or batch_nr < STOP_AFTER_BATCH:  # TODO remove STOP_AFTER_BATCH after testing
+            logger.info(f"Batch {batch_nr} - starting batch (of size {BATCH_SIZE})")
+
+            total_items_count_result = self.bqclient.query(
+                f"SELECT count(*) FROM `{VIEW_NAME_WITHOUT_CLASSIFICATIONS}`"  # noqa: S608
+            ).result()
+            total_items_count = next(total_items_count_result)[0]
+            logger.info(f"Batch {batch_nr} - found {total_items_count} items to classify")
+
+            # exit early if there are no items to classify
+            if total_items_count == 0:
+                logger.info(f"Batch {batch_nr} - all items classified")
+                break  # exit while loop
+
+            batch_items = self.bqclient.query(
+                f"SELECT * FROM `{VIEW_NAME_WITHOUT_CLASSIFICATIONS}` LIMIT {BATCH_SIZE}"  # noqa: S608
+            ).result()
+            logger.info(f"Batch {batch_nr} - starting classification of {batch_items.total_rows} items")
+
+            futures = [pool.submit(self._classify_and_store_item, batch_nr, item) for item in batch_items]
+            wait(futures, return_when=ALL_COMPLETED)
+
+            logger.info(f"Batch {batch_nr} - finished classification of {batch_items.total_rows} items")
+            batch_nr += 1
+
+        logger.info("Finished classification of volunteering")
 
 
 @monitored_flow
 def volunteering_classification() -> State:
-    # TODO location enrichment
-    compute_classifications()
-    # TODO similarity classifications
+    classifier = VolunteeringClassifier()
+    classifier.compute_classifications()
     return Completed()
 
 
