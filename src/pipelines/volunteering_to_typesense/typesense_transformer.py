@@ -33,6 +33,9 @@ def transform_row(row: Dict[str, Optional[str]]) -> Dict[str, Optional[Any]]:
     if row.get("id") is None:
         raise ValueError("id is mandatory")
 
+    if row.get("title") is None:
+        raise ValueError("title is mandatory")
+
     def decimal_as_str_or_none(value: Any) -> str | None:
         if value is None:
             return None
@@ -62,6 +65,8 @@ def transform_row(row: Dict[str, Optional[str]]) -> Dict[str, Optional[Any]]:
         "image_url": row.get("image"),
         "link_locators": {"volunteering": row.get("id")},
         "topics_skills_embedding_v2": row.get("topics_skills_embedding_v2"),
+        "topics_v2": row.get("topics_v2"),
+        "skills_v2": row.get("skills_v2"),
         "similarity_embedding": row.get("similarity_embedding"),
     }
 

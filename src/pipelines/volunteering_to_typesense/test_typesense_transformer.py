@@ -1,14 +1,20 @@
+import random
 import json
 from typing import Any
 
 import pytest
 from faker import Faker
 
+from src.pipelines.skills_v2 import skill_v2_slugs
+from src.pipelines.topics_v2 import topic_v2_slugs
 from src.pipelines.volunteering_to_typesense.typesense_transformer import transform_row
 
 fake = Faker()
 
 RowFixture = dict[str, Any]
+
+TOPICS_SKILLS_EMBEDDING_V2_LENGTH = 53
+SIMILARITY_EMBEDDING_LENGTH = 256
 
 
 def _row() -> RowFixture:
@@ -22,6 +28,18 @@ def _row() -> RowFixture:
         "longitude": str(fake.longitude()),
         "image": fake.image_url(),
         "link": fake.url(),
+        "topics_skills_embedding_v2": [
+            fake.pyfloat(min_value=-1, max_value=1) for i in range(TOPICS_SKILLS_EMBEDDING_V2_LENGTH)
+        ],
+        "topics_v2": [
+            random.choice(topic_v2_slugs)  # noqa: S311
+            for i in range(fake.random_int(min=0, max=len(topic_v2_slugs) - 1))
+        ],
+        "skills_v2": [
+            random.choice(skill_v2_slugs)  # noqa: S311
+            for i in range(fake.random_int(min=0, max=len(skill_v2_slugs) - 1))
+        ],
+        "similarity_embedding": [fake.pyfloat(min_value=-1, max_value=1) for i in range(SIMILARITY_EMBEDDING_LENGTH)],
     }
 
 
@@ -44,6 +62,11 @@ def test_german_all_fields(row: RowFixture) -> None:
     assert result["location_lat_lng"] == [row["latitude"], row["longitude"]]
     assert result["image_url"] == row["image"]
     assert result["link_locators"] == {"volunteering": row["id"]}
+
+    assert result["topics_skills_embedding_v2"] == row["topics_skills_embedding_v2"]
+    assert result["topics_v2"] == row["topics_v2"]
+    assert result["skills_v2"] == row["skills_v2"]
+    assert result["similarity_embedding"] == row["similarity_embedding"]
 
 
 def test_english_title_and_description(row: RowFixture) -> None:
@@ -131,8 +154,8 @@ def test_returns_none_for_invalid_lng(row: RowFixture) -> None:
     assert result["location_lat_lng"] is None
 
 
-def test_tolerates_missing_values(row: RowFixture) -> None:
-    row_with_missing_values = {
+def test_requires_title(row: RowFixture) -> None:
+    row_with_missing_title = {
         "id": row["id"],
         "title": None,
         "description": None,
@@ -143,18 +166,10 @@ def test_tolerates_missing_values(row: RowFixture) -> None:
         "link": None,
     }
 
-    result = transform_row(row_with_missing_values)
+    with pytest.raises(ValueError) as error:
+        transform_row(row_with_missing_title)
 
-    assert result["id"] == f"volunteering_{row_with_missing_values['id']}"
-    assert result["type"] == "volunteering"
-    assert result["title_de"] is None
-    assert result["title_en"] is None
-    assert result["description_de"] is None
-    assert result["description_en"] is None
-    assert result["location"] is None
-    assert result["location_lat_lng"] is None
-    assert result["image_url"] is None
-    assert result["link_locators"] == {"volunteering": row_with_missing_values["id"]}
+    assert "title is mandatory" in str(error.value)
 
 
 def test_falls_back_to_german_if_language_detection_on_title_fails(row: RowFixture) -> None:
