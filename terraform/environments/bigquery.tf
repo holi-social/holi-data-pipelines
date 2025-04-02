@@ -100,10 +100,10 @@ resource "google_bigquery_table" "volunteering_voltastics_without_classification
   }
 }
 
-
-# TODO migrate volunteering_voltastics_raw_deduped_aggregated_images from holi-data-classification once it is "shut down"
-# TODO migrate volunteering_voltastics_raw_deduped from holi-data-classification once it is "shut down"
-# TODO migrate location_cache from holi-data-classification once it is "shut down"
+# TODO migrate table / view definitions from holi-data-classification once it is "shut down":
+# TODO - volunteering_voltastics_raw_deduped_aggregated_images
+# TODO - volunteering_voltastics_raw_deduped
+# TODO - location_cache
 
 resource "google_bigquery_table" "volunteering_voltastics_classified_enriched_partitioned" {
   project    = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
@@ -115,16 +115,21 @@ resource "google_bigquery_table" "volunteering_voltastics_classified_enriched_pa
     use_legacy_sql = false
     query          = <<SQL
       SELECT
-        raw_deduped_enriched.*,
-        classifications_v2.embedding_array AS topics_skills_embedding_v2,
-        similarities.embedding_array AS similarity_embedding
-      FROM `${local.datalake}.volunteering_voltastics_raw_deduped_location_enriched` AS raw_deduped_enriched
-      LEFT OUTER JOIN `${local.datalake}.volunteering_voltastics_classification_v2` AS classifications_v2
-        ON raw_deduped_enriched.id = classifications_v2.id
-        AND raw_deduped_enriched.hash = classifications_v2.hash
-      LEFT OUTER JOIN `${local.datalake}.volunteering_voltastics_similar_embeddings` AS similarities
-        ON raw_deduped_enriched.id = similarities.id
-        AND raw_deduped_enriched.hash = similarities.hash
+        raw_deduped.* EXCEPT(latitude, longitude),
+        COALESCE(raw_deduped.latitude, location_cache.latitude) AS latitude,
+        COALESCE(raw_deduped.longitude, location_cache.longitude) AS longitude,
+        classifications.topics_skills_embedding_v2 AS topics_skills_embedding_v2,
+        classifications.topics_v2 AS topics_v2,
+        classifications.skills_v2 AS skills_v2,
+        classifications.similarity_embedding AS similarity_embedding
+      FROM
+        `${local.datalake}.volunteering_voltastics_raw_deduped` AS raw_deduped
+      LEFT OUTER JOIN
+        `${local.datalake}.location_cache` AS location_cache
+        ON raw_deduped.location = location_cache.location
+      LEFT OUTER JOIN `${local.datalake}.classifications` AS classifications
+        ON CAST(raw_deduped.id AS STRING) = classifications.id
+        AND raw_deduped.hash = classifications.hash
     SQL
   }
 }
