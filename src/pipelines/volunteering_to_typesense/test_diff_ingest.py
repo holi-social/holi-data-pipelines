@@ -1,5 +1,5 @@
 from typing import Any
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 from unittest.mock import patch
 from pytest import fixture
 
@@ -44,7 +44,7 @@ def test_diff_ingest(
     mock_upsert_typesense_documents.return_value = True
 
     # WHEN calling diff_ingest with a timestamp from the previous day
-    last_complete_ingestion_timestamp: datetime = datetime.now() - timedelta(days=1)
+    last_complete_ingestion_timestamp: datetime = datetime.now(timezone.utc) - timedelta(days=1)
     (deletion_succeeded, upsert_succeeded, processed_items_count) = diff_ingest.fn(
         table_name,
         last_complete_ingestion_timestamp,
@@ -93,7 +93,7 @@ def test_diff_ingest_no_changes(
     mock_extract_changed_records.return_value = []
 
     # WHEN calling diff_ingest with a timestamp from the previous day
-    last_complete_ingestion_timestamp: datetime = datetime.now() - timedelta(days=1)
+    last_complete_ingestion_timestamp: datetime = datetime.now(timezone.utc) - timedelta(days=1)
     (deletion_succeeded, upsert_succeeded, processed_items_count) = diff_ingest.fn(
         table_name,
         last_complete_ingestion_timestamp,

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from prefect import task, State
 from prefect.cache_policies import NONE
@@ -41,7 +41,7 @@ def volunteering_to_typesense_ingest_updates_flow() -> State:
     if isinstance(task_result, State):
         return task_result
     elif isinstance(task_result, int):
-        store_last_complete_ingestion_timestamp(datetime.now())
+        store_last_complete_ingestion_timestamp(datetime.now(timezone.utc))
         report_number_of_processed_entities(task_result)
         return Completed()
     else:

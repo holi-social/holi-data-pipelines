@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import cast
 
 from prefect import State
@@ -42,7 +42,7 @@ def all_to_typesense_ingest_from_scratch_flow() -> State:
         )
         active_collection = None
 
-    next_collection = f"{alias_name}_{datetime.now().isoformat()}"
+    next_collection = f"{alias_name}_{datetime.now(timezone.utc).isoformat()}"
 
     typesense_client.drop_collection(next_collection)
     typesense_client.create_collection(schema_file_path=schema_path, collection_name=next_collection)
@@ -80,7 +80,7 @@ def all_to_typesense_ingest_from_scratch_flow() -> State:
         logger.info(f'Dropping old collection "{active_collection}"')
         typesense_client.drop_collection(active_collection)
 
-    store_last_complete_ingestion_timestamp(datetime.now())
+    store_last_complete_ingestion_timestamp(datetime.now(timezone.utc))
 
     report_number_of_processed_entities(
         cast(int, profiles_result) + cast(int, spaces_result) + cast(int, volunteering_result)

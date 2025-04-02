@@ -169,6 +169,7 @@ resource "prefect_block" "bigquery_warehouse" {
   depends_on = [null_resource.prefect_server_available]
 }
 
+# FIXME delete this once the slack alerter is working
 resource "prefect_block" "rocketchat_alert" {
   name      = "rocketchat-alert"
   type_slug = "custom-webhook"
@@ -182,6 +183,16 @@ resource "prefect_block" "rocketchat_alert" {
       }, "headers" : {
       "Content-Type" : "application/json"
     }
+  })
+  depends_on = [null_resource.prefect_server_available]
+}
+
+resource "prefect_block" "slack_alert" {
+  name      = "slack-alert"
+  type_slug = "slack-webhook"
+
+  data = jsonencode({
+    "url" : "https://hooks.slack.com/services/T083396EPAM/${local.environment == "production" ? "B08KUHQRPRU/GXMLSGgwgW95n1tKV0E3KxoI" : "B08KZK0GP29/NAf0jACQe1I40Vm76tLQgV6V"}",
   })
   depends_on = [null_resource.prefect_server_available]
 }
