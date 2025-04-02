@@ -34,8 +34,8 @@ VIEW_NAME_WITHOUT_CLASSIFICATIONS = (
     f"{bigquery_datapool.project}.{bigquery_datapool.dataset}.volunteering_voltastics_without_classifications"
 )
 
-STOP_AFTER_BATCH = 1  # TODO set to 0 after development
-BATCH_SIZE = 10  # TODO increase after development
+STOP_AFTER_BATCH = 0
+BATCH_SIZE = 100
 
 
 @dataclass
