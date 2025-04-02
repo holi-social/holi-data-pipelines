@@ -1,7 +1,9 @@
 from datetime import date
 from typing import Callable, Any, Awaitable
 
+import time
 import prefect
+from prefect import task
 from codetiming import Timer
 from prefect_gcp import GcpCredentials
 from prefect_gcp.bigquery import BigQueryWarehouse
@@ -50,17 +52,25 @@ async def stream_to_bigquery(
             return
 
 
-def delete_partition(project: str, dataset: str, table: str, partition: date) -> None:
+def delete_partition(table_name: str, partition: date) -> None:
     with BigQueryWarehouse.load("bigquery-warehouse") as warehouse:
         warehouse.execute(
-            f"DELETE from `{project}.{dataset}.{table}` where TIMESTAMP_TRUNC(_PARTITIONTIME, DAY) = "  # noqa: S608
+            f"DELETE from `{table_name}` where TIMESTAMP_TRUNC(_PARTITIONTIME, DAY) = "  # noqa: S608
             f"TIMESTAMP('{partition.isoformat()}')"
         )
 
 
-def is_streaming_buffer_empty(project: str, dataset: str, table: str) -> bool:
+def is_streaming_buffer_empty(table_name: str) -> bool:
     with BigQueryWarehouse.load("bigquery-warehouse") as warehouse:
         count = warehouse.fetch_one(
-            f"SELECT count(*) from `{project}.{dataset}.{table}` where _PARTITIONTIME is null"  # noqa: S608
+            f"SELECT count(*) from `{table_name}` where _PARTITIONTIME is null"  # noqa: S608
         )[0]
         return count == 0
+
+
+@task(timeout_seconds=60 * 90)
+def wait_for_bigquery_data_to_be_accessible(table_name: str) -> None:
+    while True:
+        if is_streaming_buffer_empty(table_name):
+            break
+        time.sleep(60)

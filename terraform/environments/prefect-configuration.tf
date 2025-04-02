@@ -84,6 +84,14 @@ resource "prefect_variable" "bigquery_datalake" {
   }
 }
 
+resource "prefect_variable" "bigquery_datapool" {
+  name = "bigquery_datapool"
+  value = {
+    project = local.default_project
+    dataset = local.dataset_datapool
+  }
+}
+
 resource "prefect_variable" "volunteering_to_typesense_state" {
   name  = "volunteering_to_typesense_state"
   value = {}
@@ -130,6 +138,20 @@ resource "prefect_block" "typesense_admin_api_key" {
       "project" = "holi-shared"
     }
     "secret_name"    = local.environment == "production" ? "TYPESENSE_CLOUD_ADMIN_API_KEY_PRODUCTION" : "TYPESENSE_CLOUD_ADMIN_API_KEY_STAGING"
+    "secret_version" = "latest"
+  })
+  depends_on = [null_resource.prefect_server_available]
+}
+
+resource "prefect_block" "geoapify-api-key" {
+  name      = "geoapify-api-key"
+  type_slug = "gcpsecret"
+
+  data = jsonencode({
+    "gcp_credentials" = {
+      "project" = "holi-shared"
+    }
+    "secret_name"    = local.environment == "production" ? "GEOAPIFY_API_KEY_PRODUCTION" : "GEOAPIFY_API_KEY_DEVELOPMENT"
     "secret_version" = "latest"
   })
   depends_on = [null_resource.prefect_server_available]
