@@ -70,6 +70,34 @@
                     "model_name": "ts/multilingual-e5-base"
                 }
             }
-        }
+        },
+        {
+            "name": "topics_v2",
+            "type": "string[]",
+            "optional": true,
+            "index": true
+        },
+        {
+            "name": "skills_v2",
+            "type": "string[]",
+            "optional": true,
+            "index": true
+        },
+        {
+            "name": "topics_skills_embedding_v2",
+            "type": "float[]",
+            "optional": true,
+            "num_dim": 53
+        },
+        {
+            "name": "similarity_embedding",
+            "type": "float[]",
+            "optional": true,
+            "num_dim": 256
+        },
+        {"name": "organizer_name", "type": "string", "optional": true, "index":  false},
+        {"name": "organizer_image_url", "type": "string", "optional": true, "index":  false},
+        {"name": "external_url", "type": "string", "optional": true, "index":  false},
+        {"name": "source", "type": "string", "optional": true, "index":  false}
     ]
 }
