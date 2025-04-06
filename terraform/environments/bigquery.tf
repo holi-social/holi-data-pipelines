@@ -20,7 +20,7 @@ resource "google_bigquery_table" "volunteering_voltastics_raw" {
   deletion_protection = true
 
   lifecycle {
-    ignore_changes = [encryption_configuration, schema]
+    ignore_changes = [encryption_configuration]
   }
 
   schema = <<EOF
@@ -37,7 +37,8 @@ resource "google_bigquery_table" "volunteering_voltastics_raw" {
     { "name": "orga", "type": "STRING", "mode": "NULLABLE"},
     { "name": "id", "type": "INTEGER","mode": "NULLABLE"},
     { "name": "latitude","type": "FLOAT", "mode": "NULLABLE"},
-    { "name": "uses", "type": "STRING","mode": "REPEATED"}
+    { "name": "uses", "type": "STRING","mode": "REPEATED"},
+    { "name": "additionalData", "type": "JSON","mode": "NULLABLE"}
 ]
 EOF
 }
