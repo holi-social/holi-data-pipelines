@@ -38,7 +38,7 @@ resource "google_bigquery_table" "volunteering_voltastics_raw" {
     { "name": "id", "type": "INTEGER","mode": "NULLABLE"},
     { "name": "latitude","type": "FLOAT", "mode": "NULLABLE"},
     { "name": "uses", "type": "STRING","mode": "REPEATED"},
-    { "name": "additionalData", "type": "JSON","mode": "NULLABLE"}
+    { "name": "additionalData", "type": "STRING","mode": "NULLABLE"}
 ]
 EOF
 }
