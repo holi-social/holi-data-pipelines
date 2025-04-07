@@ -78,7 +78,7 @@ stages:
   cache: !reference [ .pip_cache_readonly ]
   script:
     - source venv/bin/activate
-    - PREFECT_API_URL="$(cat $PREFECT_SERVER_URL_PATH)/api" PYTHONPATH=$PYTHONPATH:. python src/pipelines/deployments.py
+    - PREFECT_API_URL="$(cat $PREFECT_SERVER_URL_PATH)/api" PYTHONPATH=$PYTHONPATH:. python -m src.pipelines.deployments
   resource_group: $ENVIRONMENT_ID
 
 .smoketest:

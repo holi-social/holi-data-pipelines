@@ -33,6 +33,9 @@ def transform_row(row: Dict[str, Optional[str]]) -> Dict[str, Optional[Any]]:
     if row.get("id") is None:
         raise ValueError("id is mandatory")
 
+    if row.get("title") is None:
+        raise ValueError("title is mandatory")
+
     def decimal_as_str_or_none(value: Any) -> str | None:
         if value is None:
             return None
@@ -60,7 +63,15 @@ def transform_row(row: Dict[str, Optional[str]]) -> Dict[str, Optional[Any]]:
         "location": row.get("location"),
         "location_lat_lng": [latitude, longitude] if latitude is not None and longitude is not None else None,
         "image_url": row.get("image"),
+        "organizer_name": row.get("orga"),
+        "organizer_image_url": row.get("imageOrga"),
+        "external_url": row.get("link"),
+        "source": row.get("source"),
         "link_locators": {"volunteering": row.get("id")},
+        "topics_skills_embedding_v2": row.get("topics_skills_embedding_v2"),
+        "topics_v2": row.get("topics_v2"),
+        "skills_v2": row.get("skills_v2"),
+        "similarity_embedding": row.get("similarity_embedding"),
     }
 
     title_lang = _lang_for(row.get("title"), row.get("id"))

@@ -74,16 +74,16 @@ def delete_typesense_documents(
         )
 
         num_deleted = response.get("num_deleted")
-        success = num_deleted == len(document_ids_to_delete)
+        deleted_all = num_deleted == len(document_ids_to_delete)
 
-        if success:
+        if deleted_all:
             logger.info(f"Deleted {num_deleted} volunteering documents")
         else:
             missing = len(document_ids_to_delete) - num_deleted
             logger.error(
                 f"Partial deletion: {num_deleted}/{len(document_ids_to_delete)} ({missing} missing). IDs: {document_ids_to_delete}"
             )
-        return success
+        return True
     except Exception as e:
         logger.error(
             f"Error deleting {len(document_ids_to_delete)} documents from Typesense: "

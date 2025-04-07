@@ -8,7 +8,11 @@ import prefect
 from prefect import task
 
 from src.common.extractors.rest_crawler import RestCrawler, PagingInfo
-from src.common.loaders.bq_loader import is_streaming_buffer_empty, delete_partition
+from src.common.loaders.bq_loader import (
+    is_streaming_buffer_empty,
+    delete_partition,
+    wait_for_bigquery_data_to_be_accessible,
+)
 from src.common.monitoring.flow import monitored_flow
 from src.common.monitoring.metrics import report_number_of_processed_entities
 from src.common.variables import variable_value_as, secret_value
@@ -76,15 +80,16 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
 
 
 @monitored_flow
-def crawl_voltastics(force_run: bool = False) -> None:
+def crawl_voltastics(force_run: bool = False, wait_for_bq: bool = True) -> None:
     # only run for days that have not been successfully crawled yet, or when forced
     if not has_run_successfully_for_day(config()) or force_run:
         logger.info("Crawling did not run successfully for today, starting run.")
+        table_name = f"{config().get_bq_project()}.{config().get_bq_dataset()}.{config().get_bq_table()}"
 
         if is_cleanup_needed(config()):
-            if is_streaming_buffer_empty(*config().get_bq_table_fqdn()) or force_run:
+            if is_streaming_buffer_empty(table_name) or force_run:
                 logger.info("Unfinished run happened for today, clearing today's partition.")
-                delete_partition(*config().get_bq_table_fqdn(), partition=config().partition_date)
+                delete_partition(table_name, partition=config().partition_date)
             else:
                 logger.warning("Unfinished run happened for today, but streaming buffer is not empty. Aborting flow.")
                 return
@@ -93,9 +98,11 @@ def crawl_voltastics(force_run: bool = False) -> None:
         processed_entities_count = asyncio.run(source_to_sink(crawl(), bigquery_sink(config(), _STOP_DOC)))
         update_last_successful_day(config())  # = finalize
         report_number_of_processed_entities(processed_entities_count)
+        if wait_for_bq:
+            wait_for_bigquery_data_to_be_accessible(table_name)
     else:
         logger.info("Crawling already ran successfully for today, skipping run.")
 
 
 if __name__ == "__main__":
-    crawl_voltastics(True)  # type: ignore[call-overload]
+    crawl_voltastics(force_run=True, wait_for_bq=False)  # type: ignore[call-overload]

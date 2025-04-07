@@ -32,11 +32,6 @@ resource "null_resource" "prefect_server_available" {
   }
 }
 
-resource "prefect_variable" "volunteering_with_classification" {
-  name  = "volunteering_with_classification"
-  value = local.environment == "production" ? "holi-shared.datapool_production.volunteering_voltastics_with_classification_enriched" : "holi-shared.datapool_development.volunteering_voltastics_with_classification_enriched"
-}
-
 # crawler / voltastics
 resource "prefect_variable" "voltastics_crawler_table" {
   name = "voltastics_crawler_table"
@@ -81,10 +76,20 @@ resource "prefect_variable" "betterplace_api_url" {
   value = "https://api.betterplace.org/de/api_v4"
 }
 
-# deprecated
-resource "prefect_variable" "volunteering_voltastics_raw_deduped" {
-  name  = "volunteering_voltastics_raw_deduped"
-  value = local.environment == "production" ? "holi-shared.datalake_production.volunteering_voltastics_raw_deduped_location_enriched" : "holi-shared.datalake_development.volunteering_voltastics_raw_deduped_location_enriched"
+resource "prefect_variable" "bigquery_datalake" {
+  name = "bigquery_datalake"
+  value = {
+    project = local.default_project
+    dataset = local.dataset_datalake
+  }
+}
+
+resource "prefect_variable" "bigquery_datapool" {
+  name = "bigquery_datapool"
+  value = {
+    project = local.default_project
+    dataset = local.dataset_datapool
+  }
 }
 
 resource "prefect_variable" "volunteering_to_typesense_state" {
@@ -138,6 +143,20 @@ resource "prefect_block" "typesense_admin_api_key" {
   depends_on = [null_resource.prefect_server_available]
 }
 
+resource "prefect_block" "geoapify-api-key" {
+  name      = "geoapify-api-key"
+  type_slug = "gcpsecret"
+
+  data = jsonencode({
+    "gcp_credentials" = {
+      "project" = "holi-shared"
+    }
+    "secret_name"    = local.environment == "production" ? "GEOAPIFY_API_KEY_PRODUCTION" : "GEOAPIFY_API_KEY_DEVELOPMENT"
+    "secret_version" = "latest"
+  })
+  depends_on = [null_resource.prefect_server_available]
+}
+
 resource "prefect_block" "bigquery_warehouse" {
   name      = "bigquery-warehouse"
   type_slug = "bigquery-warehouse"
@@ -150,6 +169,7 @@ resource "prefect_block" "bigquery_warehouse" {
   depends_on = [null_resource.prefect_server_available]
 }
 
+# FIXME delete this once the slack alerter is working
 resource "prefect_block" "rocketchat_alert" {
   name      = "rocketchat-alert"
   type_slug = "custom-webhook"
@@ -163,6 +183,16 @@ resource "prefect_block" "rocketchat_alert" {
       }, "headers" : {
       "Content-Type" : "application/json"
     }
+  })
+  depends_on = [null_resource.prefect_server_available]
+}
+
+resource "prefect_block" "slack_alert" {
+  name      = "slack-alert"
+  type_slug = "slack-webhook"
+
+  data = jsonencode({
+    "url" : "https://hooks.slack.com/services/T083396EPAM/${local.environment == "production" ? "B08KUHQRPRU/GXMLSGgwgW95n1tKV0E3KxoI" : "B08KZK0GP29/NAf0jACQe1I40Vm76tLQgV6V"}",
   })
   depends_on = [null_resource.prefect_server_available]
 }

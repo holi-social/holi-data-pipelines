@@ -42,6 +42,99 @@ resource "google_bigquery_table" "volunteering_voltastics_raw" {
 EOF
 }
 
+resource "google_bigquery_table" "classifications" {
+  project    = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
+  dataset_id = local.dataset_id_datalake
+  table_id   = "classifications"
+
+  time_partitioning {
+    type = "DAY"
+  }
+
+  schema = <<EOF
+  [
+    { "name": "type", "type": "STRING", "mode": "REQUIRED"},
+    { "name": "id", "type": "STRING", "mode": "REQUIRED"},
+    { "name": "hash", "type": "STRING", "mode": "REQUIRED"},
+    { "name": "topics_skills_embedding_v2", "type": "FLOAT", "mode": "REPEATED"},
+    { "name": "topics_v2", "type": "STRING", "mode": "REPEATED"},
+    { "name": "skills_v2", "type": "STRING", "mode": "REPEATED"},
+    { "name": "similarity_embedding", "type": "FLOAT", "mode": "REPEATED"}
+  ]
+  EOF
+
+  lifecycle {
+    ignore_changes = [encryption_configuration]
+  }
+}
+
+resource "google_bigquery_table" "volunteering_voltastics_without_classifications" {
+  project    = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
+  dataset_id = local.dataset_id_datapool
+  table_id   = "volunteering_voltastics_without_classifications"
+
+  view {
+    use_legacy_sql = false
+    query          = <<SQL
+      SELECT
+        raw_deduped.*,
+        classifications.topics_skills_embedding_v2,
+        classifications.similarity_embedding
+      FROM `${local.datalake}.volunteering_voltastics_raw_deduped` raw_deduped
+      LEFT OUTER JOIN `${google_bigquery_table.classifications.dataset_id}.${google_bigquery_table.classifications.table_id}` classifications
+      ON
+        CAST(raw_deduped.id AS STRING) = classifications.id AND
+        raw_deduped.hash = classifications.hash AND
+        classifications.type = 'volunteering'
+      WHERE DATE(raw_deduped.partitiontime) = (
+          SELECT MAX(DATE(partitiontime))
+          FROM `${local.datalake}.volunteering_voltastics_raw_deduped`
+          WHERE partitiontime IS NOT NULL
+      )
+      AND (
+          classifications.hash IS NULL OR
+          classifications.topics_skills_embedding_v2 IS NULL OR
+          classifications.similarity_embedding IS NULL
+      )
+    SQL
+  }
+}
+
+# TODO migrate table / view definitions from holi-data-classification once it is "shut down":
+# TODO - volunteering_voltastics_raw_deduped_aggregated_images
+# TODO - volunteering_voltastics_raw_deduped
+# TODO - location_cache
+
+resource "google_bigquery_table" "volunteering_voltastics_classified_enriched_partitioned" {
+  project    = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
+  dataset_id = local.dataset_id_datalake
+  table_id   = "volunteering_voltastics_classified_enriched_partitioned"
+  description = "View holding all (partitioned) volunteering data, together with topics&skill classification, similarity classification and location enrichment. Used by the volunteering-to-typesense pipeline."
+
+  view {
+    use_legacy_sql = false
+    query          = <<SQL
+      SELECT
+        raw_deduped.* EXCEPT(latitude, longitude),
+        COALESCE(raw_deduped.latitude, location_cache.latitude) AS latitude,
+        COALESCE(raw_deduped.longitude, location_cache.longitude) AS longitude,
+        classifications.topics_skills_embedding_v2 AS topics_skills_embedding_v2,
+        classifications.topics_v2 AS topics_v2,
+        classifications.skills_v2 AS skills_v2,
+        classifications.similarity_embedding AS similarity_embedding
+      FROM
+        `${local.datalake}.volunteering_voltastics_raw_deduped` AS raw_deduped
+      LEFT OUTER JOIN
+        `${local.datalake}.location_cache` AS location_cache
+        ON raw_deduped.location = location_cache.location
+      LEFT OUTER JOIN `${local.datalake}.classifications` AS classifications
+        ON CAST(raw_deduped.id AS STRING) = classifications.id
+        AND raw_deduped.hash = classifications.hash
+    SQL
+  }
+}
+
+
 output "volunteering_voltastics_raw_table" {
   value = google_bigquery_table.volunteering_voltastics_raw.table_id
 }

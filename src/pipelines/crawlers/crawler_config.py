@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from typing import Dict, Tuple
 
 import prefect
@@ -12,7 +12,7 @@ class CrawlerConfig:
     state_variable_name: str
     api_url: str
     bigquery_table: Dict[str, str]
-    partition_date: date = datetime.today().date()
+    partition_date: date = datetime.now(timezone.utc).date()
 
     def get_bq_project(self) -> str:
         return self.bigquery_table["project"]

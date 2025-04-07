@@ -1,10 +1,11 @@
-from typing import List, Optional, Any, cast
+from typing import List, Optional, Any, cast, Union
 
 from prefect import deploy, Flow
 from prefect.client.schemas.objects import ConcurrencyLimitConfig, ConcurrencyLimitStrategy
 from prefect.client.schemas.schedules import CronSchedule
 from prefect.deployments.runner import RunnerDeployment
 from prefect.deployments.schedules import FlexibleScheduleList
+from prefect.events import DeploymentEventTrigger, DeploymentTriggerTypes, TriggerTypes, Posture
 
 from src.common.variables import variable_value_as
 from src.pipelines.all_to_typesense.ingest_from_scratch import all_to_typesense_ingest_from_scratch_flow
@@ -13,8 +14,14 @@ from src.pipelines.crawlers.voltastics.pipeline import crawl_voltastics
 from src.pipelines.example.pipeline import hello_universe
 from src.pipelines.profiles_to_typesense.ingest_from_scratch import profiles_to_typesense_ingest_from_scratch_flow
 from src.pipelines.spaces_to_typesense.ingest_from_scratch import spaces_to_typesense_ingest_from_scratch_flow
+from src.pipelines.tasks_to_typesense.ingest_from_scratch import tasks_to_typesense_ingest_from_scratch_flow
 from src.pipelines.typesense_qc.typesense_qc import typesense_qc
+from src.pipelines.volunteering_classification.volunteering_classification import volunteering_classification
+from src.pipelines.volunteering_geo_enrichment.volunteering_geo_enrichment import volunteering_geo_enrichment
 from src.pipelines.volunteering_to_typesense.ingest_updates import volunteering_to_typesense_ingest_updates_flow
+from src.pipelines.volunteering_to_typesense.ingest_from_scratch import (
+    volunteering_to_typesense_ingest_from_scratch_flow,
+)
 
 
 def environment() -> str:
@@ -29,7 +36,7 @@ def default_docker_image_tag() -> str:
 def cron_schedule(expression: str) -> CronSchedule:
     return CronSchedule(
         cron=expression,
-        timezone="Europe/Berlin",
+        timezone="Etc/UTC",
         day_or=True,
     )
 
@@ -49,6 +56,7 @@ def deployment_for_flow(
     paused: bool = False,
     description: Optional[str] = None,
     job_variables_overrides: Optional[dict[str, Any]] = None,
+    triggers: Optional[list[Union[DeploymentTriggerTypes, TriggerTypes]]] = None,
 ) -> RunnerDeployment:
     # merge default job variables with overrides
     job_variables = default_job_variables(name=flow.name)
@@ -69,6 +77,7 @@ def deployment_for_flow(
         work_pool_name="cloud-run-v2",
         work_queue_name="default",
         job_variables=job_variables,
+        triggers=triggers,
     )
 
 
@@ -81,9 +90,8 @@ def get_deployments() -> List[RunnerDeployment]:
             job_variables_overrides={"memory": "4096Mi"},
         ),
         deployment_for_flow(
-            volunteering_to_typesense_ingest_updates_flow,
-            description="Orchestrates the ETL pipeline to move volunteering updates from BigQuery to Typesense",
-            schedules=[cron_schedule("30 6 * * *")],
+            volunteering_to_typesense_ingest_from_scratch_flow,
+            description="Ingests volunteering opportunities from BigQuery into Typesense",
             job_variables_overrides={"memory": "4096Mi"},
         ),
         deployment_for_flow(
@@ -94,6 +102,11 @@ def get_deployments() -> List[RunnerDeployment]:
         deployment_for_flow(
             spaces_to_typesense_ingest_from_scratch_flow,
             description="Ingests spaces from Datastream-replicated Okuna into Typesense",
+            job_variables_overrides={"memory": "4096Mi"},
+        ),
+        deployment_for_flow(
+            tasks_to_typesense_ingest_from_scratch_flow,
+            description="Ingests tasks from Datastream-replicated Okuna into Typesense",
             job_variables_overrides={"memory": "4096Mi"},
         ),
         deployment_for_flow(
@@ -111,7 +124,51 @@ def get_deployments() -> List[RunnerDeployment]:
         deployment_for_flow(
             typesense_qc,
             description="Quality check for the state of replication of entities into Typesense",
-            schedules=[cron_schedule("30 6 * * *")],
+            schedules=[cron_schedule("00 7 * * *")],
+            job_variables_overrides={"memory": "1024Mi"},
+        ),
+        deployment_for_flow(
+            volunteering_classification,
+            description="Runs classifications on unclassified volunteering opportunities",
+            job_variables_overrides={"memory": "4096Mi"},
+            triggers=[
+                DeploymentEventTrigger(
+                    enabled=True,
+                    match_related={"prefect.resource.name": crawl_voltastics.name},  # type: ignore
+                    expect=["prefect.flow-run.Completed"],  # type: ignore
+                    parameters={},
+                )
+            ],
+        ),
+        deployment_for_flow(
+            volunteering_geo_enrichment,
+            description="Resolves lat/lng for volunteering opportunities lacking those",
+            job_variables_overrides={"memory": "1024Mi"},
+            triggers=[
+                DeploymentEventTrigger(
+                    enabled=True,
+                    match_related={"prefect.resource.name": crawl_voltastics.name},  # type: ignore
+                    expect=["prefect.flow-run.Completed"],  # type: ignore
+                    parameters={},
+                )
+            ],
+        ),
+        deployment_for_flow(
+            volunteering_to_typesense_ingest_updates_flow,
+            description="Orchestrates the ETL pipeline to move volunteering updates from BigQuery to Typesense",
+            job_variables_overrides={"memory": "4096Mi"},
+            triggers=[
+                DeploymentEventTrigger(
+                    enabled=True,
+                    match_related={
+                        "prefect.resource.name": [volunteering_classification.name, volunteering_geo_enrichment.name]
+                    },  # type: ignore
+                    expect=["prefect.flow-run.Completed"],  # type: ignore
+                    parameters={},
+                    posture=Posture.Reactive,
+                    threshold=2,
+                )
+            ],
         ),
     ]
 
