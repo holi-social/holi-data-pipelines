@@ -15,12 +15,12 @@ from src.common.logging.PipelineLogger import PipelineLogger
 from src.common.monitoring.flow import monitored_flow
 from src.common.variables import variable_value
 from src.pipelines.bigquery import bigquery_datalake, bigquery_datapool
-from src.pipelines.volunteering_classification.similarity_classification import SimilarityClassifier
 from src.pipelines.volunteering_classification.topics_skills_classification_v2 import (
     Item,
     TopicsSkillsClassifierV2,
     TopicsSkillsClassificationV2,
 )
+from src.pipelines.volunteering_classification.volunteering_similarity_embedder import VolunteeringSimilarityEmbedder
 
 logger = PipelineLogger("volunteering_classification")
 
@@ -51,14 +51,14 @@ class ClassificationResult:
 
 class VolunteeringClassifier:
     topics_skills_v2_classifier: TopicsSkillsClassifierV2
-    similarity_classifier: SimilarityClassifier
+    similarity_embedder: VolunteeringSimilarityEmbedder
     bqclient: Client
     bqclient_writing: Client
 
     def __init__(self) -> None:
         vertexai.init(project=GCLOUD_PROJECT_ID, location=GCLOUD_LOCATION)
         self.topics_skills_v2_classifier = TopicsSkillsClassifierV2()
-        self.similarity_classifier = SimilarityClassifier()
+        self.similarity_embedder = VolunteeringSimilarityEmbedder()
         gcp_credentials = GcpCredentials(project=GCLOUD_PROJECT_ID)
         self.bqclient = gcp_credentials.get_bigquery_client(project=GCLOUD_PROJECT_ID, location=GCLOUD_LOCATION)
         self.bqclient_writing = gcp_credentials.get_bigquery_client(
@@ -79,7 +79,7 @@ class VolunteeringClassifier:
                 )
             if not item.get("similarity_embedding"):
                 logger.debug(f"[{item.id}] no existing similarity classification found, running classifier")
-                similarity_embedding = self.similarity_classifier.classify(item)
+                similarity_embedding = self.similarity_embedder.embed(item)
             else:
                 logger.debug(f"[{item.id}] using existing similarity classification")
                 similarity_embedding = item.similarity_embedding
