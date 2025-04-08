@@ -1,0 +1,3 @@
+# contains requirements that are shared between cloud functions and pipelines at runtime
+
+typesense==0.21.0

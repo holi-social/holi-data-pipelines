@@ -60,6 +60,14 @@ data "terraform_remote_state" "holi_data_pipeline_common_state" {
   }
 }
 
+data "terraform_remote_state" "okuna_common_state" {
+  backend = "gcs"
+  config = {
+    bucket = "holi-shared-terraform-state"
+    prefix = "okuna-common"
+  }
+}
+
 data "terraform_remote_state" "okuna_state" {
   backend = "gcs"
   config = {

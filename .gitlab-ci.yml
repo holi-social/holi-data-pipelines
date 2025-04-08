@@ -12,28 +12,44 @@ variables:
 .pip_cache_rw:
   key:
     files:
-      - requirements.txt
-      - dev-requirements.txt
+      # GitLab CI only allows listing 2 files to calculate a cache key, this is a workaround
+      - "*requirements.txt"
   policy: pull-push
   paths:
     - .cache/pip
-    - venv/
+    - .venv/
 
-.pip_cache_readonly:
+.pip_cache_ro:
   key:
     files:
-      - requirements.txt
-      - dev-requirements.txt
+      # GitLab CI only allows listing 2 files to calculate a cache key, this is a workaround
+      - "*requirements.txt"
   policy: pull
   paths:
     - .cache/pip
-    - venv/
+    - .venv/
 
-stages:
-  - "prepare"
-  - "build"
-  - "test"
-  - "deploy"
+.pip_cache_rw_search_integration:
+  key:
+    files:
+      # GitLab CI only allows listing 2 files to calculate a cache key, this is a workaround
+      - "shared*requirements.txt"
+      - "cloud_functions/search_integration/*requirements.txt"
+  policy: pull-push
+  paths:
+    - .cache/pip
+    - cloud_functions/search_integration/.venv
+
+.pip_cache_ro_search_integration:
+  key:
+    files:
+      # GitLab CI only allows listing 2 files to calculate a cache key, this is a workaround
+      - "shared*requirements.txt"
+      - "cloud_functions/search_integration/*requirements.txt"
+  policy: pull
+  paths:
+    - .cache/pip
+    - cloud_functions/search_integration/.venv
 
 .rule_templates:
   only_main:
@@ -46,15 +62,109 @@ stages:
       when: on_success
     - if: $CI_COMMIT_BRANCH == 'production' && $CI_PIPELINE_SOURCE == "web"
       when: on_success
+  not_for_search_integration:
+    - if: $CI_PIPELINE_SOURCE == 'push'
+      changes:
+        - cloud_functions/**/*
+      when: never
+  only_search_integration:
+    - if: $CI_PIPELINE_SOURCE == 'push'
+      changes:
+        - shared-requirements.txt
+        - shared-dev-requirements.txt
+        - shared/**/*
+        - cloud_functions/search_integration/**/*
+        - .gitlab-ci.yml
+
+stages:
+  - prepare
+  - build
+  - test
+  - deploy
+
+search_integration_install_test:
+  stage: prepare
+  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/python:3.13-slim"
+  cache: !reference [ .pip_cache_rw_search_integration ]
+  script:
+    # install dependencies for cloud functions
+    - python3 -m venv cloud_functions/search_integration/.venv
+    - source cloud_functions/search_integration/.venv/bin/activate
+    - pip install --upgrade pip
+    - pip install -r cloud_functions/search_integration/requirements.txt --exists-action s
+    - pip install -r cloud_functions/search_integration/dev-requirements.txt --exists-action s
+    # validate and test
+    - ruff check cloud_functions/search_integration shared
+    - ruff format --check cloud_functions/search_integration shared
+    # change the mypy call to run from within the cloud function directory
+    - cd cloud_functions/search_integration
+    # use the explicit-package-bases flag to prevent the module collision
+    - mypy --python-executable=./.venv/bin/python --explicit-package-bases --namespace-packages .
+    - cd $CI_PROJECT_DIR
+    - mypy --python-executable=cloud_functions/search_integration/.venv/bin/python shared
+    - cd cloud_functions/search_integration
+    - pytest
+    - cd $CI_PROJECT_DIR
+  rules:
+    - !reference [ .rule_templates, only_search_integration ]
+  interruptible: true
+
+.search_integration_deploy:
+  stage: deploy
+  image:
+    name: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/hashicorp/terraform:1.11.2"
+    # default entrypoint is terraform command, but we want to run shell scripts
+    entrypoint: [ "/bin/sh", "-c" ]
+  cache: !reference [ .pip_cache_ro_search_integration ]
+  resource_group: $ENVIRONMENT_ID
+  artifacts:
+    paths:
+      - 'terraform/environments/crash.log' # optional, only available in case of a crash/panic
+      - 'terraform/environments/terraform-*.log' # separate log for every step/command
+    name: '${CI_JOB_NAME}_${CI_JOB_ID}'
+    #when: on_failure # can't do that for api base url, but can't define multiple artifacts
+    expire_in: 1 week
+  variables:
+    FUNCTION_NAME: search_integration
+  script:
+    - apk add zip
+    - cd cloud_functions/search_integration
+    # Create a deployment directory with all required files
+    - mkdir -p .build
+    - cp -r ../../shared .build/
+    - cp -r *.py .build/
+    # create a single consolidated requirements file without relative paths
+    - cat ../../shared-requirements.txt | grep -v "^-r" | grep -v "^#" >> .build/requirements.txt
+    - cat requirements.txt | grep -v "^-r" | grep -v "^#" >> .build/requirements.txt
+    - cd .build
+    - zip -r ../.build/search_integration.zip .
+    - cd $CI_PROJECT_DIR
+    - terraform/environments/scripts/create-or-update-env.sh "$ENVIRONMENT_ID" "$CI_COMMIT_SHA"
+  interruptible: false
+
+search_integration_staging_deploy:
+  extends: .search_integration_deploy
+  variables:
+    ENVIRONMENT_ID: 'staging'
+  rules:
+    - !reference [ .rule_templates, only_search_integration ]
+    - !reference [ .rule_templates, only_main ]
+
+search_integration_production_deploy:
+  extends: .search_integration_deploy
+  variables:
+    ENVIRONMENT_ID: 'production'
+  rules:
+    - !reference [ .rule_templates, only_search_integration ]
+    - !reference [ .rule_templates, only_production ]
 
 .terraform_deploy:
   image:
     name: "europe-north1-docker.pkg.dev/holi-shared/docker/holi-docker/terraform-docker"
-  stage: build
   services:
     - name: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/docker:28-dind"
       alias: "docker"
-  stage: "deploy"
+  stage: deploy
   variables:
     ENVIRONMENT_ID: $CI_ENVIRONMENT_SLUG
   artifacts:
@@ -72,10 +182,10 @@ stages:
 
 .prefect_deploy:
   image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.2.11-python3.12"
-  stage: "deploy"
+  stage: deploy
   variables:
     ENVIRONMENT_ID: $CI_ENVIRONMENT_SLUG
-  cache: !reference [ .pip_cache_readonly ]
+  cache: !reference [ .pip_cache_ro ]
   script:
     - source venv/bin/activate
     - PREFECT_API_URL="$(cat $PREFECT_SERVER_URL_PATH)/api" PYTHONPATH=$PYTHONPATH:. python -m src.pipelines.deployments
@@ -83,8 +193,8 @@ stages:
 
 .smoketest:
   image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.2.11-python3.12"
-  stage: "deploy"
-  cache: !reference [ .pip_cache_readonly ]
+  stage: deploy
+  cache: !reference [ .pip_cache_ro ]
   script:
     - source venv/bin/activate
     - PREFECT_API_URL="$(cat $PREFECT_SERVER_URL_PATH)/api" prefect shell watch --flow-run-name ci-test-$CI_PIPELINE_IID --tag ci-test "echo smoketesting"
@@ -92,7 +202,7 @@ stages:
 
 .build_prefect_flow_docker_image:
   image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/docker:28"
-  stage: "build"
+  stage: build
   services:
     - name: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/docker:28-dind"
       alias: "docker"
@@ -107,13 +217,13 @@ stages:
     - docker push "$GCR_IMAGE":"$CI_COMMIT_SHA" # we use latest in prefect, this is just extra information for humans.
     - docker push "$GCR_IMAGE":latest # for caching the build and for use by prefect pipelines
 
-install_dependencies:
+pipelines_install_dependencies:
   image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/python:3.12-slim"
-  stage: "prepare"
+  stage: prepare
   cache: !reference [ .pip_cache_rw ]
   script:
-    - python3 -m venv venv
-    - source venv/bin/activate
+    - python3 -m venv .venv
+    - source .venv/bin/activate
     - pip install -r requirements.txt --exists-action s
     - pip install -r dev-requirements.txt --exists-action s
   rules:
@@ -123,27 +233,33 @@ install_dependencies:
     # only run on specific file changes when triggered by git push
     - if: $CI_COMMIT_BRANCH
       changes:
+        - shared-requirements.txt
+        - shared-dev-requirements.txt
         - requirements.txt
         - dev-requirements.txt
         - .gitlab-ci.yml
 
-validate:
+pipelines_validate:
   image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/python:3.12-slim"
-  stage: "prepare"
+  stage: prepare
   needs:
-    - job: install_dependencies
+    - job: pipelines_install_dependencies
       optional: true
-  cache: !reference [ .pip_cache_readonly ]
+  cache: !reference [ .pip_cache_ro ]
   script:
-    - source venv/bin/activate
-    - ruff check
-    - ruff format --check
-    - mypy --python-executable=venv/bin/python src
-    - pytest .
+    - source .venv/bin/activate
+    - ruff check src shared
+    - ruff format --check src shared
+    - mypy --python-executable=.venv/bin/python src shared
+    - pytest src
+  rules:
+    - !reference [ .rule_templates, not_for_search_integration ]
+    
 
 build_prefect_flow_docker_image_staging:
   extends: .build_prefect_flow_docker_image
-  needs: [ "validate" ]
+  needs:
+    - job: pipelines_validate
   variables:
     ENVIRONMENT_SUFFIX: staging
   rules:
@@ -153,40 +269,51 @@ build_prefect_flow_docker_image_staging:
     # only run on specific file changes when triggered by git push
     - if: $CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"
       changes:
+        - shared-requirements.txt
+        - shared-dev-requirements.txt
         - requirements.txt
+        - dev-requirements.txt
+        - shared/**/*
         - src/**/*
         - .gitlab-ci.yml
 
 ## staging environment
-terraform_deploy_staging:
+pipelines_tf_deploy_staging:
   extends: .terraform_deploy
-  needs: [ "validate" ]
+  needs:
+    - job: pipelines_validate
   variables:
     ENVIRONMENT_ID: staging
   rules:
     - !reference [ .rule_templates, only_main ]
+    - !reference [ .rule_templates, not_for_search_integration ]
 
 prefect_deploy_staging:
   extends: .prefect_deploy
   needs:
-    - job: "terraform_deploy_staging"
-    - job: "build_prefect_flow_docker_image_staging"
+    - job: pipelines_tf_deploy_staging
+    - job: build_prefect_flow_docker_image_staging
       optional: true
   variables:
     ENVIRONMENT_ID: staging
   rules:
     - !reference [ .rule_templates, only_main ]
+    - !reference [ .rule_templates, not_for_search_integration ]
 
-smoketest_staging:
+prefect_smoketest_staging:
   extends: .smoketest
-  needs: [ "terraform_deploy_staging", "prefect_deploy_staging" ]
+  needs:
+    - job: pipelines_tf_deploy_staging
+    - job: prefect_deploy_staging
   rules:
     - !reference [ .rule_templates, only_main ]
+    - !reference [ .rule_templates, not_for_search_integration ]
 
 ## production environment
 build_prefect_flow_docker_image_production:
   extends: .build_prefect_flow_docker_image
-  needs: [ "validate" ]
+  needs:
+    - job: pipelines_validate
   stage: deploy
   variables:
     ENVIRONMENT_SUFFIX: production
@@ -197,34 +324,44 @@ build_prefect_flow_docker_image_production:
     # only run on specific file changes when triggered by git push
     - if: $CI_COMMIT_BRANCH == "production" && $CI_PIPELINE_SOURCE == "push"
       changes:
+        - shared-requirements.txt
+        - shared-dev-requirements.txt
         - requirements.txt
+        - dev-requirements.txt
+        - shared/**/*
         - src/**/*
         - .gitlab-ci.yml
 
-terraform_deploy_production:
+pipelines_tf_deploy_production:
   extends: .terraform_deploy
-  needs: [ "validate" ]
+  needs:
+    - job: pipelines_validate
   stage: deploy
   variables:
     ENVIRONMENT_ID: production
   rules:
     - !reference [ .rule_templates, only_production ]
+    - !reference [ .rule_templates, not_for_search_integration ]
 
 prefect_deploy_production:
   extends: .prefect_deploy
   needs:
-    - job: "terraform_deploy_production"
-    - job: "build_prefect_flow_docker_image_production"
+    - job: pipelines_tf_deploy_production
+    - job: build_prefect_flow_docker_image_production
       optional: true
   stage: deploy
   variables:
     ENVIRONMENT_ID: production
   rules:
     - !reference [ .rule_templates, only_production ]
+    - !reference [ .rule_templates, not_for_search_integration ]
 
-smoketest_production:
+pipelines_smoketest_production:
   extends: .smoketest
-  needs: [ "terraform_deploy_production", "prefect_deploy_production" ]
+  needs:
+    - job: pipelines_tf_deploy_production
+    - job: prefect_deploy_production
   stage: deploy
   rules:
     - !reference [ .rule_templates, only_production ]
+    - !reference [ .rule_templates, not_for_search_integration ]

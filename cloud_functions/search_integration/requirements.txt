@@ -1,0 +1,3 @@
+-r ../../shared-requirements.txt
+
+functions_framework==3.8.2
