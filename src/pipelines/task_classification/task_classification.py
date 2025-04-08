@@ -30,7 +30,7 @@ class TaskClassifier(Classifier):
 
 
 @monitored_flow
-def task_classification(
+def task_classification_flow(
     wait_for_bq: bool = True, batch_size: Optional[int] = None, stop_after_batch_nr: Optional[int] = None
 ) -> State:
     # TODO use context manager to create and shut down classifier
@@ -45,4 +45,4 @@ if __name__ == "__main__":
     logging.getLogger("task_classification").setLevel(logging.DEBUG)
     logging.getLogger("task_topics_skills_classifier_v2").setLevel(logging.DEBUG)
     logging.getLogger("similarity_classification").setLevel(logging.DEBUG)
-    task_classification(wait_for_bq=False, batch_size=2, stop_after_batch_nr=1)  # type: ignore
+    task_classification_flow(wait_for_bq=False, batch_size=2, stop_after_batch_nr=1)  # type: ignore
