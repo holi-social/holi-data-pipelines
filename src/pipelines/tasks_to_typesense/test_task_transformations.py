@@ -9,7 +9,8 @@ class TestTaskToDoc(unittest.TestCase):
         """Set up common test data"""
         self.task_data = {
             "id": 123,
-            "name": "Test Task",
+            "name": "test-task",  # actually the slug, bad naming on Okuna-side
+            "title": "Test Task",
             "description": "This is a test task",
             "location": "Berlin, Germany",
             "thumbnail": "https://example.com/image.jpg",
@@ -51,6 +52,9 @@ class TestTaskToDoc(unittest.TestCase):
         self.assertEqual(result["topics_v2"], ["animal-welfare", "arts-culture"])
         self.assertEqual(result["skills_v2"], ["administration", "driving"])
         self.assertEqual(result["similarity_embedding"], [-1, 0, 1])
+
+        # Check locator
+        self.assertEqual(result["link_locators"], {"space": "test-task", "id": 123})
 
     def test_task_without_geolocation(self) -> None:
         """Test task conversion without geolocation data"""
