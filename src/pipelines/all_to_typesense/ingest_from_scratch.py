@@ -10,8 +10,7 @@ from src.common.monitoring.flow import monitored_flow
 from src.common.monitoring.metrics import report_number_of_processed_entities
 from src.common.typesense import extract_collection_name_from_schema
 from src.common.typesense_client import TypesenseClient, TypesenseClientConfig
-from src.common.variables import variable_value
-from src.pipelines.bigquery import volunteering_voltastics_classified_enriched_partitioned
+from src.pipelines.bigquery import volunteering_voltastics_classified_enriched_partitioned, bigquery_okuna_dataset
 from src.pipelines.profiles_to_typesense.ingest_from_scratch import profiles_to_typesense_ingest_from_scratch
 from src.pipelines.spaces_to_typesense.ingest_from_scratch import spaces_to_typesense_ingest_from_scratch
 from src.pipelines.tasks_to_typesense.ingest_from_scratch import (
@@ -30,7 +29,7 @@ def all_to_typesense_ingest_from_scratch_flow() -> State:
     Orchestrates the ETL pipeline to ingest all search data into Typesense from scratch.
     """
     typesense_client = TypesenseClient(TypesenseClientConfig.from_env())
-    source_dataset = cast(str, variable_value("bigquery_okuna_dataset"))
+    source_dataset = str(bigquery_okuna_dataset)
     alias_name = extract_collection_name_from_schema(schema_path=schema_path)
 
     try:

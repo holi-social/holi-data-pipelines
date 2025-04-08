@@ -11,6 +11,7 @@ from src.common.monitoring.flow import monitored_flow
 from src.common.monitoring.metrics import report_number_of_processed_entities
 from src.common.typesense_client import TypesenseClient, TypesenseClientConfig
 from src.common.variables import variable_value
+from src.pipelines.bigquery import bigquery_okuna_dataset
 
 logger = PipelineLogger(__name__)
 
@@ -67,7 +68,7 @@ def spaces_to_typesense_docs(spaces: list[SpaceRow]) -> list[SpaceDoc]:
 def spaces_to_typesense_ingest_from_scratch_flow() -> State:
     typesense_client = TypesenseClient(TypesenseClientConfig.from_env())
     typesense_collection = cast(str, variable_value("typesense_collection"))
-    source_dataset = cast(str, variable_value("bigquery_okuna_dataset"))
+    source_dataset = str(bigquery_okuna_dataset)
     task_result = spaces_to_typesense_ingest_from_scratch(typesense_client, source_dataset, typesense_collection)
     if isinstance(task_result, State):
         return task_result

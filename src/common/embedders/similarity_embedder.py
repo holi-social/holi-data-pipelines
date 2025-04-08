@@ -1,11 +1,12 @@
 import re
 from abc import ABC, abstractmethod
-from typing import Any, List
+from typing import List
 
 from bs4 import BeautifulSoup
 from ratelimit import limits, sleep_and_retry
 from vertexai.language_models import TextEmbeddingInput, TextEmbeddingModel
 
+from src.common.classifiers.classification_item import ClassificationItem
 from src.common.logging.PipelineLogger import PipelineLogger
 
 TEXT_EMBEDDING_MODEL_NAME = "text-multilingual-embedding-002"
@@ -38,12 +39,12 @@ class SimilarityEmbedder(ABC):
         return text
 
     @abstractmethod
-    def _combine_text_fields(self, item: Any) -> str:
+    def _combine_text_fields(self, item: ClassificationItem) -> str:
         pass
 
     @sleep_and_retry  # type: ignore
     @limits(calls=MODEL_RATE_LIMIT_PER_MINUTE, period=60)  # type: ignore
-    def embed(self, item: Any) -> SimilarityEmbedding:
+    def embed(self, item: ClassificationItem) -> SimilarityEmbedding:
         text_input = TextEmbeddingInput(self._combine_text_fields(item), TEXT_EMBEDDING_TASK_TYPE)
         try:
             embeddings = self.model.get_embeddings([text_input], output_dimensionality=EMBEDDING_DIMENSIONALITY)
