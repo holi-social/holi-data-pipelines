@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from asyncio import Queue
 from typing import Any, Dict, cast, Callable, Coroutine, Optional
 
@@ -64,6 +65,7 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
             else:
                 for document in page.get("entries"):
                     document_count += 1
+                    document["additionalData"] = json.dumps(document["additionalData"])
                     queue.put_nowait(document)
 
         await RestCrawler(
