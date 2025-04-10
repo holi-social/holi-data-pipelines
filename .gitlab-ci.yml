@@ -146,16 +146,16 @@ pubsub_typesense_updater_staging_deploy:
   variables:
     ENVIRONMENT_ID: 'staging'
   rules:
-    - !reference [ .rule_templates, only_pubsub_typesense_updater ]
     - !reference [ .rule_templates, only_main ]
+    - !reference [ .rule_templates, only_pubsub_typesense_updater ]
 
 pubsub_typesense_updater_production_deploy:
   extends: .pubsub_typesense_updater_deploy
   variables:
     ENVIRONMENT_ID: 'production'
   rules:
-    - !reference [ .rule_templates, only_pubsub_typesense_updater ]
     - !reference [ .rule_templates, only_production ]
+    - !reference [ .rule_templates, only_pubsub_typesense_updater ]
 
 .terraform_deploy:
   image:
