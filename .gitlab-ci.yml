@@ -111,9 +111,10 @@ pubsub_typesense_updater_install_test:
 .pubsub_typesense_updater_deploy:
   stage: deploy
   image:
-    name: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/hashicorp/terraform:1.11.2"
-    # default entrypoint is terraform command, but we want to run shell scripts
-    entrypoint: [ "/bin/sh", "-c" ]
+    name: "europe-north1-docker.pkg.dev/holi-shared/docker/holi-docker/terraform-docker"
+  services:
+    - name: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/docker:28-dind"
+      alias: "docker"
   cache: !reference [ .pip_cache_ro_pubsub_typesense_updater ]
   resource_group: $ENVIRONMENT_ID
   artifacts:
