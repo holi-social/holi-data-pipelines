@@ -16,7 +16,7 @@ logger = PipelineLogger(__name__)
 def _compile_context_info(context: Mapping[str, StrictVariableValue], run: FlowRun, state: State) -> str:
     context_info = []
     if state.message:
-        context_info.append(f"**{state.message}**\n")
+        context_info.append(f"*{state.message}*\n")
     if context:
         context_info.append(f"Context information: `{json.dumps(context)}`\n")
     if runtime.task_run.task_name:
@@ -83,7 +83,9 @@ def alert(
                 subject=subject,
                 body=_compile_context_info(context, run, state),
             )
-            alerter.notify(f"{subject}\n{_compile_context_info(context, run, state)}")  # type: ignore[unused-coroutine]
+            alerter.notify(  # type: ignore[unused-coroutine]
+                subject=subject, body=_compile_context_info(context, run, state)
+            )
             return
         case _:
             assert_never(state.type)

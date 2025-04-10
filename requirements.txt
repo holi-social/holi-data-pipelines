@@ -2,12 +2,12 @@ aiohttp-retry==2.9.1
 aiohttp==3.11.16
 beautifulsoup4==4.13.3
 codetiming==1.4.0
-google-cloud-aiplatform==1.87.0
+google-cloud-aiplatform==1.88.0
 langdetect==1.0.9
 prefect[gcp]==3.2.11
 prefect-gcp[all_extras]==0.6.2
 pyarrow>=3.0.0
-pydantic==2.11.2
+pydantic==2.11.3
 python-dateutil==2.9.0.post0
 ratelimit==2.2.1
 requests==2.32.3
