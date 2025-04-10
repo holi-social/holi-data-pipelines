@@ -28,12 +28,12 @@ repos:
       - id: mypy_search_integration
         name: mypy search_integration
         language: system
-        entry: cd cloud_functions/search_integration && mypy --python-executable=./.venv/bin/python --explicit-package-bases --namespace-packages .
+        entry: cd search_integration && mypy --python-executable=./.venv/bin/python --explicit-package-bases --namespace-packages .
         pass_filenames: false
         always_run: true
       - id: mypy_search_integration_shared
         name: mypy search_integration shared
         language: system
-        entry: mypy --python-executable=cloud_functions/search_integration/.venv/bin/python shared
+        entry: mypy --python-executable=search_integration/.venv/bin/python shared
         pass_filenames: false
         always_run: true

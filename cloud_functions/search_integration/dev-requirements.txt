@@ -1,1 +1,0 @@
--r ../../shared-dev-requirements.txt

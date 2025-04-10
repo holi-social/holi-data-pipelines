@@ -8,7 +8,7 @@ resource "random_id" "main" {
 resource "google_storage_bucket_object" "function_source" {
   name   = "${random_id.main.hex}/search_integration.zip"
   bucket = data.terraform_remote_state.holi_infra_state.outputs.gcf_sources_upload_bucket_name
-  source = "../../cloud_functions/search_integration/.build/search_integration.zip"
+  source = "search_integration/.build/search_integration.zip"
 }
 
 resource "google_cloudfunctions2_function" "holi-search-integration" {
