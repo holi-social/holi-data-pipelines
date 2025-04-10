@@ -20,7 +20,7 @@ UserDoc = dict[str, Any | None]
 
 
 @task(cache_policy=NONE)  # type: ignore[arg-type]
-def load_users(source_dataset: str) -> list[UserRow]:
+def load_users() -> list[UserRow]:
     return extract_data_from_bigquery(f"""
         SELECT
           user.username as user_id,
@@ -30,9 +30,9 @@ def load_users(source_dataset: str) -> list[UserRow]:
           profile.avatar,
           profile.avatar_blurhash,
         FROM
-          `{source_dataset}.openbook_auth_user` user
+          `{bigquery_okuna_dataset()}.openbook_auth_user` user
         LEFT OUTER JOIN
-          `{source_dataset}.openbook_auth_userprofile` profile
+          `{bigquery_okuna_dataset()}.openbook_auth_userprofile` profile
         ON
           user.id=profile.user_id
         WHERE
@@ -71,8 +71,7 @@ def users_to_typesense_docs(users: list[UserRow]) -> list[UserDoc]:
 def profiles_to_typesense_ingest_from_scratch_flow() -> State:
     typesense_client = TypesenseClient(TypesenseClientConfig.from_env())
     typesense_collection = cast(str, variable_value("typesense_collection"))
-    source_dataset = str(bigquery_okuna_dataset)
-    task_result = profiles_to_typesense_ingest_from_scratch(typesense_client, source_dataset, typesense_collection)
+    task_result = profiles_to_typesense_ingest_from_scratch(typesense_client, typesense_collection)
     if isinstance(task_result, State):
         return task_result
     elif isinstance(task_result, int):
@@ -83,12 +82,10 @@ def profiles_to_typesense_ingest_from_scratch_flow() -> State:
 
 
 @task(cache_policy=NONE)  # type: ignore[arg-type]
-def profiles_to_typesense_ingest_from_scratch(
-    typesense_client: TypesenseClient, source_dataset: str, collection: str
-) -> State | int:
+def profiles_to_typesense_ingest_from_scratch(typesense_client: TypesenseClient, collection: str) -> State | int:
     logger.info(f"Starting profiles ingestion from scratch into typesense collection '{collection}'")
 
-    users = load_users(source_dataset)
+    users = load_users()
     logger.info("Found %s users", len(users))
 
     user_documents = users_to_typesense_docs(users)

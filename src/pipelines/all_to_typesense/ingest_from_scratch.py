@@ -10,7 +10,7 @@ from src.common.monitoring.flow import monitored_flow
 from src.common.monitoring.metrics import report_number_of_processed_entities
 from src.common.typesense import extract_collection_name_from_schema
 from src.common.typesense_client import TypesenseClient, TypesenseClientConfig
-from src.pipelines.bigquery import volunteering_voltastics_classified_enriched_partitioned, bigquery_okuna_dataset
+from src.pipelines.bigquery import volunteering_voltastics_classified_enriched_partitioned
 from src.pipelines.profiles_to_typesense.ingest_from_scratch import profiles_to_typesense_ingest_from_scratch
 from src.pipelines.spaces_to_typesense.ingest_from_scratch import spaces_to_typesense_ingest_from_scratch
 from src.pipelines.tasks_to_typesense.ingest_from_scratch import (
@@ -29,7 +29,6 @@ def all_to_typesense_ingest_from_scratch_flow() -> State:
     Orchestrates the ETL pipeline to ingest all search data into Typesense from scratch.
     """
     typesense_client = TypesenseClient(TypesenseClientConfig.from_env())
-    source_dataset = str(bigquery_okuna_dataset)
     alias_name = extract_collection_name_from_schema(schema_path=schema_path)
 
     try:
@@ -47,17 +46,17 @@ def all_to_typesense_ingest_from_scratch_flow() -> State:
     typesense_client.create_collection(schema_file_path=schema_path, collection_name=next_collection)
 
     logger.info("Ingesting profiles from scratch")
-    profiles_result = profiles_to_typesense_ingest_from_scratch(typesense_client, source_dataset, next_collection)
+    profiles_result = profiles_to_typesense_ingest_from_scratch(typesense_client, next_collection)
     if isinstance(profiles_result, State) and profiles_result.is_failed():
         return Failed(message=profiles_result.message)
 
     logger.info("Ingesting spaces from scratch")
-    spaces_result = spaces_to_typesense_ingest_from_scratch(typesense_client, source_dataset, next_collection)
+    spaces_result = spaces_to_typesense_ingest_from_scratch(typesense_client, next_collection)
     if isinstance(spaces_result, State) and spaces_result.is_failed():
         return Failed(message=spaces_result.message)
 
     logger.info("Ingesting tasks from scratch")
-    tasks_result = tasks_to_typesense_ingest_from_scratch(typesense_client, source_dataset, next_collection)
+    tasks_result = tasks_to_typesense_ingest_from_scratch(typesense_client, next_collection)
     if isinstance(tasks_result, State) and tasks_result.is_failed():
         return Failed(message=tasks_result.message)
 
@@ -65,7 +64,7 @@ def all_to_typesense_ingest_from_scratch_flow() -> State:
     volunteering_result = volunteering_to_typesense_ingest_updates(
         typesense_client=typesense_client,
         typesense_collection_name=next_collection,
-        table_name=volunteering_voltastics_classified_enriched_partitioned,
+        table_name=volunteering_voltastics_classified_enriched_partitioned(),
         last_complete_ingestion_timestamp=None,
     )
     if isinstance(volunteering_result, State) and volunteering_result.is_failed():

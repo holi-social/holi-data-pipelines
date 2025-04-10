@@ -25,8 +25,8 @@ DEVIATION_TOLERANCE_IN_PERCENT = 1
 def get_profile_count_bq() -> int:
     result = extract_data_from_bigquery(f"""
         SELECT count(*) as user_count
-        FROM `{bigquery_okuna_dataset}.openbook_auth_user` user
-        LEFT OUTER JOIN `{bigquery_okuna_dataset}.openbook_auth_userprofile` profile
+        FROM `{bigquery_okuna_dataset()}.openbook_auth_user` user
+        LEFT OUTER JOIN `{bigquery_okuna_dataset()}.openbook_auth_userprofile` profile
         ON user.id=profile.user_id
         WHERE
           user.is_deleted=false
@@ -40,7 +40,7 @@ def get_profile_count_bq() -> int:
 def get_space_count_bq() -> int:
     result = extract_data_from_bigquery(f"""
         SELECT count(*) as space_count
-        FROM `{bigquery_okuna_dataset}.openbook_communities_community`
+        FROM `{bigquery_okuna_dataset()}.openbook_communities_community`
         WHERE is_deleted=false
     """)  # noqa: S608
     return cast(int, result[0]["space_count"])
@@ -50,7 +50,7 @@ def get_space_count_bq() -> int:
 def get_task_count_bq() -> int:
     result = extract_data_from_bigquery(f"""
         SELECT count(*) AS task_count
-        FROM `{tasks_with_classifications}`
+        FROM `{tasks_with_classifications()}`
     """)  # noqa: S608
     return cast(int, result[0]["task_count"])
 
@@ -59,7 +59,7 @@ def get_task_count_bq() -> int:
 def get_volunteering_count_bq() -> int:
     result = extract_data_from_bigquery(f"""
         SELECT count(*) as volunteering_count
-        FROM `{volunteering_voltastics_classified_enriched_partitioned}`
+        FROM `{volunteering_voltastics_classified_enriched_partitioned()}`
         WHERE TIMESTAMP_TRUNC(partitiontime, DAY) = TIMESTAMP_TRUNC(CURRENT_TIMESTAMP(), DAY)
     """)  # noqa: S608
     return cast(int, result[0]["volunteering_count"])

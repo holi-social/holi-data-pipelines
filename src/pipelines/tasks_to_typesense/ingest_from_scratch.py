@@ -1,8 +1,8 @@
-from typing import Any, cast, List
+from typing import Any, List, cast
 
 from prefect import task
 from prefect.cache_policies import NONE
-from prefect.states import Failed, State, Completed
+from prefect.states import Completed, Failed, State
 
 from src.common.extractors.bq_extractor import extract_data_from_bigquery
 from src.common.loaders.typesense_loader import upsert_typesense_documents
@@ -11,19 +11,17 @@ from src.common.monitoring.flow import monitored_flow
 from src.common.monitoring.metrics import report_number_of_processed_entities
 from src.common.typesense_client import TypesenseClient, TypesenseClientConfig
 from src.common.variables import variable_value
-from src.pipelines.bigquery import bigquery_datapool, bigquery_okuna_dataset
+from src.pipelines.bigquery import tasks_with_classifications
 
 logger = PipelineLogger(__name__)
 
 TaskRow = dict[str, Any | None]
 TaskDoc = dict[str, Any | None]
 
-VIEW_NAME_WITH_CLASSIFICATIONS = f"{bigquery_datapool}.tasks_with_classifications"
-
 
 @task(cache_policy=NONE)  # type: ignore[arg-type]
-def load_tasks(source_dataset: str) -> List[TaskRow]:
-    return extract_data_from_bigquery(f"SELECT * FROM {VIEW_NAME_WITH_CLASSIFICATIONS}")  # noqa: S608
+def load_tasks() -> List[TaskRow]:
+    return extract_data_from_bigquery(f"SELECT * FROM {tasks_with_classifications()}")  # noqa: S608
 
 
 def to_location_lat_lng(geojson: Any) -> List[float]:
@@ -60,8 +58,7 @@ def tasks_to_typesense_docs(tasks: list[TaskRow]) -> list[TaskDoc]:
 def tasks_to_typesense_ingest_from_scratch_flow() -> State:
     typesense_client = TypesenseClient(TypesenseClientConfig.from_env())
     typesense_collection = cast(str, variable_value("typesense_collection"))
-    source_dataset = str(bigquery_okuna_dataset)
-    task_result = tasks_to_typesense_ingest_from_scratch(typesense_client, source_dataset, typesense_collection)
+    task_result = tasks_to_typesense_ingest_from_scratch(typesense_client, typesense_collection)
     if isinstance(task_result, State):
         return task_result
     elif isinstance(task_result, int):
@@ -72,12 +69,10 @@ def tasks_to_typesense_ingest_from_scratch_flow() -> State:
 
 
 @task(cache_policy=NONE)  # type: ignore[arg-type]
-def tasks_to_typesense_ingest_from_scratch(
-    typesense_client: TypesenseClient, source_dataset: str, collection: str
-) -> State | int:
+def tasks_to_typesense_ingest_from_scratch(typesense_client: TypesenseClient, collection: str) -> State | int:
     logger.info(f"Starting tasks ingestion from scratch into typesense collection '{collection}'")
 
-    tasks = load_tasks(source_dataset)
+    tasks = load_tasks()
     logger.info("Found %s tasks", len(tasks))
 
     task_documents = tasks_to_typesense_docs(tasks)

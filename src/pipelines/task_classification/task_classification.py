@@ -3,17 +3,15 @@ from typing import Optional
 
 from prefect.states import Completed, State
 
-from src.common.classifiers.classifier import Classifier, DEFAULT_BATCH_SIZE
+from src.common.classifiers.classifier import DEFAULT_BATCH_SIZE, Classifier
 from src.common.loaders.bq_loader import wait_for_bigquery_data_to_be_accessible
 from src.common.logging.PipelineLogger import PipelineLogger
 from src.common.monitoring.flow import monitored_flow
-from src.pipelines.bigquery import table_classifications, bigquery_datapool
+from src.pipelines.bigquery import table_classifications, tasks_without_classifications
 from src.pipelines.task_classification.task_similarity_embedder import TaskSimilarityEmbedder
 from src.pipelines.task_classification.task_topics_skills_classifier_v2 import TaskTopicsSkillsClassifierV2
 
 logger = PipelineLogger("task_classification")
-
-VIEW_NAME_WITHOUT_CLASSIFICATION = f"{bigquery_datapool}.tasks_without_classifications"
 
 
 class TaskClassifier(Classifier):
@@ -22,7 +20,7 @@ class TaskClassifier(Classifier):
             topics_skills_classifier_v2=TaskTopicsSkillsClassifierV2(),
             similarity_embedder=TaskSimilarityEmbedder(),
             item_type="task",
-            view_name_without_classifications=VIEW_NAME_WITHOUT_CLASSIFICATION,
+            view_name_without_classifications=tasks_without_classifications(),
             logger=logger,
             batch_size=batch_size or DEFAULT_BATCH_SIZE,
             stop_after_batch_nr=stop_after_batch_nr,
@@ -37,7 +35,7 @@ def task_classification_flow(
     classifier = TaskClassifier(batch_size=batch_size, stop_after_batch_nr=stop_after_batch_nr)
     classifier.compute_classifications()
     if wait_for_bq:
-        wait_for_bigquery_data_to_be_accessible(table_classifications)
+        wait_for_bigquery_data_to_be_accessible(table_classifications())
     return Completed()
 
 

@@ -22,7 +22,7 @@ class VolunteeringClassifier(Classifier):
             topics_skills_classifier_v2=VolunteeringTopicsSkillsClassifierV2(),
             similarity_embedder=VolunteeringSimilarityEmbedder(),
             item_type="volunteering",
-            view_name_without_classifications=volunteering_voltastics_without_classifications,
+            view_name_without_classifications=volunteering_voltastics_without_classifications(),
             logger=logger,
             stop_after_batch_nr=stop_after_batch_nr,
         )
@@ -34,7 +34,7 @@ def volunteering_classification(wait_for_bq: bool = True, stop_after_batch_nr: O
     classifier = VolunteeringClassifier(stop_after_batch_nr)
     classifier.compute_classifications()
     if wait_for_bq:
-        wait_for_bigquery_data_to_be_accessible(table_classifications)
+        wait_for_bigquery_data_to_be_accessible(table_classifications())
     return Completed()
 
 

@@ -107,7 +107,7 @@ class Classifier(ABC):
             if classification is None:
                 self.logger.debug(f"Batch {batch_nr} - item id={item.id} - failed to classify item, skipping")
                 return
-            errors = self.bqclient_writing.insert_rows_json(table_classifications, [classification.to_dict()])
+            errors = self.bqclient_writing.insert_rows_json(table_classifications(), [classification.to_dict()])
             self.logger.debug(f"Batch {batch_nr} - item id={item.id} - written to BigQuery")
             if len(errors) > 0:
                 raise Exception(f"Failed to insert classification {classification}: {errors}")

@@ -35,7 +35,6 @@ def volunteering_to_typesense_ingest_updates_flow() -> State:
     task_result = volunteering_to_typesense_ingest_updates(
         typesense_client=typesense_client,
         typesense_collection_name=active_collection,
-        table_name=volunteering_voltastics_classified_enriched_partitioned,
         last_complete_ingestion_timestamp=load_last_complete_ingestion_timestamp(),
     )
     if isinstance(task_result, State):
@@ -52,9 +51,9 @@ def volunteering_to_typesense_ingest_updates_flow() -> State:
 def volunteering_to_typesense_ingest_updates(
     typesense_client: TypesenseClient,
     typesense_collection_name: str,
-    table_name: str,
     last_complete_ingestion_timestamp: datetime | None,
 ) -> State | int:
+    table_name = volunteering_voltastics_classified_enriched_partitioned()
     latest_partition_timestamp = extract_latest_partition_timestamp_from_bigquery(table_name)
 
     # volunteering data is partitioned by day so we compare days only

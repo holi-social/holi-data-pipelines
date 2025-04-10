@@ -6,7 +6,6 @@ from src.common.monitoring.flow import monitored_flow
 from src.common.typesense import extract_collection_name_from_schema
 from src.common.typesense_client import TypesenseClient, TypesenseClientConfig
 from src.pipelines.typesense import schema_path
-from src.pipelines.bigquery import volunteering_voltastics_classified_enriched_partitioned
 from src.pipelines.volunteering_to_typesense.ingest_updates import volunteering_to_typesense_ingest_updates
 
 
@@ -18,7 +17,6 @@ def volunteering_to_typesense_ingest_from_scratch_flow() -> State | int:
     return volunteering_to_typesense_ingest_from_scratch(
         typesense_client=typesense_client,
         typesense_collection_name=active_collection,
-        table_name=volunteering_voltastics_classified_enriched_partitioned,
     )
 
 
@@ -26,12 +24,10 @@ def volunteering_to_typesense_ingest_from_scratch_flow() -> State | int:
 def volunteering_to_typesense_ingest_from_scratch(
     typesense_client: TypesenseClient,
     typesense_collection_name: str,
-    table_name: str,
 ) -> State | int:
     return volunteering_to_typesense_ingest_updates(
         typesense_client=typesense_client,
         typesense_collection_name=typesense_collection_name,
-        table_name=table_name,
         last_complete_ingestion_timestamp=None,
     )
 
