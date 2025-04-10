@@ -98,12 +98,11 @@ search_integration_install_test:
     - ruff format --check cloud_functions/search_integration shared
     # change the mypy call to run from within the cloud function directory
     - cd cloud_functions/search_integration
-    # use the explicit-package-bases flag to prevent the module collision
-    - mypy --python-executable=./.venv/bin/python --explicit-package-bases --namespace-packages .
+    - PYTHONPATH=$CI_PROJECT_DIR/cloud_functions/search_integration mypy --python-executable=./.venv/bin/python --explicit-package-bases --namespace-packages .
     - cd $CI_PROJECT_DIR
     - mypy --python-executable=cloud_functions/search_integration/.venv/bin/python shared
     - cd cloud_functions/search_integration
-    - pytest
+    - PYTHONPATH=$CI_PROJECT_DIR/cloud_functions/search_integration pytest
     - cd $CI_PROJECT_DIR
   rules:
     - !reference [ .rule_templates, only_search_integration ]
