@@ -41,7 +41,7 @@ class TestTaskToDoc(unittest.TestCase):
 
         # Check link locators
         assert result["link_locators"] is not None
-        self.assertEqual(result["link_locators"]["space"], 456)
+        self.assertEqual(result["link_locators"]["space"], "my-community")
         self.assertEqual(result["link_locators"]["task"], 123)
 
         # Check location_lat_lng (should be reversed from geojson)
@@ -54,7 +54,7 @@ class TestTaskToDoc(unittest.TestCase):
         self.assertEqual(result["similarity_embedding"], [-1, 0, 1])
 
         # Check locator
-        self.assertEqual(result["link_locators"], {"space": "my-community", "id": 123})
+        self.assertEqual(result["link_locators"], {"space": "my-community", "task": 123})
 
     def test_task_without_geolocation(self) -> None:
         """Test task conversion without geolocation data"""
