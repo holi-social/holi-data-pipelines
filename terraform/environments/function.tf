@@ -8,7 +8,7 @@ resource "random_id" "main" {
 resource "google_storage_bucket_object" "function_source" {
   name   = "${random_id.main.hex}/pubsub_typesense_updater.zip"
   bucket = data.terraform_remote_state.holi_infra_state.outputs.gcf_sources_upload_bucket_name
-  source = "pubsub_typesense_updater/.build/pubsub_typesense_updater.zip"
+  source = "../../pubsub_typesense_updater/.build/pubsub_typesense_updater.zip"
 }
 
 resource "google_cloudfunctions2_function" "pubsub_typesense_updater" {
