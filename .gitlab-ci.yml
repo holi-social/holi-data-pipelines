@@ -147,16 +147,32 @@ pubsub_typesense_updater_staging_deploy:
   variables:
     ENVIRONMENT_ID: 'staging'
   rules:
-    - !reference [ .rule_templates, only_main ]
-    - !reference [ .rule_templates, only_pubsub_typesense_updater ]
+    - if: $CI_COMMIT_BRANCH == 'main' && $CI_PIPELINE_SOURCE == "web"
+      when: on_success
+    - if: $CI_COMMIT_BRANCH == 'main' && $CI_PIPELINE_SOURCE == "push"
+      when: on_success
+      changes:
+        - shared-requirements.txt
+        - shared-dev-requirements.txt
+        - shared/**/*
+        - pubsub_typesense_updater/**/*
+        - .gitlab-ci.yml
 
 pubsub_typesense_updater_production_deploy:
   extends: .pubsub_typesense_updater_deploy
   variables:
     ENVIRONMENT_ID: 'production'
   rules:
-    - !reference [ .rule_templates, only_production ]
-    - !reference [ .rule_templates, only_pubsub_typesense_updater ]
+    - if: $CI_COMMIT_BRANCH == 'production' && $CI_PIPELINE_SOURCE == "web"
+      when: on_success
+    - if: $CI_COMMIT_BRANCH == 'production && $CI_PIPELINE_SOURCE == "push"
+      when: on_success
+      changes:
+        - shared-requirements.txt
+        - shared-dev-requirements.txt
+        - shared/**/*
+        - pubsub_typesense_updater/**/*
+        - .gitlab-ci.yml
 
 .terraform_deploy:
   image:
