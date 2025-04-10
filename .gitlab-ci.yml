@@ -29,27 +29,27 @@ variables:
     - .cache/pip
     - .venv/
 
-.pip_cache_rw_search_integration:
+.pip_cache_rw_pubsub_typesense_index_updater:
   key:
     files:
       # GitLab CI only allows listing 2 files to calculate a cache key, this is a workaround
       - "shared*requirements.txt"
-      - "search_integration/*requirements.txt"
+      - "pubsub_typesense_index_updater/*requirements.txt"
   policy: pull-push
   paths:
     - .cache/pip
-    - search_integration/.venv
+    - pubsub_typesense_index_updater/.venv
 
-.pip_cache_ro_search_integration:
+.pip_cache_ro_pubsub_typesense_index_updater:
   key:
     files:
       # GitLab CI only allows listing 2 files to calculate a cache key, this is a workaround
       - "shared*requirements.txt"
-      - "search_integration/*requirements.txt"
+      - "pubsub_typesense_index_updater/*requirements.txt"
   policy: pull
   paths:
     - .cache/pip
-    - search_integration/.venv
+    - pubsub_typesense_index_updater/.venv
 
 .rule_templates:
   only_main:
@@ -62,18 +62,18 @@ variables:
       when: on_success
     - if: $CI_COMMIT_BRANCH == 'production' && $CI_PIPELINE_SOURCE == "web"
       when: on_success
-  not_for_search_integration:
+  not_for_pubsub_typesense_index_updater:
     - if: $CI_PIPELINE_SOURCE == 'push'
       changes:
-        - search_integration/**/*
+        - pubsub_typesense_index_updater/**/*
       when: never
-  only_search_integration:
+  only_pubsub_typesense_index_updater:
     - if: $CI_PIPELINE_SOURCE == 'push'
       changes:
         - shared-requirements.txt
         - shared-dev-requirements.txt
         - shared/**/*
-        - search_integration/**/*
+        - pubsub_typesense_index_updater/**/*
         - .gitlab-ci.yml
 
 stages:
@@ -82,39 +82,39 @@ stages:
   - test
   - deploy
 
-search_integration_install_test:
+pubsub_typesense_index_updater_install_test:
   stage: prepare
   image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/python:3.13-slim"
-  cache: !reference [ .pip_cache_rw_search_integration ]
+  cache: !reference [ .pip_cache_rw_pubsub_typesense_index_updater ]
   script:
     # install dependencies for cloud functions
-    - python3 -m venv search_integration/.venv
-    - source search_integration/.venv/bin/activate
+    - python3 -m venv pubsub_typesense_index_updater/.venv
+    - source pubsub_typesense_index_updater/.venv/bin/activate
     - pip install --upgrade pip
-    - pip install -r search_integration/requirements.txt --exists-action s
-    - pip install -r search_integration/dev-requirements.txt --exists-action s
+    - pip install -r pubsub_typesense_index_updater/requirements.txt --exists-action s
+    - pip install -r pubsub_typesense_index_updater/dev-requirements.txt --exists-action s
     # validate and test
-    - ruff check search_integration shared
-    - ruff format --check search_integration shared
+    - ruff check pubsub_typesense_index_updater shared
+    - ruff format --check pubsub_typesense_index_updater shared
     # change the mypy call to run from within the cloud function directory
-    - cd search_integration
-    - PYTHONPATH=$CI_PROJECT_DIR/search_integration mypy --python-executable=./.venv/bin/python --explicit-package-bases --namespace-packages .
+    - cd pubsub_typesense_index_updater
+    - PYTHONPATH=$CI_PROJECT_DIR/pubsub_typesense_index_updater mypy --python-executable=./.venv/bin/python --explicit-package-bases --namespace-packages .
     - cd $CI_PROJECT_DIR
-    - mypy --python-executable=search_integration/.venv/bin/python shared
-    - cd search_integration
-    - PYTHONPATH=$CI_PROJECT_DIR/search_integration pytest
+    - mypy --python-executable=pubsub_typesense_index_updater/.venv/bin/python shared
+    - cd pubsub_typesense_index_updater
+    - PYTHONPATH=$CI_PROJECT_DIR/pubsub_typesense_index_updater pytest
     - cd $CI_PROJECT_DIR
   rules:
-    - !reference [ .rule_templates, only_search_integration ]
+    - !reference [ .rule_templates, only_pubsub_typesense_index_updater ]
   interruptible: true
 
-.search_integration_deploy:
+.pubsub_typesense_index_updater_deploy:
   stage: deploy
   image:
     name: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/hashicorp/terraform:1.11.2"
     # default entrypoint is terraform command, but we want to run shell scripts
     entrypoint: [ "/bin/sh", "-c" ]
-  cache: !reference [ .pip_cache_ro_search_integration ]
+  cache: !reference [ .pip_cache_ro_pubsub_typesense_index_updater ]
   resource_group: $ENVIRONMENT_ID
   artifacts:
     paths:
@@ -124,10 +124,10 @@ search_integration_install_test:
     #when: on_failure # can't do that for api base url, but can't define multiple artifacts
     expire_in: 1 week
   variables:
-    FUNCTION_NAME: search_integration
+    FUNCTION_NAME: pubsub_typesense_index_updater
   script:
     - apk add zip
-    - cd search_integration
+    - cd pubsub_typesense_index_updater
     # Create a deployment directory with all required files
     - mkdir -p .build
     - cp -r ../shared .build/
@@ -136,25 +136,25 @@ search_integration_install_test:
     - cat ../shared-requirements.txt | grep -v "^-r" | grep -v "^#" >> .build/requirements.txt
     - cat requirements.txt | grep -v "^-r" | grep -v "^#" >> .build/requirements.txt
     - cd .build
-    - zip -r search_integration.zip .
+    - zip -r pubsub_typesense_index_updater.zip .
     - cd $CI_PROJECT_DIR
     - terraform/environments/scripts/create-or-update-env.sh "$ENVIRONMENT_ID" "$CI_COMMIT_SHA"
   interruptible: false
 
-search_integration_staging_deploy:
-  extends: .search_integration_deploy
+pubsub_typesense_index_updater_staging_deploy:
+  extends: .pubsub_typesense_index_updater_deploy
   variables:
     ENVIRONMENT_ID: 'staging'
   rules:
-    - !reference [ .rule_templates, only_search_integration ]
+    - !reference [ .rule_templates, only_pubsub_typesense_index_updater ]
     - !reference [ .rule_templates, only_main ]
 
-search_integration_production_deploy:
-  extends: .search_integration_deploy
+pubsub_typesense_index_updater_production_deploy:
+  extends: .pubsub_typesense_index_updater_deploy
   variables:
     ENVIRONMENT_ID: 'production'
   rules:
-    - !reference [ .rule_templates, only_search_integration ]
+    - !reference [ .rule_templates, only_pubsub_typesense_index_updater ]
     - !reference [ .rule_templates, only_production ]
 
 .terraform_deploy:
@@ -252,8 +252,8 @@ pipelines_validate:
     - mypy --python-executable=.venv/bin/python src shared
     - pytest src
   rules:
-    - !reference [ .rule_templates, not_for_search_integration ]
-    
+    - !reference [ .rule_templates, not_for_pubsub_typesense_index_updater ]
+
 
 build_prefect_flow_docker_image_staging:
   extends: .build_prefect_flow_docker_image
@@ -285,7 +285,7 @@ pipelines_tf_deploy_staging:
     ENVIRONMENT_ID: staging
   rules:
     - !reference [ .rule_templates, only_main ]
-    - !reference [ .rule_templates, not_for_search_integration ]
+    - !reference [ .rule_templates, not_for_pubsub_typesense_index_updater ]
 
 prefect_deploy_staging:
   extends: .prefect_deploy
@@ -297,7 +297,7 @@ prefect_deploy_staging:
     ENVIRONMENT_ID: staging
   rules:
     - !reference [ .rule_templates, only_main ]
-    - !reference [ .rule_templates, not_for_search_integration ]
+    - !reference [ .rule_templates, not_for_pubsub_typesense_index_updater ]
 
 prefect_smoketest_staging:
   extends: .smoketest
@@ -306,7 +306,7 @@ prefect_smoketest_staging:
     - job: prefect_deploy_staging
   rules:
     - !reference [ .rule_templates, only_main ]
-    - !reference [ .rule_templates, not_for_search_integration ]
+    - !reference [ .rule_templates, not_for_pubsub_typesense_index_updater ]
 
 ## production environment
 build_prefect_flow_docker_image_production:
@@ -340,7 +340,7 @@ pipelines_tf_deploy_production:
     ENVIRONMENT_ID: production
   rules:
     - !reference [ .rule_templates, only_production ]
-    - !reference [ .rule_templates, not_for_search_integration ]
+    - !reference [ .rule_templates, not_for_pubsub_typesense_index_updater ]
 
 prefect_deploy_production:
   extends: .prefect_deploy
@@ -353,7 +353,7 @@ prefect_deploy_production:
     ENVIRONMENT_ID: production
   rules:
     - !reference [ .rule_templates, only_production ]
-    - !reference [ .rule_templates, not_for_search_integration ]
+    - !reference [ .rule_templates, not_for_pubsub_typesense_index_updater ]
 
 pipelines_smoketest_production:
   extends: .smoketest
@@ -363,4 +363,4 @@ pipelines_smoketest_production:
   stage: deploy
   rules:
     - !reference [ .rule_templates, only_production ]
-    - !reference [ .rule_templates, not_for_search_integration ]
+    - !reference [ .rule_templates, not_for_pubsub_typesense_index_updater ]

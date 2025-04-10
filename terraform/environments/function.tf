@@ -2,16 +2,16 @@
 
 resource "random_id" "main" {
   byte_length = 2
-  prefix      = "search-integration-${local.environment_name}-"
+  prefix      = "pubsub-typesense-index-updater-${local.environment_name}-"
 }
 
 resource "google_storage_bucket_object" "function_source" {
-  name   = "${random_id.main.hex}/search_integration.zip"
+  name   = "${random_id.main.hex}/pubsub_typesense_index_updater.zip"
   bucket = data.terraform_remote_state.holi_infra_state.outputs.gcf_sources_upload_bucket_name
-  source = "search_integration/.build/search_integration.zip"
+  source = "pubsub_typesense_index_updater/.build/pubsub_typesense_index_updater.zip"
 }
 
-resource "google_cloudfunctions2_function" "holi-search-integration" {
+resource "google_cloudfunctions2_function" "pubsub_typesense_index_updater" {
   project      = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
   name         = random_id.main.hex
   location     = local.default_region
@@ -62,7 +62,7 @@ resource "google_cloudfunctions2_function" "holi-search-integration" {
 
   labels = {
     "environment_type" = local.environment_type
-    "holi_service"     = "search-integration"
+    "holi_service"     = "pubsub-typesense-index-updater"
   }
 
   # taken from https://github.com/hashicorp/terraform-provider-google/issues/1938#issuecomment-1229042663

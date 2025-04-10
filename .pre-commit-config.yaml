@@ -25,15 +25,15 @@ repos:
         entry: mypy --python-executable=.venv/bin/python src shared
         pass_filenames: false
         always_run: true
-      - id: mypy_search_integration
-        name: mypy search_integration
+      - id: mypy_pubsub-typesense-index-updater
+        name: mypy pubsub_typesense_index_updater
         language: system
-        entry: cd search_integration && mypy --python-executable=./.venv/bin/python --explicit-package-bases --namespace-packages .
+        entry: cd pubsub_typesense_index_updater && mypy --python-executable=./.venv/bin/python --explicit-package-bases --namespace-packages .
         pass_filenames: false
         always_run: true
-      - id: mypy_search_integration_shared
-        name: mypy search_integration shared
+      - id: mypy_pubsub-typesense-index-updater_shared
+        name: mypy pubsub_typesense_index_updater shared
         language: system
-        entry: mypy --python-executable=search_integration/.venv/bin/python shared
+        entry: mypy --python-executable=pubsub_typesense_index_updater/.venv/bin/python shared
         pass_filenames: false
         always_run: true
