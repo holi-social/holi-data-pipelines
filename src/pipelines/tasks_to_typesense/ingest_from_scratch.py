@@ -77,7 +77,6 @@ def tasks_to_typesense_ingest_from_scratch(typesense_client: TypesenseClient, co
 
     task_documents = tasks_to_typesense_docs(tasks)
     logger.info("Transformed %s documents", len(task_documents))
-    logger.info(task_documents)
 
     upsert_succeeded = upsert_typesense_documents(typesense_client, logger, collection, task_documents)
     if not upsert_succeeded:
