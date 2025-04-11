@@ -15,6 +15,7 @@ from events import (
     SpaceUpdatedEvent,
     SpaceDeletedEvent,
 )
+from shared.hello_shared import hello_shared
 from typesense_client import TypesenseClient
 
 logger = getLogger(__name__)
@@ -90,7 +91,7 @@ def process_event(client: TypesenseClient, event: CloudEvent) -> None:
 def process_message(event: CloudEvent) -> None:
     client = TypesenseClient()
     process_event(client, event)
-    logger.debug(f"Event processed {event}")
+    hello_shared()
 
 
 # TODO ensure that UserUpdated or similar is emitted on updates of fields we're interested in
