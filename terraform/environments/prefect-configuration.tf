@@ -124,7 +124,10 @@ resource "prefect_variable" "prefect_environment" {
 
 resource "prefect_variable" "bigquery_okuna_dataset" {
   name  = "bigquery_okuna_dataset"
-  value = local.environment == "production" ? "okuna_production_public" : "okuna_staging_public"
+  value = {
+    project = local.default_project
+    dataset = local.environment == "production" ? "okuna_production_public" : "okuna_staging_public"
+  }
 }
 
 # create one: create the GCP secret in the ui console

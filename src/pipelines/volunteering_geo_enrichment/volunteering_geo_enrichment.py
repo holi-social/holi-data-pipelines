@@ -8,11 +8,10 @@ from google.cloud.bigquery import Client
 from prefect.states import State, Completed
 from prefect_gcp import GcpCredentials
 
-from src.common.loaders.bq_loader import wait_for_bigquery_data_to_be_accessible
 from src.common.logging.PipelineLogger import PipelineLogger
 from src.common.monitoring.flow import monitored_flow
 from src.common.variables import secret_value
-from src.pipelines.bigquery import bigquery_datalake
+from src.pipelines.bigquery import table_location_cache, volunteering_voltastics_raw_deduped
 
 # Initialize logging from logging_setup
 logger = PipelineLogger("volunteering_geo_enrichment")
@@ -20,11 +19,6 @@ logger = PipelineLogger("volunteering_geo_enrichment")
 GCLOUD_PROJECT_ID = "holi-shared"
 GCLOUD_LOCATION = "europe-north1"
 GERMANY = "Germany"
-
-CACHE_LOCATION_TABLE = f"{bigquery_datalake.project}.{bigquery_datalake.dataset}.location_cache"
-RAW_CLASSIFICATION_TABLE = (
-    f"{bigquery_datalake.project}.{bigquery_datalake.dataset}.volunteering_voltastics_raw_deduped"
-)
 
 # these city names exist multiple times in Germany, are therefore non-unique and are therefore excluded from enrichment
 DUPLICATE_CITY_NAMES = {
@@ -117,9 +111,9 @@ class VolunteeringGeoEnricher:
             logger.warning(f"error fetching coordinates for {location}: {e}")
             return None
 
-    def update_cache_table_batch(self, entries: List[LocationCacheEntry], cache_location_table: str) -> None:
+    def update_cache_table_batch(self, entries: List[LocationCacheEntry]) -> None:
         try:
-            table = self.bq_client.get_table(cache_location_table)
+            table = self.bq_client.get_table(table_location_cache())
             rows_to_insert = [asdict(entry) for entry in entries]
             errors = self.bq_client.insert_rows_json(table, rows_to_insert)
 
@@ -139,11 +133,11 @@ class VolunteeringGeoEnricher:
         # query for rows with missing latitude or longitude in raw classification table
         query = f"""
         SELECT location
-        FROM `{RAW_CLASSIFICATION_TABLE}`
+        FROM `{volunteering_voltastics_raw_deduped()}`
         WHERE (latitude IS NULL OR longitude IS NULL)
         AND location NOT IN (
             SELECT location 
-            FROM `{CACHE_LOCATION_TABLE}`
+            FROM `{table_location_cache()}`
         )
         AND TIMESTAMP_TRUNC(partitiontime, DAY) = TIMESTAMP_TRUNC(CURRENT_TIMESTAMP(), DAY)
         """  # noqa: S608
@@ -174,22 +168,18 @@ class VolunteeringGeoEnricher:
 
         # Batch update the cache after processing all rows
         if entries_to_cache:
-            self.update_cache_table_batch(
-                cast(List[LocationCacheEntry], entries_to_cache.values()), CACHE_LOCATION_TABLE
-            )
+            self.update_cache_table_batch(cast(List[LocationCacheEntry], entries_to_cache.values()))
         else:
-            logger.debug(f"no new location data found to add to location table '{CACHE_LOCATION_TABLE}'")
+            logger.debug(f"no new location data found to add to location table '{table_location_cache()}'")
 
 
 @monitored_flow
-def volunteering_geo_enrichment(wait_for_bq: bool = True) -> State:
+def volunteering_geo_enrichment() -> State:
     enricher = VolunteeringGeoEnricher(cast(str, secret_value("geoapify-api-key")))
     enricher.enrich_location_data()
-    if wait_for_bq:
-        wait_for_bigquery_data_to_be_accessible(CACHE_LOCATION_TABLE)
     return Completed()
 
 
 if __name__ == "__main__":
     logging.getLogger("volunteering_geo_enrichment").setLevel(logging.DEBUG)
-    volunteering_geo_enrichment(wait_for_bq=False)  # type: ignore[call-overload]
+    volunteering_geo_enrichment()  # type: ignore[call-overload]

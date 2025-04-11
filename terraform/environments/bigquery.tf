@@ -4,6 +4,8 @@ locals {
 
   datalake = "${local.default_project}.${local.dataset_id_datalake}"
   datapool = "${local.default_project}.${local.dataset_id_datapool}"
+
+  okuna_dataset = "${local.default_project}.okuna_${local.environment_name}_public"
 }
 
 resource "google_bigquery_table" "volunteering_voltastics_raw" {
@@ -48,10 +50,6 @@ resource "google_bigquery_table" "classifications" {
   dataset_id = local.dataset_id_datalake
   table_id   = "classifications"
 
-  time_partitioning {
-    type = "DAY"
-  }
-
   schema = <<EOF
   [
     { "name": "type", "type": "STRING", "mode": "REQUIRED"},
@@ -66,6 +64,73 @@ resource "google_bigquery_table" "classifications" {
 
   lifecycle {
     ignore_changes = [encryption_configuration]
+  }
+}
+
+resource "google_bigquery_table" "tasks_without_classifications" {
+  project    = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
+  dataset_id = local.dataset_id_datapool
+  table_id   = "tasks_without_classifications"
+
+  view {
+    use_legacy_sql = false
+    # ATTENTION: if you change the hash calculation function, make sure to also change it in
+    #  * the JOIN clause AND
+    #  * the "tasks_with_classifications" view
+    query          = <<SQL
+      SELECT
+        task.* EXCEPT(skills_v2),
+        JSON_VALUE_ARRAY(task.skills_v2) AS skills_v2,
+        JSON_VALUE_ARRAY(community.topics_v2) AS topics_v2,
+        community.name AS community_slug,
+        CAST(FARM_FINGERPRINT(CONCAT(IFNULL(task.name, ''), '|', IFNULL(task.description, ''), '|', IFNULL(task.location, ''), '|', IFNULL(ARRAY_TO_STRING(JSON_VALUE_ARRAY(community.topics_v2), ' '), ''), '|', IFNULL(ARRAY_TO_STRING(JSON_VALUE_ARRAY(task.skills_v2), ' '), ''))) AS STRING) AS `hash`
+      FROM `${local.okuna_dataset}.openbook_communities_task` AS task
+      JOIN `${local.okuna_dataset}.openbook_communities_community` AS community
+        ON task.community_id = community.id
+      LEFT JOIN `${local.datalake}.classifications` AS classification
+        ON task.id = classification.id
+        AND classification.type = 'task'
+        AND classification.hash = CAST(FARM_FINGERPRINT(CONCAT(IFNULL(task.name, ''), '|', IFNULL(task.description, ''), '|', IFNULL(task.location, ''), '|', IFNULL(ARRAY_TO_STRING(JSON_VALUE_ARRAY(community.topics_v2), ' '), ''), '|', IFNULL(ARRAY_TO_STRING(JSON_VALUE_ARRAY(task.skills_v2), ' '), ''))) AS STRING)
+      WHERE community.is_deleted IS FALSE
+        AND visibility="PUBLIC"
+        AND deleted_at IS NULL
+        AND (
+          classification.topics_skills_embedding_v2 IS NULL
+          OR classification.similarity_embedding IS NULL
+        )
+    SQL
+  }
+}
+
+resource "google_bigquery_table" "tasks_with_classifications" {
+  project    = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
+  dataset_id = local.dataset_id_datapool
+  table_id   = "tasks_with_classifications"
+
+  view {
+    use_legacy_sql = false
+    # ATTENTION: if you change the hash calculation function, make sure to also change it in
+    #  * the JOIN clause AND
+    #  * the "tasks_without_classifications" view
+    query          = <<SQL
+      SELECT
+        task.* EXCEPT(skills_v2),
+        classification.* EXCEPT(id, type, `hash`),
+        community.name AS community_slug,
+        CAST(FARM_FINGERPRINT(CONCAT(IFNULL(task.name, ''), '|', IFNULL(task.description, ''), '|', IFNULL(task.location, ''), '|', IFNULL(ARRAY_TO_STRING(JSON_VALUE_ARRAY(community.topics_v2), ' '), ''), '|', IFNULL(ARRAY_TO_STRING(JSON_VALUE_ARRAY(task.skills_v2), ' '), ''))) AS STRING) AS `hash`
+      FROM `${local.okuna_dataset}.openbook_communities_task` AS task
+      JOIN `${local.okuna_dataset}.openbook_communities_community` AS community
+        ON task.community_id = community.id
+      LEFT JOIN `${local.datalake}.classifications` AS classification
+        ON task.id = classification.id
+        AND classification.type = 'task'
+        AND classification.hash = CAST(FARM_FINGERPRINT(CONCAT(IFNULL(task.name, ''), '|', IFNULL(task.description, ''), '|', IFNULL(task.location, ''), '|', IFNULL(ARRAY_TO_STRING(JSON_VALUE_ARRAY(community.topics_v2), ' '), ''), '|', IFNULL(ARRAY_TO_STRING(JSON_VALUE_ARRAY(task.skills_v2), ' '), ''))) AS STRING)
+      WHERE community.is_deleted IS FALSE
+        AND visibility="PUBLIC"
+        AND deleted_at IS NULL
+        AND classification.topics_skills_embedding_v2 IS NOT NULL
+        AND classification.similarity_embedding IS NOT NULL
+    SQL
   }
 }
 
