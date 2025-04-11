@@ -76,14 +76,7 @@ variables:
         - pubsub_typesense_updater/**/*
         - .gitlab-ci.yml
 
-stages:
-  - prepare
-  - build
-  - test
-  - deploy
-
 pubsub_typesense_updater_install_test:
-  stage: prepare
   image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/python:3.13-slim"
   cache: !reference [ .pip_cache_rw_pubsub_typesense_updater ]
   script:
@@ -109,7 +102,8 @@ pubsub_typesense_updater_install_test:
   interruptible: true
 
 .pubsub_typesense_updater_deploy:
-  stage: deploy
+  needs:
+    - job: pubsub_typesense_updater_install_test
   image:
     name: "europe-north1-docker.pkg.dev/holi-shared/docker/holi-docker/terraform-docker"
   services:
@@ -180,7 +174,6 @@ pubsub_typesense_updater_production_deploy:
   services:
     - name: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/docker:28-dind"
       alias: "docker"
-  stage: deploy
   variables:
     ENVIRONMENT_ID: $CI_ENVIRONMENT_SLUG
   artifacts:
@@ -198,7 +191,6 @@ pubsub_typesense_updater_production_deploy:
 
 .prefect_deploy:
   image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.2.11-python3.12"
-  stage: deploy
   variables:
     ENVIRONMENT_ID: $CI_ENVIRONMENT_SLUG
   cache: !reference [ .pip_cache_ro ]
@@ -209,7 +201,6 @@ pubsub_typesense_updater_production_deploy:
 
 .smoketest:
   image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.2.11-python3.12"
-  stage: deploy
   cache: !reference [ .pip_cache_ro ]
   script:
     - source venv/bin/activate
@@ -218,7 +209,6 @@ pubsub_typesense_updater_production_deploy:
 
 .build_prefect_flow_docker_image:
   image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/docker:28"
-  stage: build
   services:
     - name: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/docker:28-dind"
       alias: "docker"
@@ -235,7 +225,6 @@ pubsub_typesense_updater_production_deploy:
 
 pipelines_install_dependencies:
   image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/python:3.12-slim"
-  stage: prepare
   cache: !reference [ .pip_cache_rw ]
   script:
     - python3 -m venv .venv
@@ -257,7 +246,6 @@ pipelines_install_dependencies:
 
 pipelines_validate:
   image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/python:3.12-slim"
-  stage: prepare
   needs:
     - job: pipelines_install_dependencies
       optional: true
@@ -330,7 +318,6 @@ build_prefect_flow_docker_image_production:
   extends: .build_prefect_flow_docker_image
   needs:
     - job: pipelines_validate
-  stage: deploy
   variables:
     ENVIRONMENT_SUFFIX: production
   rules:
@@ -352,7 +339,6 @@ pipelines_tf_deploy_production:
   extends: .terraform_deploy
   needs:
     - job: pipelines_validate
-  stage: deploy
   variables:
     ENVIRONMENT_ID: production
   rules:
@@ -365,7 +351,6 @@ prefect_deploy_production:
     - job: pipelines_tf_deploy_production
     - job: build_prefect_flow_docker_image_production
       optional: true
-  stage: deploy
   variables:
     ENVIRONMENT_ID: production
   rules:
@@ -377,7 +362,6 @@ pipelines_smoketest_production:
   needs:
     - job: pipelines_tf_deploy_production
     - job: prefect_deploy_production
-  stage: deploy
   rules:
     - !reference [ .rule_templates, only_production ]
     - !reference [ .rule_templates, not_for_pubsub_typesense_updater ]
