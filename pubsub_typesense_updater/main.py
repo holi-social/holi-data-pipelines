@@ -90,6 +90,7 @@ def process_event(client: TypesenseClient, event: CloudEvent) -> None:
 def process_message(event: CloudEvent) -> None:
     client = TypesenseClient()
     process_event(client, event)
+    logger.debug(f"Event processed {event}")
 
 
 # TODO ensure that UserUpdated or similar is emitted on updates of fields we're interested in
