@@ -91,7 +91,7 @@ pubsub_typesense_updater_install_test:
     - ruff format --check pubsub_typesense_updater shared
     # change the mypy call to run from within the cloud function directory
     - cd pubsub_typesense_updater
-    - PYTHONPATH=$CI_PROJECT_DIR/pubsub_typesense_updater mypy --python-executable=./.venv/bin/python --explicit-package-bases --namespace-packages .
+    - PYTHONPATH=$CI_PROJECT_DIR:$CI_PROJECT_DIR/pubsub_typesense_updater mypy --python-executable=./.venv/bin/python --explicit-package-bases --namespace-packages .
     - cd $CI_PROJECT_DIR
     - mypy --python-executable=pubsub_typesense_updater/.venv/bin/python shared
     - cd pubsub_typesense_updater
