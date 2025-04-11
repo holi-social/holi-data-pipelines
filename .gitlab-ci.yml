@@ -53,14 +53,14 @@ variables:
 
 .rule_templates:
   only_main:
-    - if: $CI_COMMIT_BRANCH == 'main' && $CI_PIPELINE_SOURCE == "push"
+    - if: $CI_COMMIT_BRANCH == 'main' && $CI_PIPELINE_SOURCE == 'push'
       when: on_success
-    - if: $CI_COMMIT_BRANCH == 'main' && $CI_PIPELINE_SOURCE == "web"
+    - if: $CI_COMMIT_BRANCH == 'main' && $CI_PIPELINE_SOURCE == 'web'
       when: on_success
   only_production:
-    - if: $CI_COMMIT_BRANCH == 'production' && $CI_PIPELINE_SOURCE == "push"
+    - if: $CI_COMMIT_BRANCH == 'production' && $CI_PIPELINE_SOURCE == 'push'
       when: on_success
-    - if: $CI_COMMIT_BRANCH == 'production' && $CI_PIPELINE_SOURCE == "web"
+    - if: $CI_COMMIT_BRANCH == 'production' && $CI_PIPELINE_SOURCE == 'web'
       when: on_success
   not_for_pubsub_typesense_updater:
     - if: $CI_PIPELINE_SOURCE == 'push'
@@ -147,9 +147,9 @@ pubsub_typesense_updater_staging_deploy:
   variables:
     ENVIRONMENT_ID: 'staging'
   rules:
-    - if: $CI_COMMIT_BRANCH == 'main' && $CI_PIPELINE_SOURCE == "web"
+    - if: $CI_COMMIT_BRANCH == 'main' && $CI_PIPELINE_SOURCE == 'web'
       when: on_success
-    - if: $CI_COMMIT_BRANCH == 'main' && $CI_PIPELINE_SOURCE == "push"
+    - if: $CI_COMMIT_BRANCH == 'main' && $CI_PIPELINE_SOURCE == 'push'
       when: on_success
       changes:
         - shared-requirements.txt
@@ -163,9 +163,9 @@ pubsub_typesense_updater_production_deploy:
   variables:
     ENVIRONMENT_ID: 'production'
   rules:
-    - if: $CI_COMMIT_BRANCH == 'production' && $CI_PIPELINE_SOURCE == "web"
+    - if: $CI_COMMIT_BRANCH == 'production' && $CI_PIPELINE_SOURCE == 'web'
       when: on_success
-    - if: $CI_COMMIT_BRANCH == 'production && $CI_PIPELINE_SOURCE == "push"
+    - if: $CI_COMMIT_BRANCH == 'production' && $CI_PIPELINE_SOURCE == 'push'
       when: on_success
       changes:
         - shared-requirements.txt
@@ -244,7 +244,7 @@ pipelines_install_dependencies:
     - pip install -r dev-requirements.txt --exists-action s
   rules:
     # always run when triggered manually
-    - if: $CI_COMMIT_BRANCH && $CI_PIPELINE_SOURCE == "web"
+    - if: $CI_COMMIT_BRANCH && $CI_PIPELINE_SOURCE == 'web'
       when: on_success
     # only run on specific file changes when triggered by git push
     - if: $CI_COMMIT_BRANCH
@@ -280,10 +280,10 @@ build_prefect_flow_docker_image_staging:
     ENVIRONMENT_SUFFIX: staging
   rules:
     # always run when triggered manually
-    - if: $CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "web"
+    - if: $CI_COMMIT_BRANCH == 'main' && $CI_PIPELINE_SOURCE == 'web'
       when: on_success
     # only run on specific file changes when triggered by git push
-    - if: $CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"
+    - if: $CI_COMMIT_BRANCH == 'main' && $CI_PIPELINE_SOURCE == 'push'
       changes:
         - shared-requirements.txt
         - shared-dev-requirements.txt
@@ -335,10 +335,10 @@ build_prefect_flow_docker_image_production:
     ENVIRONMENT_SUFFIX: production
   rules:
     # always run when triggered manually
-    - if: $CI_COMMIT_BRANCH == "production" && $CI_PIPELINE_SOURCE == "web"
+    - if: $CI_COMMIT_BRANCH == 'production' && $CI_PIPELINE_SOURCE == 'web'
       when: on_success
     # only run on specific file changes when triggered by git push
-    - if: $CI_COMMIT_BRANCH == "production" && $CI_PIPELINE_SOURCE == "push"
+    - if: $CI_COMMIT_BRANCH == 'production' && $CI_PIPELINE_SOURCE == 'push'
       changes:
         - shared-requirements.txt
         - shared-dev-requirements.txt
