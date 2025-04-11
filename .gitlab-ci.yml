@@ -12,49 +12,168 @@ variables:
 .pip_cache_rw:
   key:
     files:
-      - requirements.txt
-      - dev-requirements.txt
+      # GitLab CI only allows listing 2 files to calculate a cache key, this is a workaround
+      - "*requirements.txt"
   policy: pull-push
   paths:
     - .cache/pip
-    - venv/
+    - .venv/
 
-.pip_cache_readonly:
+.pip_cache_ro:
   key:
     files:
-      - requirements.txt
-      - dev-requirements.txt
+      # GitLab CI only allows listing 2 files to calculate a cache key, this is a workaround
+      - "*requirements.txt"
   policy: pull
   paths:
     - .cache/pip
-    - venv/
+    - .venv/
 
-stages:
-  - "prepare"
-  - "build"
-  - "test"
-  - "deploy"
+.pip_cache_rw_pubsub_typesense_updater:
+  key:
+    files:
+      # GitLab CI only allows listing 2 files to calculate a cache key, this is a workaround
+      - "shared*requirements.txt"
+      - "pubsub_typesense_updater/*requirements.txt"
+  policy: pull-push
+  paths:
+    - .cache/pip
+    - pubsub_typesense_updater/.venv
+
+.pip_cache_ro_pubsub_typesense_updater:
+  key:
+    files:
+      # GitLab CI only allows listing 2 files to calculate a cache key, this is a workaround
+      - "shared*requirements.txt"
+      - "pubsub_typesense_updater/*requirements.txt"
+  policy: pull
+  paths:
+    - .cache/pip
+    - pubsub_typesense_updater/.venv
 
 .rule_templates:
   only_main:
-    - if: $CI_COMMIT_BRANCH == 'main' && $CI_PIPELINE_SOURCE == "push"
+    - if: $CI_COMMIT_BRANCH == 'main' && $CI_PIPELINE_SOURCE == 'push'
       when: on_success
-    - if: $CI_COMMIT_BRANCH == 'main' && $CI_PIPELINE_SOURCE == "web"
+    - if: $CI_COMMIT_BRANCH == 'main' && $CI_PIPELINE_SOURCE == 'web'
       when: on_success
   only_production:
-    - if: $CI_COMMIT_BRANCH == 'production' && $CI_PIPELINE_SOURCE == "push"
+    - if: $CI_COMMIT_BRANCH == 'production' && $CI_PIPELINE_SOURCE == 'push'
       when: on_success
-    - if: $CI_COMMIT_BRANCH == 'production' && $CI_PIPELINE_SOURCE == "web"
+    - if: $CI_COMMIT_BRANCH == 'production' && $CI_PIPELINE_SOURCE == 'web'
       when: on_success
+  not_for_pubsub_typesense_updater:
+    - if: $CI_PIPELINE_SOURCE == 'push'
+      changes:
+        - pubsub_typesense_updater/**/*
+      when: never
+  only_pubsub_typesense_updater:
+    - if: $CI_PIPELINE_SOURCE == 'push'
+      changes:
+        - shared-requirements.txt
+        - shared-dev-requirements.txt
+        - shared/**/*
+        - pubsub_typesense_updater/**/*
+        - .gitlab-ci.yml
+
+pubsub_typesense_updater_install_test:
+  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/python:3.13-slim"
+  cache: !reference [ .pip_cache_rw_pubsub_typesense_updater ]
+  script:
+    # install dependencies for cloud functions
+    - python3 -m venv pubsub_typesense_updater/.venv
+    - source pubsub_typesense_updater/.venv/bin/activate
+    - pip install --upgrade pip
+    - pip install -r pubsub_typesense_updater/requirements.txt --exists-action s
+    - pip install -r pubsub_typesense_updater/dev-requirements.txt --exists-action s
+    # validate and test
+    - ruff check pubsub_typesense_updater shared
+    - ruff format --check pubsub_typesense_updater shared
+    # change the mypy call to run from within the cloud function directory
+    - cd pubsub_typesense_updater
+    - PYTHONPATH=$CI_PROJECT_DIR:$CI_PROJECT_DIR/pubsub_typesense_updater mypy --python-executable=./.venv/bin/python --explicit-package-bases --namespace-packages .
+    - cd $CI_PROJECT_DIR
+    - mypy --python-executable=pubsub_typesense_updater/.venv/bin/python shared
+    - cd pubsub_typesense_updater
+    - PYTHONPATH=$CI_PROJECT_DIR/pubsub_typesense_updater pytest
+    - cd $CI_PROJECT_DIR
+  rules:
+    - !reference [ .rule_templates, only_pubsub_typesense_updater ]
+  interruptible: true
+
+.pubsub_typesense_updater_deploy:
+  needs:
+    - job: pubsub_typesense_updater_install_test
+  image:
+    name: "europe-north1-docker.pkg.dev/holi-shared/docker/holi-docker/terraform-docker"
+  services:
+    - name: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/docker:28-dind"
+      alias: "docker"
+  cache: !reference [ .pip_cache_ro_pubsub_typesense_updater ]
+  resource_group: $ENVIRONMENT_ID
+  artifacts:
+    paths:
+      - 'terraform/environments/crash.log' # optional, only available in case of a crash/panic
+      - 'terraform/environments/terraform-*.log' # separate log for every step/command
+    name: '${CI_JOB_NAME}_${CI_JOB_ID}'
+    #when: on_failure # can't do that for api base url, but can't define multiple artifacts
+    expire_in: 1 week
+  variables:
+    FUNCTION_NAME: pubsub_typesense_updater
+  script:
+    - apk add zip
+    - cd pubsub_typesense_updater
+    # Create a deployment directory with all required files
+    - mkdir -p .build
+    - cp -r ../shared .build/
+    - cp -r *.py .build/
+    # create a single consolidated requirements file without relative paths
+    - cat ../shared-requirements.txt | grep -v "^-r" | grep -v "^#" >> .build/requirements.txt
+    - cat requirements.txt | grep -v "^-r" | grep -v "^#" >> .build/requirements.txt
+    - cd .build
+    - zip -r pubsub_typesense_updater.zip .
+    - cd $CI_PROJECT_DIR
+    - terraform/environments/scripts/create-or-update-env.sh "$ENVIRONMENT_ID" "$CI_COMMIT_SHA"
+  interruptible: false
+
+pubsub_typesense_updater_staging_deploy:
+  extends: .pubsub_typesense_updater_deploy
+  variables:
+    ENVIRONMENT_ID: 'staging'
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'main' && $CI_PIPELINE_SOURCE == 'web'
+      when: on_success
+    - if: $CI_COMMIT_BRANCH == 'main' && $CI_PIPELINE_SOURCE == 'push'
+      when: on_success
+      changes:
+        - shared-requirements.txt
+        - shared-dev-requirements.txt
+        - shared/**/*
+        - pubsub_typesense_updater/**/*
+        - .gitlab-ci.yml
+
+pubsub_typesense_updater_production_deploy:
+  extends: .pubsub_typesense_updater_deploy
+  variables:
+    ENVIRONMENT_ID: 'production'
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'production' && $CI_PIPELINE_SOURCE == 'web'
+      when: on_success
+    - if: $CI_COMMIT_BRANCH == 'production' && $CI_PIPELINE_SOURCE == 'push'
+      when: on_success
+      changes:
+        - shared-requirements.txt
+        - shared-dev-requirements.txt
+        - shared/**/*
+        - pubsub_typesense_updater/**/*
+        - .gitlab-ci.yml
 
 .terraform_deploy:
   image:
     name: "europe-north1-docker.pkg.dev/holi-shared/docker/holi-docker/terraform-docker"
-  stage: build
   services:
     - name: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/docker:28-dind"
       alias: "docker"
-  stage: "deploy"
   variables:
     ENVIRONMENT_ID: $CI_ENVIRONMENT_SLUG
   artifacts:
@@ -72,10 +191,9 @@ stages:
 
 .prefect_deploy:
   image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.2.11-python3.12"
-  stage: "deploy"
   variables:
     ENVIRONMENT_ID: $CI_ENVIRONMENT_SLUG
-  cache: !reference [ .pip_cache_readonly ]
+  cache: !reference [ .pip_cache_ro ]
   script:
     - source venv/bin/activate
     - PREFECT_API_URL="$(cat $PREFECT_SERVER_URL_PATH)/api" PYTHONPATH=$PYTHONPATH:. python -m src.pipelines.deployments
@@ -83,8 +201,7 @@ stages:
 
 .smoketest:
   image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.2.11-python3.12"
-  stage: "deploy"
-  cache: !reference [ .pip_cache_readonly ]
+  cache: !reference [ .pip_cache_ro ]
   script:
     - source venv/bin/activate
     - PREFECT_API_URL="$(cat $PREFECT_SERVER_URL_PATH)/api" prefect shell watch --flow-run-name ci-test-$CI_PIPELINE_IID --tag ci-test "echo smoketesting"
@@ -92,7 +209,6 @@ stages:
 
 .build_prefect_flow_docker_image:
   image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/docker:28"
-  stage: "build"
   services:
     - name: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/docker:28-dind"
       alias: "docker"
@@ -107,124 +223,145 @@ stages:
     - docker push "$GCR_IMAGE":"$CI_COMMIT_SHA" # we use latest in prefect, this is just extra information for humans.
     - docker push "$GCR_IMAGE":latest # for caching the build and for use by prefect pipelines
 
-install_dependencies:
+pipelines_install_dependencies:
   image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/python:3.12-slim"
-  stage: "prepare"
   cache: !reference [ .pip_cache_rw ]
   script:
-    - python3 -m venv venv
-    - source venv/bin/activate
+    - python3 -m venv .venv
+    - source .venv/bin/activate
     - pip install -r requirements.txt --exists-action s
     - pip install -r dev-requirements.txt --exists-action s
   rules:
     # always run when triggered manually
-    - if: $CI_COMMIT_BRANCH && $CI_PIPELINE_SOURCE == "web"
+    - if: $CI_COMMIT_BRANCH && $CI_PIPELINE_SOURCE == 'web'
       when: on_success
     # only run on specific file changes when triggered by git push
     - if: $CI_COMMIT_BRANCH
       changes:
+        - shared-requirements.txt
+        - shared-dev-requirements.txt
         - requirements.txt
         - dev-requirements.txt
         - .gitlab-ci.yml
 
-validate:
+pipelines_validate:
   image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/python:3.12-slim"
-  stage: "prepare"
   needs:
-    - job: install_dependencies
+    - job: pipelines_install_dependencies
       optional: true
-  cache: !reference [ .pip_cache_readonly ]
+  cache: !reference [ .pip_cache_ro ]
   script:
-    - source venv/bin/activate
-    - ruff check
-    - ruff format --check
-    - mypy --python-executable=venv/bin/python src
-    - pytest .
+    - source .venv/bin/activate
+    - ruff check src shared
+    - ruff format --check src shared
+    - mypy --python-executable=.venv/bin/python src shared
+    - pytest src
+  rules:
+    - !reference [ .rule_templates, not_for_pubsub_typesense_updater ]
+
 
 build_prefect_flow_docker_image_staging:
   extends: .build_prefect_flow_docker_image
-  needs: [ "validate" ]
+  needs:
+    - job: pipelines_validate
   variables:
     ENVIRONMENT_SUFFIX: staging
   rules:
     # always run when triggered manually
-    - if: $CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "web"
+    - if: $CI_COMMIT_BRANCH == 'main' && $CI_PIPELINE_SOURCE == 'web'
       when: on_success
     # only run on specific file changes when triggered by git push
-    - if: $CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"
+    - if: $CI_COMMIT_BRANCH == 'main' && $CI_PIPELINE_SOURCE == 'push'
       changes:
+        - shared-requirements.txt
+        - shared-dev-requirements.txt
         - requirements.txt
+        - dev-requirements.txt
+        - shared/**/*
         - src/**/*
         - .gitlab-ci.yml
 
 ## staging environment
-terraform_deploy_staging:
+pipelines_tf_deploy_staging:
   extends: .terraform_deploy
-  needs: [ "validate" ]
+  needs:
+    - job: pipelines_validate
   variables:
     ENVIRONMENT_ID: staging
   rules:
     - !reference [ .rule_templates, only_main ]
+    - !reference [ .rule_templates, not_for_pubsub_typesense_updater ]
 
 prefect_deploy_staging:
   extends: .prefect_deploy
   needs:
-    - job: "terraform_deploy_staging"
-    - job: "build_prefect_flow_docker_image_staging"
+    - job: pipelines_tf_deploy_staging
+    - job: build_prefect_flow_docker_image_staging
       optional: true
   variables:
     ENVIRONMENT_ID: staging
   rules:
     - !reference [ .rule_templates, only_main ]
+    - !reference [ .rule_templates, not_for_pubsub_typesense_updater ]
 
-smoketest_staging:
+prefect_smoketest_staging:
   extends: .smoketest
-  needs: [ "terraform_deploy_staging", "prefect_deploy_staging" ]
+  needs:
+    - job: pipelines_tf_deploy_staging
+    - job: prefect_deploy_staging
   rules:
     - !reference [ .rule_templates, only_main ]
+    - !reference [ .rule_templates, not_for_pubsub_typesense_updater ]
 
 ## production environment
 build_prefect_flow_docker_image_production:
   extends: .build_prefect_flow_docker_image
-  needs: [ "validate" ]
-  stage: deploy
+  needs:
+    - job: pipelines_validate
   variables:
     ENVIRONMENT_SUFFIX: production
   rules:
     # always run when triggered manually
-    - if: $CI_COMMIT_BRANCH == "production" && $CI_PIPELINE_SOURCE == "web"
+    - if: $CI_COMMIT_BRANCH == 'production' && $CI_PIPELINE_SOURCE == 'web'
       when: on_success
     # only run on specific file changes when triggered by git push
-    - if: $CI_COMMIT_BRANCH == "production" && $CI_PIPELINE_SOURCE == "push"
+    - if: $CI_COMMIT_BRANCH == 'production' && $CI_PIPELINE_SOURCE == 'push'
       changes:
+        - shared-requirements.txt
+        - shared-dev-requirements.txt
         - requirements.txt
+        - dev-requirements.txt
+        - shared/**/*
         - src/**/*
         - .gitlab-ci.yml
 
-terraform_deploy_production:
+pipelines_tf_deploy_production:
   extends: .terraform_deploy
-  needs: [ "validate" ]
-  stage: deploy
+  needs:
+    - job: pipelines_validate
   variables:
     ENVIRONMENT_ID: production
   rules:
     - !reference [ .rule_templates, only_production ]
+    - !reference [ .rule_templates, not_for_pubsub_typesense_updater ]
 
 prefect_deploy_production:
   extends: .prefect_deploy
   needs:
-    - job: "terraform_deploy_production"
-    - job: "build_prefect_flow_docker_image_production"
+    - job: pipelines_tf_deploy_production
+    - job: build_prefect_flow_docker_image_production
       optional: true
-  stage: deploy
   variables:
     ENVIRONMENT_ID: production
   rules:
     - !reference [ .rule_templates, only_production ]
+    - !reference [ .rule_templates, not_for_pubsub_typesense_updater ]
 
-smoketest_production:
+pipelines_smoketest_production:
   extends: .smoketest
-  needs: [ "terraform_deploy_production", "prefect_deploy_production" ]
-  stage: deploy
+  needs:
+    - job: pipelines_tf_deploy_production
+    - job: prefect_deploy_production
   rules:
     - !reference [ .rule_templates, only_production ]
+    - !reference [ .rule_templates, not_for_pubsub_typesense_updater ]
