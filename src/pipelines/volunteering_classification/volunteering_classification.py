@@ -4,10 +4,9 @@ from typing import Optional
 from prefect.states import Completed, State
 
 from src.common.classifiers.classifier import Classifier
-from src.common.loaders.bq_loader import wait_for_bigquery_data_to_be_accessible
 from src.common.logging.PipelineLogger import PipelineLogger
 from src.common.monitoring.flow import monitored_flow
-from src.pipelines.bigquery import table_classifications, volunteering_voltastics_without_classifications
+from src.pipelines.bigquery import volunteering_voltastics_without_classifications
 from src.pipelines.volunteering_classification.volunteering_topics_skills_classifier_v2 import (
     VolunteeringTopicsSkillsClassifierV2,
 )
@@ -29,12 +28,10 @@ class VolunteeringClassifier(Classifier):
 
 
 @monitored_flow
-def volunteering_classification(wait_for_bq: bool = True, stop_after_batch_nr: Optional[int] = None) -> State:
+def volunteering_classification(stop_after_batch_nr: Optional[int] = None) -> State:
     # TODO use context manager to create and shut down classifier
     classifier = VolunteeringClassifier(stop_after_batch_nr)
     classifier.compute_classifications()
-    if wait_for_bq:
-        wait_for_bigquery_data_to_be_accessible(table_classifications())
     return Completed()
 
 
@@ -42,4 +39,4 @@ if __name__ == "__main__":
     logging.getLogger("volunteering_classification").setLevel(logging.DEBUG)
     logging.getLogger("volunteering_topics_skills_classification_v2").setLevel(logging.DEBUG)
     logging.getLogger("similarity_classification").setLevel(logging.DEBUG)
-    volunteering_classification(wait_for_bq=False, stop_after_batch_nr=0)  # type: ignore
+    volunteering_classification(stop_after_batch_nr=0)  # type: ignore
