@@ -65,8 +65,8 @@ variables:
   not_for_pubsub_typesense_updater:
     - if: $CI_PIPELINE_SOURCE == 'push'
       changes:
-        - pubsub_typesense_updater/**/*
-      when: never
+        - "**/*"
+        - "!pubsub_typesense_updater/**/*"
   only_pubsub_typesense_updater:
     - if: $CI_PIPELINE_SOURCE == 'push'
       changes:
