@@ -52,21 +52,39 @@ variables:
     - pubsub_typesense_updater/.venv
 
 .rule_templates:
-  only_main:
-    - if: $CI_COMMIT_BRANCH == 'main' && $CI_PIPELINE_SOURCE == 'push'
-      when: on_success
-    - if: $CI_COMMIT_BRANCH == 'main' && $CI_PIPELINE_SOURCE == 'web'
-      when: on_success
-  only_production:
-    - if: $CI_COMMIT_BRANCH == 'production' && $CI_PIPELINE_SOURCE == 'push'
-      when: on_success
-    - if: $CI_COMMIT_BRANCH == 'production' && $CI_PIPELINE_SOURCE == 'web'
-      when: on_success
-  not_for_pubsub_typesense_updater:
+  only_pipelines:
     - if: $CI_PIPELINE_SOURCE == 'push'
       changes:
         - "**/*"
         - "!pubsub_typesense_updater/**/*"
+      when: on_success
+    - if: $CI_PIPELINE_SOURCE == 'web'
+      changes:
+        - "**/*"
+        - "!pubsub_typesense_updater/**/*"
+      when: on_success
+  only_pipelines_main:
+    - if: $CI_COMMIT_BRANCH == 'main' && $CI_PIPELINE_SOURCE == 'push'
+      changes:
+        - "**/*"
+        - "!pubsub_typesense_updater/**/*"
+      when: on_success
+    - if: $CI_COMMIT_BRANCH == 'main' && $CI_PIPELINE_SOURCE == 'web'
+      changes:
+        - "**/*"
+        - "!pubsub_typesense_updater/**/*"
+      when: on_success
+  only_pipelines_production:
+    - if: $CI_COMMIT_BRANCH == 'production' && $CI_PIPELINE_SOURCE == 'push'
+      changes:
+        - "**/*"
+        - "!pubsub_typesense_updater/**/*"
+      when: on_success
+    - if: $CI_COMMIT_BRANCH == 'production' && $CI_PIPELINE_SOURCE == 'web'
+      changes:
+        - "**/*"
+        - "!pubsub_typesense_updater/**/*"
+      when: on_success
   only_pubsub_typesense_updater:
     - if: $CI_PIPELINE_SOURCE == 'push'
       changes:
@@ -75,6 +93,7 @@ variables:
         - shared/**/*
         - pubsub_typesense_updater/**/*
         - .gitlab-ci.yml
+      when: on_success
 
 pubsub_typesense_updater_install_test:
   image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/python:3.13-slim"
@@ -257,8 +276,7 @@ pipelines_validate:
     - mypy --python-executable=.venv/bin/python src shared
     - pytest src
   rules:
-    - !reference [ .rule_templates, not_for_pubsub_typesense_updater ]
-
+    - !reference [ .rule_templates, only_pipelines ]
 
 build_prefect_flow_docker_image_staging:
   extends: .build_prefect_flow_docker_image
@@ -289,8 +307,7 @@ pipelines_tf_deploy_staging:
   variables:
     ENVIRONMENT_ID: staging
   rules:
-    - !reference [ .rule_templates, only_main ]
-    - !reference [ .rule_templates, not_for_pubsub_typesense_updater ]
+    - !reference [ .rule_templates, only_pipelines_main ]
 
 prefect_deploy_staging:
   extends: .prefect_deploy
@@ -301,8 +318,7 @@ prefect_deploy_staging:
   variables:
     ENVIRONMENT_ID: staging
   rules:
-    - !reference [ .rule_templates, only_main ]
-    - !reference [ .rule_templates, not_for_pubsub_typesense_updater ]
+    - !reference [ .rule_templates, only_pipelines_main ]
 
 prefect_smoketest_staging:
   extends: .smoketest
@@ -310,8 +326,7 @@ prefect_smoketest_staging:
     - job: pipelines_tf_deploy_staging
     - job: prefect_deploy_staging
   rules:
-    - !reference [ .rule_templates, only_main ]
-    - !reference [ .rule_templates, not_for_pubsub_typesense_updater ]
+    - !reference [ .rule_templates, only_pipelines_main ]
 
 ## production environment
 build_prefect_flow_docker_image_production:
@@ -342,8 +357,7 @@ pipelines_tf_deploy_production:
   variables:
     ENVIRONMENT_ID: production
   rules:
-    - !reference [ .rule_templates, only_production ]
-    - !reference [ .rule_templates, not_for_pubsub_typesense_updater ]
+    - !reference [ .rule_templates, only_pipelines_production ]
 
 prefect_deploy_production:
   extends: .prefect_deploy
@@ -354,8 +368,7 @@ prefect_deploy_production:
   variables:
     ENVIRONMENT_ID: production
   rules:
-    - !reference [ .rule_templates, only_production ]
-    - !reference [ .rule_templates, not_for_pubsub_typesense_updater ]
+    - !reference [ .rule_templates, only_pipelines_production ]
 
 pipelines_smoketest_production:
   extends: .smoketest
@@ -363,5 +376,4 @@ pipelines_smoketest_production:
     - job: pipelines_tf_deploy_production
     - job: prefect_deploy_production
   rules:
-    - !reference [ .rule_templates, only_production ]
-    - !reference [ .rule_templates, not_for_pubsub_typesense_updater ]
+    - !reference [ .rule_templates, only_pipelines_production ]
