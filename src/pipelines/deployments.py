@@ -1,11 +1,11 @@
-from typing import List, Optional, Any, cast, Union
+from typing import Any, List, Optional, Union, cast
 
-from prefect import deploy, Flow
+from prefect import Flow, deploy
 from prefect.client.schemas.objects import ConcurrencyLimitConfig, ConcurrencyLimitStrategy
 from prefect.client.schemas.schedules import CronSchedule
 from prefect.deployments.runner import RunnerDeployment
 from prefect.deployments.schedules import FlexibleScheduleList
-from prefect.events import DeploymentEventTrigger, DeploymentTriggerTypes, TriggerTypes, Posture
+from prefect.events import DeploymentTriggerTypes, TriggerTypes
 
 from src.common.variables import variable_value_as
 from src.pipelines.all_to_typesense.ingest_from_scratch import all_to_typesense_ingest_from_scratch_flow
@@ -19,10 +19,11 @@ from src.pipelines.tasks_to_typesense.ingest_from_scratch import tasks_to_typese
 from src.pipelines.typesense_qc.typesense_qc import typesense_qc
 from src.pipelines.volunteering_classification.volunteering_classification import volunteering_classification
 from src.pipelines.volunteering_geo_enrichment.volunteering_geo_enrichment import volunteering_geo_enrichment
-from src.pipelines.volunteering_to_typesense.ingest_updates import volunteering_to_typesense_ingest_updates_flow
 from src.pipelines.volunteering_to_typesense.ingest_from_scratch import (
     volunteering_to_typesense_ingest_from_scratch_flow,
 )
+from src.pipelines.volunteering_to_typesense.ingest_updates import volunteering_to_typesense_ingest_updates_flow
+from src.pipelines.volunteering_updates.pipeline import volunteering_updates
 
 
 def environment() -> str:
@@ -118,6 +119,11 @@ def get_deployments() -> List[RunnerDeployment]:
         deployment_for_flow(
             crawl_voltastics,
             description="Crawls voltastics.com for volunteering opportunities and ingests them into BigQuery",
+            job_variables_overrides={"memory": "1024Mi"},
+        ),
+        deployment_for_flow(
+            volunteering_updates,
+            description="Orchestrates crawling, classification and enrichment and updating Typesense indexes for volunteering",
             schedules=[cron_schedule("40 1 * * *") if environment() == "production" else cron_schedule("40 2 * * *")],
             job_variables_overrides={"memory": "1024Mi"},
         ),
@@ -137,44 +143,16 @@ def get_deployments() -> List[RunnerDeployment]:
             volunteering_classification,
             description="Runs classifications on unclassified volunteering opportunities",
             job_variables_overrides={"memory": "4096Mi"},
-            triggers=[
-                DeploymentEventTrigger(
-                    enabled=True,
-                    match_related={"prefect.resource.name": crawl_voltastics.name},  # type: ignore
-                    expect=["prefect.flow-run.Completed"],  # type: ignore
-                    parameters={},
-                )
-            ],
         ),
         deployment_for_flow(
             volunteering_geo_enrichment,
             description="Resolves lat/lng for volunteering opportunities lacking those",
             job_variables_overrides={"memory": "1024Mi"},
-            triggers=[
-                DeploymentEventTrigger(
-                    enabled=True,
-                    match_related={"prefect.resource.name": crawl_voltastics.name},  # type: ignore
-                    expect=["prefect.flow-run.Completed"],  # type: ignore
-                    parameters={},
-                )
-            ],
         ),
         deployment_for_flow(
             volunteering_to_typesense_ingest_updates_flow,
             description="Orchestrates the ETL pipeline to move volunteering updates from BigQuery to Typesense",
             job_variables_overrides={"memory": "4096Mi"},
-            triggers=[
-                DeploymentEventTrigger(
-                    enabled=True,
-                    match_related={
-                        "prefect.resource.name": [volunteering_classification.name, volunteering_geo_enrichment.name]
-                    },  # type: ignore
-                    expect=["prefect.flow-run.Completed"],  # type: ignore
-                    parameters={},
-                    posture=Posture.Reactive,
-                    threshold=2,
-                )
-            ],
         ),
     ]
 
