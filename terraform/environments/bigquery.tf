@@ -50,10 +50,6 @@ resource "google_bigquery_table" "classifications" {
   dataset_id = local.dataset_id_datalake
   table_id   = "classifications"
 
-  time_partitioning {
-    type = "DAY"
-  }
-
   schema = <<EOF
   [
     { "name": "type", "type": "STRING", "mode": "REQUIRED"},
