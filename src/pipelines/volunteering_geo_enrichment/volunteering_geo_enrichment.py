@@ -8,7 +8,6 @@ from google.cloud.bigquery import Client
 from prefect.states import State, Completed
 from prefect_gcp import GcpCredentials
 
-from src.common.loaders.bq_loader import wait_for_bigquery_data_to_be_accessible
 from src.common.logging.PipelineLogger import PipelineLogger
 from src.common.monitoring.flow import monitored_flow
 from src.common.variables import secret_value
@@ -175,14 +174,12 @@ class VolunteeringGeoEnricher:
 
 
 @monitored_flow
-def volunteering_geo_enrichment(wait_for_bq: bool = True) -> State:
+def volunteering_geo_enrichment() -> State:
     enricher = VolunteeringGeoEnricher(cast(str, secret_value("geoapify-api-key")))
     enricher.enrich_location_data()
-    if wait_for_bq:
-        wait_for_bigquery_data_to_be_accessible(table_location_cache())
     return Completed()
 
 
 if __name__ == "__main__":
     logging.getLogger("volunteering_geo_enrichment").setLevel(logging.DEBUG)
-    volunteering_geo_enrichment(wait_for_bq=False)  # type: ignore[call-overload]
+    volunteering_geo_enrichment()  # type: ignore[call-overload]
