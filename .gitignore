@@ -2,5 +2,6 @@
 .venv
 .direnv
 .envrc.local
+.gitlab-ci-local
 *.pyc
 /.gitlab-ci-local

@@ -1,16 +1,19 @@
-import math
 import json
-
+import math
 from typing import cast
 
 from prefect import flow, task
-from prefect.states import State, Failed, Completed
+from prefect.states import Completed, Failed, State
 
 from src.common.extractors.bq_extractor import extract_data_from_bigquery
 from src.common.logging.PipelineLogger import PipelineLogger
-from src.common.typesense_client import TypesenseClientConfig, TypesenseClient
+from src.common.typesense_client import TypesenseClient, TypesenseClientConfig
 from src.common.variables import variable_value
-from src.pipelines.bigquery import volunteering_voltastics_classified_enriched_partitioned
+from src.pipelines.bigquery import (
+    bigquery_okuna_dataset,
+    tasks_with_classifications,
+    volunteering_voltastics_classified_enriched_partitioned,
+)
 
 logger = PipelineLogger(__name__)
 
@@ -20,11 +23,10 @@ DEVIATION_TOLERANCE_IN_PERCENT = 1
 
 @task
 def get_profile_count_bq() -> int:
-    source_dataset = cast(str, variable_value("bigquery_okuna_dataset"))
     result = extract_data_from_bigquery(f"""
         SELECT count(*) as user_count
-        FROM `{source_dataset}.openbook_auth_user` user
-        LEFT OUTER JOIN `{source_dataset}.openbook_auth_userprofile` profile
+        FROM `{bigquery_okuna_dataset()}.openbook_auth_user` user
+        LEFT OUTER JOIN `{bigquery_okuna_dataset()}.openbook_auth_userprofile` profile
         ON user.id=profile.user_id
         WHERE
           user.is_deleted=false
@@ -36,20 +38,28 @@ def get_profile_count_bq() -> int:
 
 @task
 def get_space_count_bq() -> int:
-    source_dataset = cast(str, variable_value("bigquery_okuna_dataset"))
     result = extract_data_from_bigquery(f"""
         SELECT count(*) as space_count
-        FROM `{source_dataset}.openbook_communities_community`
+        FROM `{bigquery_okuna_dataset()}.openbook_communities_community`
         WHERE is_deleted=false
     """)  # noqa: S608
     return cast(int, result[0]["space_count"])
 
 
 @task
+def get_task_count_bq() -> int:
+    result = extract_data_from_bigquery(f"""
+        SELECT count(*) AS task_count
+        FROM `{tasks_with_classifications()}`
+    """)  # noqa: S608
+    return cast(int, result[0]["task_count"])
+
+
+@task
 def get_volunteering_count_bq() -> int:
     result = extract_data_from_bigquery(f"""
         SELECT count(*) as volunteering_count
-        FROM `{volunteering_voltastics_classified_enriched_partitioned}`
+        FROM `{volunteering_voltastics_classified_enriched_partitioned()}`
         WHERE TIMESTAMP_TRUNC(partitiontime, DAY) = TIMESTAMP_TRUNC(CURRENT_TIMESTAMP(), DAY)
     """)  # noqa: S608
     return cast(int, result[0]["volunteering_count"])
@@ -81,6 +91,10 @@ def typesense_qc() -> State:
     space_count_ts = get_count_ts(ts_client, ts_collection, "space")
     space_count_deviates = not math.isclose(space_count_bq, space_count_ts, rel_tol=DEVIATION_TOLERANCE_FACTOR)
 
+    task_count_bq = get_task_count_bq()
+    task_count_ts = get_count_ts(ts_client, ts_collection, "task")
+    task_count_deviates = not math.isclose(task_count_bq, task_count_ts, rel_tol=DEVIATION_TOLERANCE_FACTOR)
+
     volunteering_count_bq = get_volunteering_count_bq()
     volunteering_count_ts = get_count_ts(ts_client, ts_collection, "volunteering")
     volunteering_count_deviates = not math.isclose(
@@ -92,11 +106,13 @@ def typesense_qc() -> State:
         "profile_count_ts": profile_count_ts,
         "space_count_bq": space_count_bq,
         "space_count_ts": space_count_ts,
+        "task_count_bq": task_count_bq,
+        "task_count_ts": task_count_ts,
         "volunteering_count_bq": volunteering_count_bq,
         "volunteering_count_ts": volunteering_count_ts,
     }
 
-    if profile_count_deviates or space_count_deviates or volunteering_count_deviates:
+    if profile_count_deviates or space_count_deviates or task_count_deviates or volunteering_count_deviates:
         message = f"Some counts deviate by more than {DEVIATION_TOLERANCE_IN_PERCENT}%: {json.dumps(counts, indent=4)}"
         logger.error(message)
         return Failed(message=message)

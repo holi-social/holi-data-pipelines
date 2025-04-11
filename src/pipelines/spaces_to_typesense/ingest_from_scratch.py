@@ -11,6 +11,7 @@ from src.common.monitoring.flow import monitored_flow
 from src.common.monitoring.metrics import report_number_of_processed_entities
 from src.common.typesense_client import TypesenseClient, TypesenseClientConfig
 from src.common.variables import variable_value
+from src.pipelines.bigquery import bigquery_okuna_dataset
 
 logger = PipelineLogger(__name__)
 
@@ -19,7 +20,7 @@ SpaceDoc = dict[str, Any | None]
 
 
 @task(cache_policy=NONE)  # type: ignore[arg-type]
-def load_spaces(source_dataset: str) -> List[SpaceRow]:
+def load_spaces() -> List[SpaceRow]:
     return extract_data_from_bigquery(f"""
         SELECT
           id,
@@ -31,7 +32,7 @@ def load_spaces(source_dataset: str) -> List[SpaceRow]:
           avatar_blurhash,
           geolocation_geojson,
         FROM
-          `{source_dataset}.openbook_communities_community`
+          `{bigquery_okuna_dataset()}.openbook_communities_community`
         WHERE
           is_deleted=false
     """)  # noqa: S608
@@ -67,8 +68,7 @@ def spaces_to_typesense_docs(spaces: list[SpaceRow]) -> list[SpaceDoc]:
 def spaces_to_typesense_ingest_from_scratch_flow() -> State:
     typesense_client = TypesenseClient(TypesenseClientConfig.from_env())
     typesense_collection = cast(str, variable_value("typesense_collection"))
-    source_dataset = cast(str, variable_value("bigquery_okuna_dataset"))
-    task_result = spaces_to_typesense_ingest_from_scratch(typesense_client, source_dataset, typesense_collection)
+    task_result = spaces_to_typesense_ingest_from_scratch(typesense_client, typesense_collection)
     if isinstance(task_result, State):
         return task_result
     elif isinstance(task_result, int):
@@ -79,12 +79,10 @@ def spaces_to_typesense_ingest_from_scratch_flow() -> State:
 
 
 @task(cache_policy=NONE)  # type: ignore[arg-type]
-def spaces_to_typesense_ingest_from_scratch(
-    typesense_client: TypesenseClient, source_dataset: str, collection: str
-) -> State | int:
+def spaces_to_typesense_ingest_from_scratch(typesense_client: TypesenseClient, collection: str) -> State | int:
     logger.info(f"Starting spaces ingestion from scratch into typesense collection '{collection}'")
 
-    spaces = load_spaces(source_dataset)
+    spaces = load_spaces()
     logger.info("Found %s spaces", len(spaces))
 
     space_documents = spaces_to_typesense_docs(spaces)
