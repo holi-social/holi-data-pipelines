@@ -151,7 +151,7 @@ pubsub_typesense_updater_install_test:
     - cat requirements.txt | grep -v "^-r" | grep -v "^#" >> .build/requirements.txt
     - cd .build
     - zip -r pubsub_typesense_updater.zip .
-    - cd $CI_PROJECT_DIR
+    - cd ..
     - terraform/environments/scripts/create-or-update-env.sh "$ENVIRONMENT_ID" "$CI_COMMIT_SHA"
   interruptible: false
 
