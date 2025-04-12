@@ -214,7 +214,7 @@ pubsub_typesense_updater_production_deploy:
     ENVIRONMENT_ID: $CI_ENVIRONMENT_SLUG
   cache: !reference [ .pip_cache_ro ]
   script:
-    - source venv/bin/activate
+    - source .venv/bin/activate
     - PREFECT_API_URL="$(cat $PREFECT_SERVER_URL_PATH)/api" PYTHONPATH=$PYTHONPATH:. python -m src.pipelines.deployments
   resource_group: $ENVIRONMENT_ID
 
@@ -222,7 +222,7 @@ pubsub_typesense_updater_production_deploy:
   image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.2.11-python3.12"
   cache: !reference [ .pip_cache_ro ]
   script:
-    - source venv/bin/activate
+    - source .venv/bin/activate
     - PREFECT_API_URL="$(cat $PREFECT_SERVER_URL_PATH)/api" prefect shell watch --flow-run-name ci-test-$CI_PIPELINE_IID --tag ci-test "echo smoketesting"
     - PREFECT_API_URL="$(cat $PREFECT_SERVER_URL_PATH)/api" prefect deployment run --tag ci-test --watch hello-universe/hello-universe
 
