@@ -15,11 +15,13 @@ from events import (
     SpaceUpdatedEvent,
     SpaceDeletedEvent,
 )
+from pubsub_typesense_updater.events import TaskCreatedEvent, TaskUpdatedEvent, TaskDeletedEvent
 from typesense_client import TypesenseClient
 
 logger = getLogger(__name__)
 
 SEMVER_1XX_SERIES = r"^1\.\d+\.\d+$"
+SEMVER_GTE_120_LT_200 = r"^1\.(?:(?:[2-9]|[1-9]\d+)\.\d+)$"
 
 
 def process_user_updated_event(client: TypesenseClient, event: UserUpdatedEvent) -> None:
@@ -58,28 +60,53 @@ def process_space_deleted_event(client: TypesenseClient, event: SpaceDeletedEven
     logger.info(f"Deleted space {event.space.id} in Typesense")
 
 
+def process_task_upserting_event(client: TypesenseClient, event: Union[TaskCreatedEvent, TaskUpdatedEvent]) -> None:
+    logger.debug(f"Processing {event}")
+    client.upsert(event.as_typesense_document())
+    logger.info(f"Upserted task {event.task.id} in Typesense")
+
+
+def process_task_deleted_event(client: TypesenseClient, event: TaskDeletedEvent) -> None:
+    logger.debug(f"Processing {event}")
+    try:
+        client.delete(f"task_{event.task.id}")
+    except ObjectNotFound:
+        pass
+    logger.info(f"Deleted task {event.task.id} in Typesense")
+
+
 def process_event(client: TypesenseClient, event: CloudEvent) -> None:
-    type_version = (get_event_type(event), re.match(SEMVER_1XX_SERIES, get_event_version(event)) is not None)
+    type_version = (
+        get_event_type(event),
+        re.match(SEMVER_1XX_SERIES, get_event_version(event)) is not None,
+        re.match(SEMVER_GTE_120_LT_200, get_event_version(event)) is not None,
+    )
     match type_version:
-        case ("UserUpdated", True):
+        case ("UserUpdated", True, _):
             return process_user_updated_event(client, UserUpdatedEvent(event))
-        case ("UserDeleted", True):
+        case ("UserDeleted", True, _):
             return process_user_deleted_event(client, UserDeletedEvent(event))
-        case ("UserNameUpdated", True):
+        case ("UserNameUpdated", True, _):
             # no need to process, it is sufficient to handle UserUpdated
             logger.debug("Ignoring UserNameUpdated event")
             return None
-        case ("UserEmailUpdated", True):
+        case ("UserEmailUpdated", True, _):
             # no need to process, it is sufficient to handle UserUpdated
             # also, no PII must be in Typesense as there's no authentication
             logger.debug("Ignoring UserEmailUpdated event")
             return None
-        case ("SpaceCreated", True):
+        case ("SpaceCreated", _, True):
             return process_space_upserting_event(client, SpaceCreatedEvent(event))
-        case ("SpaceUpdated", True):
+        case ("SpaceUpdated", _, True):
             return process_space_upserting_event(client, SpaceUpdatedEvent(event))
-        case ("SpaceDeleted", True):
+        case ("SpaceDeleted", True, _):
             return process_space_deleted_event(client, SpaceDeletedEvent(event))
+        case ("TaskCreated", True, _):
+            return process_task_upserting_event(client, TaskCreatedEvent(event))
+        case ("TaskUpdated", True, _):
+            return process_task_upserting_event(client, TaskUpdatedEvent(event))
+        case ("TaskDeleted", True, _):
+            return process_task_deleted_event(client, TaskDeletedEvent(event))
         case (eventType, eventVersion):
             # other events than handled above are assumed to (currently) not be of interest in search
             logger.debug(f"Ignoring {eventType} ({eventVersion}) event.")

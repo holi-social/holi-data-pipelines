@@ -1,14 +1,14 @@
 import base64
 import json
-from unittest.mock import patch
-from pytest import fail
 from typing import Any
+from unittest.mock import patch
 
 # noinspection PyPackageRequirements
 from cloudevents.http.event import CloudEvent
-from typesense.exceptions import ObjectNotFound, RequestUnauthorized
-
 from main import process_event
+from pytest import fail
+
+from typesense.exceptions import ObjectNotFound, RequestUnauthorized
 
 attributes: Any = {
     "id": "12833783708309476",
@@ -40,6 +40,30 @@ space_payload: Any = {
         "latitude": 57.0393497,
         "longitude": 8.474686,
     },
+    "topicsV2": ["animal-welfare", "arts-culture"],
+}
+
+geojson_point = {"type": "Point", "coordinates": [8.474686, 57.0393497]}
+
+task_payload: Any = {
+    "id": "149a3d29-a0da-4f52-8e1c-660376b7084c",
+    "name": "Community Garden Clean-up",
+    "description": "Help us clean up and prepare the community garden for the spring season. Tasks include weeding, planting new seedlings, and repairing garden beds.",
+    "created": "2025-04-10T14:30:00",
+    "timeframeStartDate": "2025-04-20",
+    "timeframeEndDate": "2025-04-22",
+    "regularity": "ONE_TIME",
+    "duration": "HOURS_2to4",
+    "slotsAvailable": 10,
+    "slotsTaken": 3,
+    "visibility": "PUBLIC",
+    "locationType": "ONSITE",
+    "location": "Klitmøller, Denmark",
+    "geolocationGeoJson": geojson_point,
+    "skillsV2": ["gardening", "carpentry", "landscaping"],
+    "thumbnail": "https://example.com/images/garden-cleanup.jpg",
+    "contactEmail": "garden@example.org",
+    "contactPhone": "+49123456789",
 }
 
 
@@ -141,7 +165,7 @@ def test_user_deleted(mock_client: Any) -> None:
 # noinspection DuplicatedCode
 @patch("typesense.client.Client")
 def test_space_created(mock_client: Any) -> None:
-    process_event(mock_client, CloudEvent(attributes, message_data("SpaceCreated", "1.1.0", {"space": space_payload})))
+    process_event(mock_client, CloudEvent(attributes, message_data("SpaceCreated", "1.2.0", {"space": space_payload})))
     mock_client.upsert.assert_called_with(
         {
             "id": f"space_{space_payload['id']}",
@@ -159,6 +183,7 @@ def test_space_created(mock_client: Any) -> None:
             "link_locators": {
                 "space": space_payload["slug"],
             },
+            "topics_v2": space_payload["topicsV2"],
         }
     )
 
@@ -166,7 +191,7 @@ def test_space_created(mock_client: Any) -> None:
 # noinspection DuplicatedCode
 @patch("typesense.client.Client")
 def test_space_updated(mock_client: Any) -> None:
-    process_event(mock_client, CloudEvent(attributes, message_data("SpaceUpdated", "1.1.0", {"space": space_payload})))
+    process_event(mock_client, CloudEvent(attributes, message_data("SpaceUpdated", "1.2.0", {"space": space_payload})))
     mock_client.upsert.assert_called_with(
         {
             "id": f"space_{space_payload['id']}",
@@ -184,5 +209,92 @@ def test_space_updated(mock_client: Any) -> None:
             "link_locators": {
                 "space": space_payload["slug"],
             },
+            "topics_v2": space_payload["topicsV2"],
         }
     )
+
+
+@patch("typesense.client.Client")
+def test_space_deleted(mock_client: Any) -> None:
+    process_event(mock_client, CloudEvent(attributes, message_data("SpaceDeleted", "1.2.0", {"space": space_payload})))
+    mock_client.delete.assert_called_with(f"space_{space_payload['id']}")
+
+
+@patch("typesense.client.Client")
+def test_task_created(mock_client: Any) -> None:
+    process_event(
+        mock_client,
+        CloudEvent(
+            attributes,
+            message_data("TaskCreated", "1.0.0", {"user": user_payload, "space": space_payload, "task": task_payload}),
+        ),
+    )
+    mock_client.upsert.assert_called_with(
+        {
+            "id": f"task_{task_payload['id']}",
+            "type": "task",
+            "title_de": task_payload["name"],
+            "title_en": task_payload["name"],
+            "description_de": task_payload["description"],
+            "description_en": task_payload["description"],
+            "location": task_payload["location"],
+            "location_lat_lng": [
+                task_payload["geolocationGeoJson"]["coordinates"][0],
+                task_payload["geolocationGeoJson"]["coordinates"][1],
+            ]
+            if task_payload["geolocationGeoJson"]
+            else None,
+            "image_url": task_payload["thumbnail"],
+            "link_locators": {"space": space_payload["slug"], "task": task_payload["id"]},
+            "topics_v2": space_payload["topicsV2"],
+            "skills_v2": task_payload["skillsV2"],
+            "topics_skills_embedding_v2": None,  # TODO
+            "similarity_embedding": None,  # TODO
+        }
+    )
+
+
+@patch("typesense.client.Client")
+def test_task_updated(mock_client: Any) -> None:
+    process_event(
+        mock_client,
+        CloudEvent(
+            attributes,
+            message_data("TaskUpdated", "1.0.0", {"user": user_payload, "space": space_payload, "task": task_payload}),
+        ),
+    )
+    mock_client.upsert.assert_called_with(
+        {
+            "id": f"task_{task_payload['id']}",
+            "type": "task",
+            "title_de": task_payload["name"],
+            "title_en": task_payload["name"],
+            "description_de": task_payload["description"],
+            "description_en": task_payload["description"],
+            "location": task_payload["location"],
+            "location_lat_lng": [
+                task_payload["geolocationGeoJson"]["coordinates"][0],
+                task_payload["geolocationGeoJson"]["coordinates"][1],
+            ]
+            if task_payload["geolocationGeoJson"]
+            else None,
+            "image_url": task_payload["thumbnail"],
+            "link_locators": {"space": space_payload["slug"], "task": task_payload["id"]},
+            "topics_v2": space_payload["topicsV2"],
+            "skills_v2": task_payload["skillsV2"],
+            "topics_skills_embedding_v2": None,  # TODO
+            "similarity_embedding": None,  # TODO
+        }
+    )
+
+
+@patch("typesense.client.Client")
+def test_task_deleted(mock_client: Any) -> None:
+    process_event(
+        mock_client,
+        CloudEvent(
+            attributes,
+            message_data("TaskDeleted", "1.0.0", {"user": user_payload, "space": space_payload, "task": task_payload}),
+        ),
+    )
+    mock_client.delete.assert_called_with(f"task_{task_payload['id']}")
