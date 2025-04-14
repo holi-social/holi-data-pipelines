@@ -6,6 +6,7 @@ from unittest.mock import patch
 # noinspection PyPackageRequirements
 from cloudevents.http.event import CloudEvent
 from main import process_event
+import pytest
 from pytest import fail
 
 from typesense.exceptions import ObjectNotFound, RequestUnauthorized
@@ -190,6 +191,32 @@ def test_space_created(mock_client: Any) -> None:
 
 # noinspection DuplicatedCode
 @patch("typesense.client.Client")
+def test_space_created_v11(mock_client: Any) -> None:
+    process_event(mock_client, CloudEvent(attributes, message_data("SpaceCreated", "1.1.0", {"space": space_payload})))
+    mock_client.upsert.assert_called_with(
+        {
+            "id": f"space_{space_payload['id']}",
+            "type": "space",
+            "title_de": space_payload["name"],
+            "title_en": space_payload["name"],
+            "description_de": space_payload["description"],
+            "description_en": space_payload["description"],
+            "location": space_payload["location"],
+            "location_lat_lng": [
+                space_payload["locationLatLng"]["latitude"],
+                space_payload["locationLatLng"]["longitude"],
+            ],
+            "image_url": space_payload["avatar"],
+            "link_locators": {
+                "space": space_payload["slug"],
+            },
+            "topics_v2": None,
+        }
+    )
+
+
+# noinspection DuplicatedCode
+@patch("typesense.client.Client")
 def test_space_updated(mock_client: Any) -> None:
     process_event(mock_client, CloudEvent(attributes, message_data("SpaceUpdated", "1.2.0", {"space": space_payload})))
     mock_client.upsert.assert_called_with(
@@ -210,6 +237,32 @@ def test_space_updated(mock_client: Any) -> None:
                 "space": space_payload["slug"],
             },
             "topics_v2": space_payload["topicsV2"],
+        }
+    )
+
+
+# noinspection DuplicatedCode
+@patch("typesense.client.Client")
+def test_space_updated_v11(mock_client: Any) -> None:
+    process_event(mock_client, CloudEvent(attributes, message_data("SpaceUpdated", "1.1.0", {"space": space_payload})))
+    mock_client.upsert.assert_called_with(
+        {
+            "id": f"space_{space_payload['id']}",
+            "type": "space",
+            "title_de": space_payload["name"],
+            "title_en": space_payload["name"],
+            "description_de": space_payload["description"],
+            "description_en": space_payload["description"],
+            "location": space_payload["location"],
+            "location_lat_lng": [
+                space_payload["locationLatLng"]["latitude"],
+                space_payload["locationLatLng"]["longitude"],
+            ],
+            "image_url": space_payload["avatar"],
+            "link_locators": {
+                "space": space_payload["slug"],
+            },
+            "topics_v2": None,
         }
     )
 
@@ -323,7 +376,10 @@ def test_user_updated_with_missing_optional_fields(mock_client: Any) -> None:
 @patch("typesense.client.Client")
 def test_user_updated_with_wrong_version(mock_client: Any) -> None:
     # Test with unsupported version
-    process_event(mock_client, CloudEvent(attributes, message_data("UserUpdated", "2.0.0", {"user": user_payload})))
+    with pytest.raises(ValueError):
+        process_event(
+            mock_client, CloudEvent(attributes, message_data("UserUpdated", "2.0.0", {"user": user_payload}))
+        )
     mock_client.upsert.assert_not_called()
     mock_client.delete.assert_not_called()
 
@@ -386,7 +442,10 @@ def test_space_updated_with_empty_topics(mock_client: Any) -> None:
 @patch("typesense.client.Client")
 def test_space_updated_with_wrong_version(mock_client: Any) -> None:
     # Test with unsupported version (should be >=1.2.0)
-    process_event(mock_client, CloudEvent(attributes, message_data("SpaceUpdated", "1.1.0", {"space": space_payload})))
+    with pytest.raises(ValueError):
+        process_event(
+            mock_client, CloudEvent(attributes, message_data("SpaceUpdated", "1.0.0", {"space": space_payload}))
+        )
     mock_client.upsert.assert_not_called()
     mock_client.delete.assert_not_called()
 
@@ -424,8 +483,8 @@ def test_task_updated_with_missing_optional_fields(mock_client: Any) -> None:
             "link_locators": {"space": space_payload["slug"], "task": task_payload["id"]},
             "topics_v2": ["animal-welfare", "arts-culture"],
             "skills_v2": [],
-            "topics_skills_embedding_v2": None,
-            "similarity_embedding": None,
+            "topics_skills_embedding_v2": None,  # TODO
+            "similarity_embedding": None,  # TODO
         }
     )
 

@@ -3,6 +3,7 @@ import json
 from dataclasses import dataclass
 from typing import Dict, Any, Optional, Literal, List, TypedDict
 from datetime import datetime, date
+from semver import Version
 
 # noinspection PyPackageRequirements
 from cloudevents.http.event import CloudEvent
@@ -17,14 +18,20 @@ def get_event_type(cloud_event: CloudEvent) -> str:
     return cloud_event.data["message"]["attributes"]["eventType"]
 
 
-def get_event_version(cloud_event: CloudEvent) -> str:
-    return cloud_event.data["message"]["attributes"]["eventVersion"]
+def get_event_version(cloud_event: CloudEvent) -> Version:
+    return Version.parse(cloud_event.data["message"]["attributes"]["eventVersion"])
 
 
 def _validate_event_type(cloud_event: CloudEvent, expected_event_type: str) -> None:
     event_type = get_event_type(cloud_event)
     if event_type != expected_event_type:
         raise ValueError(f"Expected event of type {expected_event_type}, got {event_type}")
+
+
+def _validate_event_version(cloud_event: CloudEvent, min_version, max_version_excl: Version) -> None:
+    event_version = get_event_version(cloud_event)
+    if event_version < min_version or event_version >= max_version_excl:
+        raise ValueError(f"Expected minimal event version {min_version}, got {event_version}")
 
 
 @dataclass
@@ -50,7 +57,7 @@ class UserPayload:
 @dataclass
 class UserEvent:
     event_type: str
-    event_version: str
+    event_version: Version
     user: UserPayload
 
     def __init__(self, cloud_event: CloudEvent) -> None:
@@ -66,6 +73,7 @@ class UserEvent:
 class UserUpdatedEvent(UserEvent):
     def __init__(self, cloud_event: CloudEvent) -> None:
         _validate_event_type(cloud_event, "UserUpdated")
+        _validate_event_version(cloud_event, Version(1, 0, 0), Version(2, 0, 0))
         super().__init__(cloud_event)
 
     def as_typesense_document(self) -> object:
@@ -84,6 +92,7 @@ class UserUpdatedEvent(UserEvent):
 class UserDeletedEvent(UserEvent):
     def __init__(self, cloud_event: CloudEvent) -> None:
         _validate_event_type(cloud_event, "UserDeleted")
+        _validate_event_version(cloud_event, Version(1, 0, 0), Version(2, 0, 0))
         super().__init__(cloud_event)
 
 
@@ -130,7 +139,7 @@ class SpacePayload:
 @dataclass
 class SpaceEvent:
     event_type: str
-    event_version: str
+    event_version: Version
     space: SpacePayload
 
     def __init__(self, cloud_event: CloudEvent):
@@ -152,7 +161,7 @@ class SpaceEvent:
             else None,
             "image_url": self.space.avatar,
             "link_locators": {"space": self.space.slug},
-            "topics_v2": self.space.topics_v2,
+            "topics_v2": self.space.topics_v2 if self.event_version >= Version(1, 2, 0) else None,
             # TODO add reco embeddings
         }
 
@@ -161,6 +170,7 @@ class SpaceEvent:
 class SpaceCreatedEvent(SpaceEvent):
     def __init__(self, cloud_event: CloudEvent):
         _validate_event_type(cloud_event, "SpaceCreated")
+        _validate_event_version(cloud_event, Version(1, 1, 0), Version(2, 0, 0))
         super().__init__(cloud_event)
 
 
@@ -168,6 +178,7 @@ class SpaceCreatedEvent(SpaceEvent):
 class SpaceUpdatedEvent(SpaceEvent):
     def __init__(self, cloud_event: CloudEvent):
         _validate_event_type(cloud_event, "SpaceUpdated")
+        _validate_event_version(cloud_event, Version(1, 1, 0), Version(2, 0, 0))
         super().__init__(cloud_event)
 
 
@@ -175,6 +186,7 @@ class SpaceUpdatedEvent(SpaceEvent):
 class SpaceDeletedEvent(SpaceEvent):
     def __init__(self, cloud_event: CloudEvent):
         _validate_event_type(cloud_event, "SpaceDeleted")
+        _validate_event_version(cloud_event, Version(1, 1, 0), Version(2, 0, 0))
         super().__init__(cloud_event)
 
 
@@ -226,7 +238,7 @@ class TaskPayload:
 @dataclass
 class TaskEvent:
     event_type: str
-    event_version: str
+    event_version: Version
     user: UserPayload
     space: SpacePayload
     task: TaskPayload
@@ -267,6 +279,7 @@ class TaskEvent:
 class TaskCreatedEvent(TaskEvent):
     def __init__(self, cloud_event: CloudEvent):
         _validate_event_type(cloud_event, "TaskCreated")
+        _validate_event_version(cloud_event, Version(1, 0, 0), Version(2, 0, 0))
         super().__init__(cloud_event)
 
 
@@ -274,6 +287,7 @@ class TaskCreatedEvent(TaskEvent):
 class TaskUpdatedEvent(TaskEvent):
     def __init__(self, cloud_event: CloudEvent):
         _validate_event_type(cloud_event, "TaskUpdated")
+        _validate_event_version(cloud_event, Version(1, 0, 0), Version(2, 0, 0))
         super().__init__(cloud_event)
 
 
@@ -281,4 +295,5 @@ class TaskUpdatedEvent(TaskEvent):
 class TaskDeletedEvent(TaskEvent):
     def __init__(self, cloud_event: CloudEvent):
         _validate_event_type(cloud_event, "TaskDeleted")
+        _validate_event_version(cloud_event, Version(1, 0, 0), Version(2, 0, 0))
         super().__init__(cloud_event)

@@ -1,27 +1,24 @@
-import re
 from logging import getLogger
 from typing import Union
 
 import functions_framework
 from cloudevents.http.event import CloudEvent
+from events import (
+    SpaceCreatedEvent,
+    SpaceDeletedEvent,
+    SpaceUpdatedEvent,
+    TaskCreatedEvent,
+    TaskDeletedEvent,
+    TaskUpdatedEvent,
+    UserDeletedEvent,
+    UserUpdatedEvent,
+    get_event_type,
+)
+
+from typesense_client import TypesenseClient
 from typesense.exceptions import ObjectNotFound
 
-from events import (
-    get_event_type,
-    get_event_version,
-    UserUpdatedEvent,
-    UserDeletedEvent,
-    SpaceCreatedEvent,
-    SpaceUpdatedEvent,
-    SpaceDeletedEvent,
-)
-from pubsub_typesense_updater.events import TaskCreatedEvent, TaskUpdatedEvent, TaskDeletedEvent
-from typesense_client import TypesenseClient
-
 logger = getLogger(__name__)
-
-SEMVER_1XX_SERIES = r"^1\.\d+\.\d+$"
-SEMVER_GTE_120_LT_200 = r"^1\.(?:(?:[2-9]|[1-9]\d+)\.\d+)$"
 
 
 def process_user_updated_event(client: TypesenseClient, event: UserUpdatedEvent) -> None:
@@ -76,36 +73,31 @@ def process_task_deleted_event(client: TypesenseClient, event: TaskDeletedEvent)
 
 
 def process_event(client: TypesenseClient, event: CloudEvent) -> None:
-    type_version = (
-        get_event_type(event),
-        re.match(SEMVER_1XX_SERIES, get_event_version(event)) is not None,
-        re.match(SEMVER_GTE_120_LT_200, get_event_version(event)) is not None,
-    )
-    match type_version:
-        case ("UserUpdated", True, _):
+    match get_event_type(event):
+        case "UserUpdated":
             return process_user_updated_event(client, UserUpdatedEvent(event))
-        case ("UserDeleted", True, _):
+        case "UserDeleted":
             return process_user_deleted_event(client, UserDeletedEvent(event))
-        case ("UserNameUpdated", True, _):
+        case "UserNameUpdated":
             # no need to process, it is sufficient to handle UserUpdated
             logger.debug("Ignoring UserNameUpdated event")
             return None
-        case ("UserEmailUpdated", True, _):
+        case "UserEmailUpdated":
             # no need to process, it is sufficient to handle UserUpdated
             # also, no PII must be in Typesense as there's no authentication
             logger.debug("Ignoring UserEmailUpdated event")
             return None
-        case ("SpaceCreated", _, True):
+        case "SpaceCreated":
             return process_space_upserting_event(client, SpaceCreatedEvent(event))
-        case ("SpaceUpdated", _, True):
+        case "SpaceUpdated":
             return process_space_upserting_event(client, SpaceUpdatedEvent(event))
-        case ("SpaceDeleted", True, _):
+        case "SpaceDeleted":
             return process_space_deleted_event(client, SpaceDeletedEvent(event))
-        case ("TaskCreated", True, _):
+        case "TaskCreated":
             return process_task_upserting_event(client, TaskCreatedEvent(event))
-        case ("TaskUpdated", True, _):
+        case "TaskUpdated":
             return process_task_upserting_event(client, TaskUpdatedEvent(event))
-        case ("TaskDeleted", True, _):
+        case "TaskDeleted":
             return process_task_deleted_event(client, TaskDeletedEvent(event))
         case (eventType, eventVersion):
             # other events than handled above are assumed to (currently) not be of interest in search
@@ -117,6 +109,3 @@ def process_event(client: TypesenseClient, event: CloudEvent) -> None:
 def process_message(event: CloudEvent) -> None:
     client = TypesenseClient()
     process_event(client, event)
-
-
-# TODO ensure that UserUpdated or similar is emitted on updates of fields we're interested in
