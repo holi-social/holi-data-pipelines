@@ -252,7 +252,7 @@ class TaskEvent:
                 self.task.geolocation_geojson["coordinates"][0],
                 self.task.geolocation_geojson["coordinates"][1],
             ]
-            if self.task.geolocation_geojson
+            if self.task.geolocation_geojson and self.task.geolocation_geojson.get("coordinates")
             else None,
             "image_url": self.task.thumbnail,
             "link_locators": {"space": self.space.slug, "task": self.task.id},

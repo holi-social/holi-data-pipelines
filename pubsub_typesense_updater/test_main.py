@@ -241,9 +241,7 @@ def test_task_created(mock_client: Any) -> None:
             "location_lat_lng": [
                 task_payload["geolocationGeoJson"]["coordinates"][0],
                 task_payload["geolocationGeoJson"]["coordinates"][1],
-            ]
-            if task_payload["geolocationGeoJson"]
-            else None,
+            ],
             "image_url": task_payload["thumbnail"],
             "link_locators": {"space": space_payload["slug"], "task": task_payload["id"]},
             "topics_v2": space_payload["topicsV2"],
@@ -275,9 +273,7 @@ def test_task_updated(mock_client: Any) -> None:
             "location_lat_lng": [
                 task_payload["geolocationGeoJson"]["coordinates"][0],
                 task_payload["geolocationGeoJson"]["coordinates"][1],
-            ]
-            if task_payload["geolocationGeoJson"]
-            else None,
+            ],
             "image_url": task_payload["thumbnail"],
             "link_locators": {"space": space_payload["slug"], "task": task_payload["id"]},
             "topics_v2": space_payload["topicsV2"],
@@ -298,3 +294,214 @@ def test_task_deleted(mock_client: Any) -> None:
         ),
     )
     mock_client.delete.assert_called_with(f"task_{task_payload['id']}")
+
+
+@patch("typesense.client.Client")
+def test_user_updated_with_missing_optional_fields(mock_client: Any) -> None:
+    # Test with missing optional fields
+    user = user_payload.copy()
+    del user["avatar"]
+    del user["aboutMe"]
+    del user["location"]
+
+    process_event(mock_client, CloudEvent(attributes, message_data("UserUpdated", "1.1.0", {"user": user})))
+    mock_client.upsert.assert_called_with(
+        {
+            "id": f"profile_{user['id']}",
+            "type": "profile",
+            "user_full_name": user["name"],
+            "location": None,
+            "location_lat_lng": None,
+            "image_url": None,
+            "link_locators": {
+                "profile": user["id"],
+            },
+        }
+    )
+
+
+@patch("typesense.client.Client")
+def test_user_updated_with_wrong_version(mock_client: Any) -> None:
+    # Test with unsupported version
+    process_event(mock_client, CloudEvent(attributes, message_data("UserUpdated", "2.0.0", {"user": user_payload})))
+    mock_client.upsert.assert_not_called()
+    mock_client.delete.assert_not_called()
+
+
+@patch("typesense.client.Client")
+def test_space_updated_with_missing_location_data(mock_client: Any) -> None:
+    # Test with missing location data
+    space = space_payload.copy()
+    del space["locationLatLng"]
+
+    process_event(mock_client, CloudEvent(attributes, message_data("SpaceUpdated", "1.2.0", {"space": space})))
+    mock_client.upsert.assert_called_with(
+        {
+            "id": f"space_{space['id']}",
+            "type": "space",
+            "title_de": space["name"],
+            "title_en": space["name"],
+            "description_de": space["description"],
+            "description_en": space["description"],
+            "location": space["location"],
+            "location_lat_lng": None,
+            "image_url": space["avatar"],
+            "link_locators": {
+                "space": space["slug"],
+            },
+            "topics_v2": space["topicsV2"],
+        }
+    )
+
+
+@patch("typesense.client.Client")
+def test_space_updated_with_empty_topics(mock_client: Any) -> None:
+    # Test with empty topics list
+    space = space_payload.copy()
+    space["topicsV2"] = []
+
+    process_event(mock_client, CloudEvent(attributes, message_data("SpaceUpdated", "1.2.0", {"space": space})))
+    mock_client.upsert.assert_called_with(
+        {
+            "id": f"space_{space['id']}",
+            "type": "space",
+            "title_de": space["name"],
+            "title_en": space["name"],
+            "description_de": space["description"],
+            "description_en": space["description"],
+            "location": space["location"],
+            "location_lat_lng": [
+                space["locationLatLng"]["latitude"],
+                space["locationLatLng"]["longitude"],
+            ],
+            "image_url": space["avatar"],
+            "link_locators": {
+                "space": space["slug"],
+            },
+            "topics_v2": [],
+        }
+    )
+
+
+@patch("typesense.client.Client")
+def test_space_updated_with_wrong_version(mock_client: Any) -> None:
+    # Test with unsupported version (should be >=1.2.0)
+    process_event(mock_client, CloudEvent(attributes, message_data("SpaceUpdated", "1.1.0", {"space": space_payload})))
+    mock_client.upsert.assert_not_called()
+    mock_client.delete.assert_not_called()
+
+
+@patch("typesense.client.Client")
+def test_task_updated_with_missing_optional_fields(mock_client: Any) -> None:
+    # Test with missing optional fields
+    task = task_payload.copy()
+    del task["thumbnail"]
+    del task["contactPhone"]
+    del task["timeframeStartDate"]
+    del task["timeframeEndDate"]
+    del task["location"]
+    del task["geolocationGeoJson"]
+    del task["skillsV2"]
+
+    process_event(
+        mock_client,
+        CloudEvent(
+            attributes,
+            message_data("TaskUpdated", "1.0.0", {"user": user_payload, "space": space_payload, "task": task}),
+        ),
+    )
+    mock_client.upsert.assert_called_with(
+        {
+            "id": f"task_{task['id']}",
+            "type": "task",
+            "title_de": task["name"],
+            "title_en": task["name"],
+            "description_de": task["description"],
+            "description_en": task["description"],
+            "location": None,
+            "location_lat_lng": None,
+            "image_url": None,
+            "link_locators": {"space": space_payload["slug"], "task": task_payload["id"]},
+            "topics_v2": ["animal-welfare", "arts-culture"],
+            "skills_v2": [],
+            "topics_skills_embedding_v2": None,
+            "similarity_embedding": None,
+        }
+    )
+
+
+@patch("typesense.client.Client")
+def test_task_updated_with_broken_geojson(mock_client: Any) -> None:
+    # Test with missing optional fields
+    task = task_payload.copy()
+    del task["geolocationGeoJson"]["coordinates"]
+
+    process_event(
+        mock_client,
+        CloudEvent(
+            attributes,
+            message_data("TaskUpdated", "1.0.0", {"user": user_payload, "space": space_payload, "task": task}),
+        ),
+    )
+    mock_client.upsert.assert_called_with(
+        {
+            "id": f"task_{task['id']}",
+            "type": "task",
+            "title_de": task["name"],
+            "title_en": task["name"],
+            "description_de": task["description"],
+            "description_en": task["description"],
+            "location": task["location"],
+            "location_lat_lng": None,
+            "image_url": task_payload["thumbnail"],
+            "link_locators": {"space": space_payload["slug"], "task": task_payload["id"]},
+            "topics_v2": space_payload["topicsV2"],
+            "skills_v2": task_payload["skillsV2"],
+            "topics_skills_embedding_v2": None,
+            "similarity_embedding": None,
+        }
+    )
+
+
+@patch("typesense.client.Client")
+def test_unknown_event_type(mock_client: Any) -> None:
+    # Test with unknown event type
+    process_event(
+        mock_client, CloudEvent(attributes, message_data("UnknownEventType", "1.1.0", {"user": user_payload}))
+    )
+    mock_client.upsert.assert_not_called()
+    mock_client.delete.assert_not_called()
+
+
+@patch("typesense.client.Client")
+def test_malformed_event_missing_attributes(mock_client: Any) -> None:
+    # Test with missing event attributes
+    malformed_attributes = attributes.copy()
+    malformed_data = message_data("UserUpdated", "1.1.0", {"user": user_payload})
+    del malformed_data["message"]["attributes"]["eventType"]
+
+    # This should raise a KeyError due to missing eventType
+    try:
+        process_event(mock_client, CloudEvent(malformed_attributes, malformed_data))
+        fail("Expected KeyError was not raised")
+    except KeyError:
+        pass
+
+    mock_client.upsert.assert_not_called()
+    mock_client.delete.assert_not_called()
+
+
+@patch("typesense.client.Client")
+def test_malformed_event_missing_data(mock_client: Any) -> None:
+    # Test with missing data
+    malformed_data = message_data("UserUpdated", "1.1.0", {})
+
+    # This should raise a KeyError due to missing user data
+    try:
+        process_event(mock_client, CloudEvent(attributes, malformed_data))
+        fail("Expected KeyError was not raised")
+    except KeyError:
+        pass
+
+    mock_client.upsert.assert_not_called()
+    mock_client.delete.assert_not_called()
