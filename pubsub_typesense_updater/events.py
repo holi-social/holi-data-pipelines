@@ -31,7 +31,9 @@ def _validate_event_type(cloud_event: CloudEvent, expected_event_type: str) -> N
 def _validate_event_version(cloud_event: CloudEvent, min_version: Version, max_version_excl: Version) -> None:
     event_version = get_event_version(cloud_event)
     if event_version < min_version or event_version >= max_version_excl:
-        raise ValueError(f"Expected minimal event version {min_version}, got {event_version}")
+        raise ValueError(
+            f"Unexpected event version: min={min_version}, max_excl={max_version_excl}, actual={event_version}"
+        )
 
 
 @dataclass
