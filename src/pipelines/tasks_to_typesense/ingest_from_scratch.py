@@ -33,6 +33,7 @@ def task_to_doc(row: TaskRow) -> TaskDoc:
     geojson = row.get("geolocation_geojson")
     return {
         "id": f"task_{str(row.get('id'))}",
+        "space_id": str(row.get("community_id")),
         "type": "task",
         "title_de": row.get("name"),
         "title_en": row.get("name"),

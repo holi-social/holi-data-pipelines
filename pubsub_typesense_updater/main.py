@@ -1,6 +1,7 @@
 from logging import getLogger
 from typing import Union
 
+from semver import Version
 import functions_framework
 from cloudevents.http.event import CloudEvent
 from events import (
@@ -45,6 +46,8 @@ def process_user_deleted_event(client: TypesenseClient, event: UserDeletedEvent)
 def process_space_upserting_event(client: TypesenseClient, event: Union[SpaceCreatedEvent, SpaceUpdatedEvent]) -> None:
     logger.debug(f"Processing {event}")
     client.upsert(event.as_typesense_document())
+    if event.event_type == "SpaceUpdated" and event.event_version >= Version(1, 2, 0):
+        client.upsert({"topics_v2": event.space.topics_v2}, {"filter_by": f"type:=task && space_id:={event.space.id}"})
     logger.info(f"Upserted space {event.space.id} in Typesense")
 
 

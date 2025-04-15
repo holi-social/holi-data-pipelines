@@ -29,15 +29,16 @@ class TypesenseClient(object):
             }
         )
 
-    def upsert(self, document: Any) -> object:
+    def upsert(self, document: Any, params: Any | None) -> object:
         """
         Upserts the document in Typesense
 
         :param document: the document to upsert
+        :param params: params dict to pass to actual Typesense client (e.g. filter_by)
         :return: deserialized JSON document
         """
         try:
-            return self.client.collections[os.getenv("TYPESENSE_COLLECTION_NAME")].documents.upsert(document)
+            return self.client.collections[os.getenv("TYPESENSE_COLLECTION_NAME")].documents.upsert(document, params)
         except Exception as e:
             # typesense at this point should only contain public data so it is fine to log documents (no PII)
             # if PII should be added later, this must be handled in the documents __str__ function

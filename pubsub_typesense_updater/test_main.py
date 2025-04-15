@@ -219,7 +219,8 @@ def test_space_created_v11(mock_client: Any) -> None:
 @patch("typesense.client.Client")
 def test_space_updated(mock_client: Any) -> None:
     process_event(mock_client, CloudEvent(attributes, message_data("SpaceUpdated", "1.2.0", {"space": space_payload})))
-    mock_client.upsert.assert_called_with(
+    assert mock_client.upsert.call_count == 2
+    mock_client.upsert.assert_any_call(
         {
             "id": f"space_{space_payload['id']}",
             "type": "space",
@@ -239,13 +240,17 @@ def test_space_updated(mock_client: Any) -> None:
             "topics_v2": space_payload["topicsV2"],
         }
     )
+    mock_client.upsert.assert_any_call(
+        {"topics_v2": space_payload["topicsV2"]}, {"filter_by": f"type:=task && space_id:={space_payload['id']}"}
+    )
 
 
 # noinspection DuplicatedCode
 @patch("typesense.client.Client")
 def test_space_updated_v11(mock_client: Any) -> None:
     process_event(mock_client, CloudEvent(attributes, message_data("SpaceUpdated", "1.1.0", {"space": space_payload})))
-    mock_client.upsert.assert_called_with(
+    # assert it will only update the space and not associated tasks (only introduced for event version 1.2.0)
+    mock_client.upsert.assert_called_once_with(
         {
             "id": f"space_{space_payload['id']}",
             "type": "space",
@@ -391,7 +396,7 @@ def test_space_updated_with_missing_location_data(mock_client: Any) -> None:
     del space["locationLatLng"]
 
     process_event(mock_client, CloudEvent(attributes, message_data("SpaceUpdated", "1.2.0", {"space": space})))
-    mock_client.upsert.assert_called_with(
+    mock_client.upsert.assert_any_call(
         {
             "id": f"space_{space['id']}",
             "type": "space",
@@ -417,7 +422,7 @@ def test_space_updated_with_empty_topics(mock_client: Any) -> None:
     space["topicsV2"] = []
 
     process_event(mock_client, CloudEvent(attributes, message_data("SpaceUpdated", "1.2.0", {"space": space})))
-    mock_client.upsert.assert_called_with(
+    mock_client.upsert.assert_any_call(
         {
             "id": f"space_{space['id']}",
             "type": "space",
