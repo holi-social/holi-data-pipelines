@@ -98,6 +98,9 @@ variables:
 pubsub_typesense_updater_install_test:
   image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/python:3.13-slim"
   cache: !reference [ .pip_cache_rw_pubsub_typesense_updater ]
+  before_script:
+    - apt-get update -qq
+    - apt-get install -y build-essential
   script:
     # install dependencies for cloud functions
     - python3 -m venv pubsub_typesense_updater/.venv
