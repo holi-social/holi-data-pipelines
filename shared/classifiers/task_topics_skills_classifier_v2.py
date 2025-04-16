@@ -1,10 +1,8 @@
+from logging import Logger
 from typing import List, Optional
 
-from src.common.classifiers.classification_item import ClassificationItem
-from src.common.classifiers.topics_skills_classifier_v2 import TopicsSkillsClassifierV2, TopicsSkillsClassificationV2
-from src.common.logging.PipelineLogger import PipelineLogger
-
-logger = PipelineLogger("task_topics_skills_classifier_v2")
+from shared.classifiers.classification_item import ClassificationItem
+from shared.classifiers.topics_skills_classifier_v2 import TopicsSkillsClassifierV2, TopicsSkillsClassificationV2
 
 TOPICS_V2_VECTOR_INDICES = {
     "animal-welfare": 0,
@@ -87,7 +85,7 @@ def to_topics_skills_embedding_v2(topics_v2: Optional[List[str]], skills_v2: Opt
 
 
 class TaskTopicsSkillsClassifierV2(TopicsSkillsClassifierV2):
-    def __init__(self) -> None:
+    def __init__(self, logger: Logger) -> None:
         super().__init__(logger)
 
     def get_classification(self, item: ClassificationItem) -> TopicsSkillsClassificationV2:

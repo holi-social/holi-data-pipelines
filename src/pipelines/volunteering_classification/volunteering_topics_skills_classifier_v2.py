@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from logging import Logger
 from typing import List, Dict, Any
 
 import re
@@ -7,9 +8,8 @@ import yaml
 from vertexai.preview.generative_models import GenerativeModel
 from vertexai.generative_models import GenerationConfig
 
-from src.common.classifiers.classification_item import ClassificationItem
-from src.common.classifiers.topics_skills_classifier_v2 import TopicsSkillsClassifierV2, TopicsSkillsClassificationV2
-from src.common.logging.PipelineLogger import PipelineLogger
+from shared.classifiers.classification_item import ClassificationItem
+from shared.classifiers.topics_skills_classifier_v2 import TopicsSkillsClassifierV2, TopicsSkillsClassificationV2
 from ratelimit import limits, sleep_and_retry
 
 from src.pipelines.topics_v2 import topic_v2_titles, topic_v2_slugs
@@ -37,8 +37,6 @@ YAML_RE = re.compile(r"```yaml([\S\s]*)```")
 # Gemini output contains ellipsis lines quite often
 ELLIPSIS_RE = re.compile(r"\.\.\.\n")
 
-logger = PipelineLogger("volunteering_topics_skills_classification_v2")
-
 
 @dataclass
 class TermClassificationResult:
@@ -49,7 +47,8 @@ class TermClassificationResult:
 class VolunteeringTopicsSkillsClassifierV2(TopicsSkillsClassifierV2):
     model: GenerativeModel
 
-    def __init__(self) -> None:
+    def __init__(self, logger: Logger) -> None:
+        super().__init__(logger)
         self.model = GenerativeModel(MODEL_NAME, generation_config=(GenerationConfig()))
 
     def get_classification(self, item: ClassificationItem) -> TopicsSkillsClassificationV2:
@@ -66,7 +65,7 @@ class VolunteeringTopicsSkillsClassifierV2(TopicsSkillsClassifierV2):
     def _get_skill_v2_classification(self, item: ClassificationItem) -> TermClassificationResult:
         prompt = self._create_skills_prompt_volunteering(item)
         response = self._invoke_model(prompt)
-        logger.debug(f"raw skill classification response: {response}")
+        self.logger.debug(f"raw skill classification response: {response}")
         return self._validate_and_transform_response(
             skill_v2_titles,
             skill_v2_slugs,
@@ -78,7 +77,7 @@ class VolunteeringTopicsSkillsClassifierV2(TopicsSkillsClassifierV2):
     def _get_topic_v2_classification(self, item: ClassificationItem) -> TermClassificationResult:
         prompt = self._create_topics_prompt_volunteering(item)
         response = self._invoke_model(prompt)
-        logger.debug(f"raw topic classification response: {response}")
+        self.logger.debug(f"raw topic classification response: {response}")
         return self._validate_and_transform_response(
             topic_v2_titles,
             topic_v2_slugs,

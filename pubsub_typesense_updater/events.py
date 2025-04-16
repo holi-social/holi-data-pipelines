@@ -8,6 +8,9 @@ from semver import Version
 # noinspection PyPackageRequirements
 from cloudevents.http.event import CloudEvent
 
+from pubsub_typesense_updater.farm_fingerprint import farm_fingerprint
+from shared.classifiers.classification_result import ClassificationResult
+
 
 class GeoJSONPoint(TypedDict):
     type: Literal["Point"]
@@ -253,7 +256,14 @@ class TaskEvent:
         self.space = SpacePayload(message_data)
         self.task = TaskPayload(message_data)
 
-    def as_typesense_document(self) -> object:
+    def farm_fingerprint(self) -> str:
+        # ATTENTION! This hash calculation needs to be kept in sync with the hash calculation defined in the
+        # corresponding BigQuery views
+        return farm_fingerprint(
+            f"{self.task.name}|{self.task.description}|{self.task.location or ''}|{self.space.topics_v2 or []}|{self.task.skills_v2 or []}"
+        )
+
+    def as_typesense_document(self, classification: ClassificationResult | None) -> object:
         return {
             "id": f"task_{self.task.id}",
             "type": "task",
@@ -272,8 +282,8 @@ class TaskEvent:
             "link_locators": {"space": self.space.slug, "task": self.task.id},
             "topics_v2": self.space.topics_v2,
             "skills_v2": self.task.skills_v2,
-            "topics_skills_embedding_v2": None,  # TODO
-            "similarity_embedding": None,  # TODO
+            "topics_skills_embedding_v2": classification.topics_skills_embedding_v2 if classification else None,
+            "similarity_embedding": classification.similarity_embedding if classification else None,
         }
 
 

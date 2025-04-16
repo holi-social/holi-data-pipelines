@@ -1,29 +1,29 @@
 import re
 from abc import ABC, abstractmethod
 from typing import List
+from logging import Logger
 
 from bs4 import BeautifulSoup
 from ratelimit import limits, sleep_and_retry
 from vertexai.language_models import TextEmbeddingInput, TextEmbeddingModel
 
-from src.common.classifiers.classification_item import ClassificationItem
-from src.common.logging.PipelineLogger import PipelineLogger
+from shared.classifiers.classification_item import ClassificationItem
 
 TEXT_EMBEDDING_MODEL_NAME = "text-multilingual-embedding-002"
 MODEL_RATE_LIMIT_PER_MINUTE = 2000
 EMBEDDING_DIMENSIONALITY = 256
 TEXT_EMBEDDING_TASK_TYPE = "RETRIEVAL_DOCUMENT"
 
-logger = PipelineLogger("similarity_classification")
-
 type SimilarityEmbedding = List[float]
 
 
 class SimilarityEmbedder(ABC):
     model: TextEmbeddingModel
+    logger: Logger
 
-    def __init__(self) -> None:
+    def __init__(self, logger: Logger) -> None:
         self.model = TextEmbeddingModel.from_pretrained(TEXT_EMBEDDING_MODEL_NAME)
+        self.logger = logger
 
     @staticmethod
     def _strip_html_tags(text: str) -> str:
@@ -50,5 +50,5 @@ class SimilarityEmbedder(ABC):
             embeddings = self.model.get_embeddings([text_input], output_dimensionality=EMBEDDING_DIMENSIONALITY)
             return embeddings[0].values
         except Exception as e:
-            logger.error(f"Error fetching similarity embedding: {str(e)} for text: {text_input}")
+            self.logger.error(f"Error fetching similarity embedding: {str(e)} for text: {text_input}")
             raise e

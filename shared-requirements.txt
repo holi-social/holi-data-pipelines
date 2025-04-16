@@ -1,3 +1,4 @@
 # contains requirements that are shared between cloud functions and pipelines at runtime
 
 typesense==0.21.0
+google-cloud-aiplatform==1.88.0
