@@ -14,6 +14,7 @@ resource "google_project_iam_member" "data_pipeline" {
     "roles/logging.logWriter",
     "roles/monitoring.metricWriter",
     "roles/aiplatform.user",
+		"roles/artifactregistry.reader",
   ])
   role   = each.key
   member = "serviceAccount:${google_service_account.data_pipeline.email}"
