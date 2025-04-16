@@ -31,6 +31,7 @@ class TestTaskToDoc(unittest.TestCase):
 
         # Check basic fields
         self.assertEqual(result["id"], "task_123")
+        self.assertEqual(result["space_id"], "456")
         self.assertEqual(result["type"], "task")
         self.assertEqual(result["title_de"], "Test Task")
         self.assertEqual(result["title_en"], "Test Task")

@@ -1,24 +1,39 @@
 import base64
 import json
 from dataclasses import dataclass
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Literal, List, TypedDict
+from datetime import datetime, date
+from semver import Version
 
 # noinspection PyPackageRequirements
 from cloudevents.http.event import CloudEvent
+
+
+class GeoJSONPoint(TypedDict):
+    type: Literal["Point"]
+    coordinates: List[float]  # longitude, latitude
 
 
 def get_event_type(cloud_event: CloudEvent) -> str:
     return cloud_event.data["message"]["attributes"]["eventType"]
 
 
-def get_event_version(cloud_event: CloudEvent) -> str:
-    return cloud_event.data["message"]["attributes"]["eventVersion"]
+def get_event_version(cloud_event: CloudEvent) -> Version:
+    return Version.parse(cloud_event.data["message"]["attributes"]["eventVersion"])
 
 
 def _validate_event_type(cloud_event: CloudEvent, expected_event_type: str) -> None:
     event_type = get_event_type(cloud_event)
     if event_type != expected_event_type:
         raise ValueError(f"Expected event of type {expected_event_type}, got {event_type}")
+
+
+def _validate_event_version(cloud_event: CloudEvent, min_version: Version, max_version_excl: Version) -> None:
+    event_version = get_event_version(cloud_event)
+    if event_version < min_version or event_version >= max_version_excl:
+        raise ValueError(
+            f"Unexpected event version: min={min_version}, max_excl={max_version_excl}, actual={event_version}"
+        )
 
 
 @dataclass
@@ -44,7 +59,7 @@ class UserPayload:
 @dataclass
 class UserEvent:
     event_type: str
-    event_version: str
+    event_version: Version
     user: UserPayload
 
     def __init__(self, cloud_event: CloudEvent) -> None:
@@ -60,6 +75,7 @@ class UserEvent:
 class UserUpdatedEvent(UserEvent):
     def __init__(self, cloud_event: CloudEvent) -> None:
         _validate_event_type(cloud_event, "UserUpdated")
+        _validate_event_version(cloud_event, Version(1, 0, 0), Version(2, 0, 0))
         super().__init__(cloud_event)
 
     def as_typesense_document(self) -> object:
@@ -78,6 +94,7 @@ class UserUpdatedEvent(UserEvent):
 class UserDeletedEvent(UserEvent):
     def __init__(self, cloud_event: CloudEvent) -> None:
         _validate_event_type(cloud_event, "UserDeleted")
+        _validate_event_version(cloud_event, Version(1, 0, 0), Version(2, 0, 0))
         super().__init__(cloud_event)
 
 
@@ -96,6 +113,7 @@ class SpacePayload:
     description: str
     location: str
     location_lat_lng: Optional[LatLng]
+    topics_v2: Optional[List[str]]
 
     def __init__(self, data: Dict[str, Any]):
         self.id = data["space"].get("id")
@@ -106,8 +124,8 @@ class SpacePayload:
         self.location = data["space"].get("location")
         contains_lat_lng = (
             data["space"].get("locationLatLng") is not None
-            and data["space"].get("locationLatLng")["latitude"] is not None
-            and data["space"].get("locationLatLng")["longitude"] is not None
+            and data["space"].get("locationLatLng").get("latitude") is not None
+            and data["space"].get("locationLatLng").get("longitude") is not None
         )
         self.location_lat_lng = (
             LatLng(
@@ -117,12 +135,13 @@ class SpacePayload:
             if contains_lat_lng
             else None
         )
+        self.topics_v2 = data["space"].get("topicsV2")
 
 
 @dataclass
 class SpaceEvent:
     event_type: str
-    event_version: str
+    event_version: Version
     space: SpacePayload
 
     def __init__(self, cloud_event: CloudEvent):
@@ -144,6 +163,8 @@ class SpaceEvent:
             else None,
             "image_url": self.space.avatar,
             "link_locators": {"space": self.space.slug},
+            "topics_v2": self.space.topics_v2 if self.event_version >= Version(1, 2, 0) else None,
+            # TODO add reco embeddings
         }
 
 
@@ -151,6 +172,7 @@ class SpaceEvent:
 class SpaceCreatedEvent(SpaceEvent):
     def __init__(self, cloud_event: CloudEvent):
         _validate_event_type(cloud_event, "SpaceCreated")
+        _validate_event_version(cloud_event, Version(1, 1, 0), Version(2, 0, 0))
         super().__init__(cloud_event)
 
 
@@ -158,6 +180,7 @@ class SpaceCreatedEvent(SpaceEvent):
 class SpaceUpdatedEvent(SpaceEvent):
     def __init__(self, cloud_event: CloudEvent):
         _validate_event_type(cloud_event, "SpaceUpdated")
+        _validate_event_version(cloud_event, Version(1, 1, 0), Version(2, 0, 0))
         super().__init__(cloud_event)
 
 
@@ -165,4 +188,114 @@ class SpaceUpdatedEvent(SpaceEvent):
 class SpaceDeletedEvent(SpaceEvent):
     def __init__(self, cloud_event: CloudEvent):
         _validate_event_type(cloud_event, "SpaceDeleted")
+        _validate_event_version(cloud_event, Version(1, 1, 0), Version(2, 0, 0))
+        super().__init__(cloud_event)
+
+
+@dataclass
+class TaskPayload:
+    id: str
+    name: str
+    description: str
+    created: datetime
+    timeframe_start_date: Optional[date]
+    timeframe_end_date: Optional[date]
+    regularity: str  # TODO or use Literal["REGULARLY", "PROJECT_BASED", "ONE_TIME", "ONCE_WEEK", "SEVERAL_TIMES_WEEK", "ONCE_MONTH", "NEGOTIABLE"]
+    duration: str  # TODO or use Literal["MINUTES_10to15", "MINUTES_15to30", "MINUTES_30to60", "HOURS_1to2", "HOURS_2to4", "HOURS_4to6", "DAYS_1", "DAYS_2", "DAYS_3_OR_MORE", "INDETERMINATE"]
+    slots_available: int
+    slots_taken: int
+    visibility: Literal["MEMBERS", "PUBLIC"]
+    location_type: str  # TODO or use Literal["HYBRID", "REMOTE", "ONSITE"]
+    location: Optional[str]
+    geolocation_geojson: Optional[GeoJSONPoint]
+    skills_v2: List[str]
+    thumbnail: Optional[str]
+    contact_email: str
+    contact_phone: Optional[str]
+
+    def __init__(self, data: Dict[str, Any]):
+        task_data = data["task"]
+        self.id = task_data.get("id")
+        self.name = task_data.get("name")
+        self.description = task_data.get("description")
+        self.created = datetime.fromisoformat(task_data.get("created"))
+        timeframe_start = task_data.get("timeframeStartDate")
+        self.timeframe_start_date = date.fromisoformat(timeframe_start) if timeframe_start else None
+        timeframe_end = task_data.get("timeframeEndDate")
+        self.timeframe_end_date = date.fromisoformat(timeframe_end) if timeframe_end else None
+        self.regularity = task_data.get("regularity")
+        self.duration = task_data.get("duration")
+        self.slots_available = task_data.get("slotsAvailable")
+        self.slots_taken = task_data.get("slotsTaken")
+        self.visibility = task_data.get("visibility")
+        self.location_type = task_data.get("locationType")
+        self.location = task_data.get("location")
+        self.geolocation_geojson = task_data.get("geolocationGeoJson")
+        self.skills_v2 = task_data.get("skillsV2", [])  # Default to empty list if None
+        self.thumbnail = task_data.get("thumbnail")
+        self.contact_email = task_data.get("contactEmail")
+        self.contact_phone = task_data.get("contactPhone")
+
+
+@dataclass
+class TaskEvent:
+    event_type: str
+    event_version: Version
+    user: UserPayload
+    space: SpacePayload
+    task: TaskPayload
+
+    def __init__(self, cloud_event: CloudEvent):
+        self.event_type = get_event_type(cloud_event)
+        self.event_version = get_event_version(cloud_event)
+        message_data = json.loads(base64.b64decode(cloud_event.data["message"]["data"]))
+        self.user = UserPayload(message_data)
+        self.space = SpacePayload(message_data)
+        self.task = TaskPayload(message_data)
+
+    def as_typesense_document(self) -> object:
+        return {
+            "id": f"task_{self.task.id}",
+            "type": "task",
+            "title_de": self.task.name,
+            "title_en": self.task.name,
+            "description_de": self.task.description,
+            "description_en": self.task.description,
+            "location": self.task.location,
+            "location_lat_lng": [
+                self.task.geolocation_geojson["coordinates"][0],
+                self.task.geolocation_geojson["coordinates"][1],
+            ]
+            if self.task.geolocation_geojson and self.task.geolocation_geojson.get("coordinates")
+            else None,
+            "image_url": self.task.thumbnail,
+            "link_locators": {"space": self.space.slug, "task": self.task.id},
+            "topics_v2": self.space.topics_v2,
+            "skills_v2": self.task.skills_v2,
+            "topics_skills_embedding_v2": None,  # TODO
+            "similarity_embedding": None,  # TODO
+        }
+
+
+@dataclass
+class TaskCreatedEvent(TaskEvent):
+    def __init__(self, cloud_event: CloudEvent):
+        _validate_event_type(cloud_event, "TaskCreated")
+        _validate_event_version(cloud_event, Version(1, 0, 0), Version(2, 0, 0))
+        super().__init__(cloud_event)
+
+
+@dataclass
+class TaskUpdatedEvent(TaskEvent):
+    def __init__(self, cloud_event: CloudEvent):
+        _validate_event_type(cloud_event, "TaskUpdated")
+        _validate_event_version(cloud_event, Version(1, 0, 0), Version(2, 0, 0))
+        super().__init__(cloud_event)
+
+
+@dataclass
+class TaskDeletedEvent(TaskEvent):
+    def __init__(self, cloud_event: CloudEvent):
+        _validate_event_type(cloud_event, "TaskDeleted")
+        _validate_event_version(cloud_event, Version(1, 0, 0), Version(2, 0, 0))
         super().__init__(cloud_event)
