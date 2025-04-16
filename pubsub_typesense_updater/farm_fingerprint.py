@@ -1,4 +1,5 @@
 import farmhash
+from typing import cast
 
 
 def farm_fingerprint(s: str | bytes) -> str:
@@ -16,7 +17,7 @@ def farm_fingerprint(s: str | bytes) -> str:
         s = s.encode("utf-8")
 
     # Get unsigned 64-bit integer from farmhash
-    unsigned_hash = farmhash.fingerprint64(s)
+    unsigned_hash = farmhash.fingerprint64(cast(str, s))
 
     # Convert to signed 64-bit integer (equivalent to np.int64)
     if unsigned_hash > 0x7FFFFFFFFFFFFFFF:  # If highest bit is set (negative in int64)
