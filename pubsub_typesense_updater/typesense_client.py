@@ -29,7 +29,7 @@ class TypesenseClient(object):
             }
         )
 
-    def upsert(self, document: Any, params: Any | None) -> object:
+    def upsert(self, document: Any, params: Any | None = None) -> object:
         """
         Upserts the document in Typesense
 
