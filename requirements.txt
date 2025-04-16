@@ -6,7 +6,7 @@ aiohttp-retry==2.9.1
 aiohttp==3.11.16
 beautifulsoup4==4.13.4
 codetiming==1.4.0
-google-cloud-aiplatform==1.88.0
+google-cloud-aiplatform==1.89.0
 langdetect==1.0.9
 prefect[gcp]==3.2.11
 prefect-gcp[all_extras]==0.6.2
