@@ -5,7 +5,7 @@ from unittest.mock import patch, MagicMock, AsyncMock
 
 # noinspection PyPackageRequirements
 from cloudevents.http.event import CloudEvent
-from pubsub_typesense_updater.main import process_event
+from main import process_event
 import pytest
 from pytest import fail
 
@@ -103,7 +103,7 @@ def mock_bigquery_client() -> Generator[MagicMock, Any, None]:
 
 @pytest.fixture(autouse=True)
 def mock_task_classifier() -> Generator[MagicMock, Any, None]:
-    with patch("pubsub_typesense_updater.main.TaskClassifier") as mock:
+    with patch("main.TaskClassifier") as mock:
         mock_instance = MagicMock()
         mock.return_value = mock_instance
         mock_instance.get_cached_classification.return_value = None

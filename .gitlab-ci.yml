@@ -106,15 +106,15 @@ pubsub_typesense_updater_install_test:
     - python3 -m venv pubsub_typesense_updater/.venv
     - source pubsub_typesense_updater/.venv/bin/activate
     - pip install --upgrade pip
-    - pip install -r shared-requirements.txt --exists-action s
-    - pip install -r shared-dev-requirements.txt --exists-action s
-    - pip install -r pubsub_typesense_updater/requirements.txt --exists-action s
-    - pip install -r pubsub_typesense_updater/dev-requirements.txt --exists-action s
+    - pip install --exists-action s -r shared-requirements.txt
+    - pip install --exists-action s -r shared-dev-requirements.txt
+    - pip install --exists-action s -r pubsub_typesense_updater/requirements.txt
+    - pip install --exists-action s -r pubsub_typesense_updater/dev-requirements.txt
     # validate and test
     - ruff check pubsub_typesense_updater shared
     - ruff format --check pubsub_typesense_updater shared
-    - mypy --python-executable=pubsub_typesense_updater/.venv/bin/python --explicit-package-bases --namespace-packages pubsub_typesense_updater shared
     - cd pubsub_typesense_updater
+    - mypy --python-executable=./.venv/bin/python --explicit-package-bases --namespace-packages . ../shared
     - pytest
     - cd $CI_PROJECT_DIR
   rules:
@@ -143,16 +143,16 @@ pubsub_typesense_updater_install_test:
   script:
     - apk add zip
     # Create a deployment directory with all required files
-    - mkdir -p .build/shared
-    - mkdir -p .build/pubsub_typesense_updater
-    - cp -r shared/ .build/shared/
-    - cp -r pubsub_typesense_updater/*.py .build/pubsub_typesense_updater/
+    - cd pubsub_typesense_updater
+    - mkdir -p .build
+    - cp -r ../shared/ .build/shared/
+    - cp -r *.py .build/
     # create a single consolidated requirements file without relative paths
-    - cat shared-requirements.txt | grep -v "^-r" | grep -v "^#" >> .build/requirements.txt
-    - cat pubsub_typesense_updater/requirements.txt | grep -v "^-r" | grep -v "^#" >> .build/requirements.txt
+    - cat ../shared-requirements.txt | grep -v "^-r" | grep -v "^#" >> .build/requirements.txt
+    - cat requirements.txt | grep -v "^-r" | grep -v "^#" >> .build/requirements.txt
     - cd .build
     - zip -r pubsub_typesense_updater.zip .
-    - cd ../pubsub_typesense_updater
+    - cd ..
     - terraform/environments/scripts/create-or-update-env.sh "$ENVIRONMENT_ID" "$CI_COMMIT_SHA"
   interruptible: false
 

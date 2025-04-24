@@ -8,7 +8,7 @@ from semver import Version
 # noinspection PyPackageRequirements
 from cloudevents.http.event import CloudEvent
 
-from pubsub_typesense_updater.farm_fingerprint import farm_fingerprint
+from farm_fingerprint import farm_fingerprint
 from shared.classifiers.classification_result import ClassificationResult
 
 

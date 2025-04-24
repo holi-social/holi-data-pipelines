@@ -7,7 +7,7 @@ import vertexai
 import functions_framework
 from google.cloud import bigquery
 from cloudevents.http.event import CloudEvent
-from pubsub_typesense_updater.events import (
+from events import (
     SpaceCreatedEvent,
     SpaceDeletedEvent,
     SpaceUpdatedEvent,
@@ -18,10 +18,10 @@ from pubsub_typesense_updater.events import (
     UserUpdatedEvent,
     get_event_type,
 )
-from pubsub_typesense_updater.task_classifier import TaskClassifier
+from task_classifier import TaskClassifier
 from shared.classifiers.classification_item import ClassificationItem
 
-from pubsub_typesense_updater.typesense_client import TypesenseClient
+from typesense_client import TypesenseClient
 from typesense.exceptions import ObjectNotFound
 
 logger = getLogger(__name__)
@@ -92,7 +92,7 @@ class TaskClassificationItem(ClassificationItem):
 
 def process_task_upserting_event(ts_client: TypesenseClient, event: Union[TaskCreatedEvent, TaskUpdatedEvent]) -> None:
     logger.debug(f"Processing {event}")
-    vertexai.init(project=gcloud_project_id, location=gcloud_location)
+    vertexai.init(project=gcloud_project_id(), location=gcloud_location())
     bq_client = bigquery.Client(project=gcloud_project_id(), location=gcloud_location())
     classifier = TaskClassifier(bigquery_table_name_classifications(), logger, bq_client)
     item = TaskClassificationItem(

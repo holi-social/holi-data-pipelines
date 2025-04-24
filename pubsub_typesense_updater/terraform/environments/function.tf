@@ -8,7 +8,7 @@ resource "random_id" "pubsub_typesense_updater" {
 resource "google_storage_bucket_object" "function_source" {
   name   = "${random_id.pubsub_typesense_updater.hex}/pubsub_typesense_updater.zip"
   bucket = data.terraform_remote_state.holi_infra_state.outputs.gcf_sources_upload_bucket_name
-  source = "../../../.build/pubsub_typesense_updater.zip"
+  source = "../../.build/pubsub_typesense_updater.zip"
 }
 
 resource "google_cloudfunctions2_function" "pubsub_typesense_updater" {
@@ -19,7 +19,7 @@ resource "google_cloudfunctions2_function" "pubsub_typesense_updater" {
 
   build_config {
     runtime           = "python312"
-    entry_point       = "pubsub_typesense_updater.main.process_message"
+    entry_point       = "process_message"
     docker_repository = data.terraform_remote_state.holi_infra_state.outputs.cloudfunctions_repository_id
 
     source {
@@ -33,7 +33,7 @@ resource "google_cloudfunctions2_function" "pubsub_typesense_updater" {
   service_config {
     max_instance_count               = 1
     min_instance_count               = 0
-    available_memory                 = "200Mi"
+    available_memory                 = "512Mi"
     timeout_seconds                  = 120
     available_cpu                    = 1
     max_instance_request_concurrency = 5
@@ -47,7 +47,6 @@ resource "google_cloudfunctions2_function" "pubsub_typesense_updater" {
       GCLOUD_PROJECT_ID                   = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
       GCLOUD_LOCATION                     = local.default_region
       BIGQUERY_TABLE_NAME_CLASSIFICATIONS = data.terraform_remote_state.data_pipelines_environment_state.outputs.bigquery_table_name_classifications
-      FUNCTION_SOURCE                     = "pubsub_typesense_updater/main.py"
     }
 
     vpc_connector                  = data.terraform_remote_state.holi_infra_state.outputs.vpc_access_connector_name
