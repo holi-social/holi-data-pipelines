@@ -106,6 +106,8 @@ pubsub_typesense_updater_install_test:
     - python3 -m venv pubsub_typesense_updater/.venv
     - source pubsub_typesense_updater/.venv/bin/activate
     - pip install --upgrade pip
+    - pip install -r shared-requirements.txt --exists-action s
+    - pip install -r shared-dev-requirements.txt --exists-action s
     - pip install -r pubsub_typesense_updater/requirements.txt --exists-action s
     - pip install -r pubsub_typesense_updater/dev-requirements.txt --exists-action s
     # validate and test
