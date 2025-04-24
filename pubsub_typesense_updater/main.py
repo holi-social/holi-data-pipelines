@@ -24,8 +24,10 @@ from shared.classifiers.classification_item import ClassificationItem
 from typesense_client import TypesenseClient
 from typesense.exceptions import ObjectNotFound
 
-gcloud_logging_client = gcloud_logging.Client()  # type: ignore
-gcloud_logging_client.setup_logging(log_level=logging.DEBUG)  # type: ignore
+# don't log to Google Cloud Logging if we're run in a test
+if os.environ.get("PYTEST_CURRENT_TEST") is not None:
+    gcloud_logging_client = gcloud_logging.Client()  # type: ignore
+    gcloud_logging_client.setup_logging(log_level=logging.DEBUG)  # type: ignore
 
 logger = logging.getLogger(__name__)
 
