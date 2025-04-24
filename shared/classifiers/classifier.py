@@ -84,7 +84,11 @@ class Classifier(ABC):
         """  # noqa: S608
         query_job = self.bqclient.query(query)
         rows = list(query_job.result(max_results=1))
-        return rows[0] if rows else None
+        if rows:
+            self.logger.debug(f"[id={item.id}] found cached classification for hash={item.hash}")
+            return rows[0]
+        else:
+            return None
 
     def classify_item_and_cache_classification(
         self,
