@@ -1,7 +1,7 @@
 import base64
 import json
-from typing import Any
-from unittest.mock import patch
+from typing import Any, Generator, List
+from unittest.mock import patch, MagicMock, AsyncMock
 
 # noinspection PyPackageRequirements
 from cloudevents.http.event import CloudEvent
@@ -10,6 +10,8 @@ import pytest
 from pytest import fail
 
 from typesense.exceptions import ObjectNotFound, RequestUnauthorized
+
+from shared.classifiers.classification_result import ClassificationResult
 
 attributes: Any = {
     "id": "12833783708309476",
@@ -83,8 +85,74 @@ def message_data(event_type: Any, event_version: Any, data: Any) -> Any:
     }
 
 
+@pytest.fixture(autouse=True)
+def mock_vertexai_init() -> Generator[MagicMock | AsyncMock, Any, None]:
+    """Mock vertexai.init for all tests"""
+    with patch("vertexai.init") as mock:
+        yield mock
+
+
+@pytest.fixture(autouse=True)
+def mock_bigquery_client() -> Generator[MagicMock, Any, None]:
+    """Mock bigquery.Client for all tests"""
+    with patch("google.cloud.bigquery.Client") as mock:
+        mock_instance = MagicMock()
+        mock.return_value = mock_instance
+        yield mock_instance
+
+
+@pytest.fixture(autouse=True)
+def mock_task_classifier() -> Generator[MagicMock, Any, None]:
+    with patch("main.TaskClassifier") as mock:
+        mock_instance = MagicMock()
+        mock.return_value = mock_instance
+        mock_instance.get_cached_classification.return_value = None
+        mock_instance.classify_item_and_cache_classification.return_value = None
+        yield mock_instance
+
+
+mock_topics_skills_embedding_v2 = [0.1, 0.2, 0.3]
+mock_similarity_embedding = [0.3, 0.2, 0.1]
+mock_classification_result = ClassificationResult(
+    type="task",
+    id=task_payload["id"],
+    hash="whatever",
+    topics_skills_embedding_v2=mock_topics_skills_embedding_v2,
+    topics_v2=space_payload["topicsV2"],
+    skills_v2=task_payload["skillsV2"],
+    similarity_embedding=mock_similarity_embedding,
+)
+
+
+def _expected_task_ts_doc(
+    space_event_payload: Any,
+    task_event_payload: Any,
+    topics_skills_embedding_v2: List[float],
+    similarity_embedding: List[float],
+) -> object:
+    return {
+        "id": f"task_{task_event_payload['id']}",
+        "type": "task",
+        "title_de": task_event_payload["name"],
+        "title_en": task_event_payload["name"],
+        "description_de": task_event_payload["description"],
+        "description_en": task_event_payload["description"],
+        "location": task_event_payload["location"],
+        "location_lat_lng": [
+            task_event_payload["geolocationGeoJson"]["coordinates"][0],
+            task_event_payload["geolocationGeoJson"]["coordinates"][1],
+        ],
+        "image_url": task_event_payload["thumbnail"],
+        "link_locators": {"space": space_event_payload["slug"], "task": task_event_payload["id"]},
+        "topics_v2": space_event_payload["topicsV2"],
+        "skills_v2": task_event_payload["skillsV2"],
+        "topics_skills_embedding_v2": topics_skills_embedding_v2,
+        "similarity_embedding": similarity_embedding,
+    }
+
+
 @patch("typesense.client.Client")
-def test_user_updated(mock_client: Any) -> None:
+def test_user_updated(mock_client: MagicMock) -> None:
     process_event(mock_client, CloudEvent(attributes, message_data("UserUpdated", "1.1.0", {"user": user_payload})))
     mock_client.upsert.assert_called_with(
         {
@@ -102,7 +170,7 @@ def test_user_updated(mock_client: Any) -> None:
 
 
 @patch("typesense.client.Client")
-def test_ignores_deletes_user_without_name(mock_client: Any) -> None:
+def test_ignores_deletes_user_without_name(mock_client: MagicMock) -> None:
     # users without names must not show up in search results
     user = user_payload.copy()
     # noinspection PyTypeChecker
@@ -118,7 +186,7 @@ def test_ignores_deletes_user_without_name(mock_client: Any) -> None:
 
 
 @patch("typesense.client.Client")
-def test_ignores_404_on_deletion(mock_client: Any) -> None:
+def test_ignores_404_on_deletion(mock_client: MagicMock) -> None:
     mock_client.delete.side_effect = ObjectNotFound("Object not found")
     user = user_payload.copy()
     user["name"] = ""
@@ -128,7 +196,7 @@ def test_ignores_404_on_deletion(mock_client: Any) -> None:
 
 
 @patch("typesense.client.Client")
-def test_raises_others_error_responses_on_deletion(mock_client: Any) -> None:
+def test_raises_others_error_responses_on_deletion(mock_client: MagicMock) -> None:
     # obviously does not cover *all* other errors but one to check if not all exceptions are "swallowed"
     mock_client.delete.side_effect = RequestUnauthorized("Unauthorized")
     user = user_payload.copy()
@@ -142,7 +210,7 @@ def test_raises_others_error_responses_on_deletion(mock_client: Any) -> None:
 
 
 @patch("typesense.client.Client")
-def test_user_name_updated_ignored(mock_client: Any) -> None:
+def test_user_name_updated_ignored(mock_client: MagicMock) -> None:
     process_event(
         mock_client, CloudEvent(attributes, message_data("UserNameUpdated", "1.1.0", {"user": user_payload}))
     )
@@ -150,7 +218,7 @@ def test_user_name_updated_ignored(mock_client: Any) -> None:
 
 
 @patch("typesense.client.Client")
-def test_user_email_updated_ignored(mock_client: Any) -> None:
+def test_user_email_updated_ignored(mock_client: MagicMock) -> None:
     process_event(
         mock_client, CloudEvent(attributes, message_data("UserEmailUpdated", "1.1.0", {"user": user_payload}))
     )
@@ -158,14 +226,14 @@ def test_user_email_updated_ignored(mock_client: Any) -> None:
 
 
 @patch("typesense.client.Client")
-def test_user_deleted(mock_client: Any) -> None:
+def test_user_deleted(mock_client: MagicMock) -> None:
     process_event(mock_client, CloudEvent(attributes, message_data("UserDeleted", "1.1.0", {"user": user_payload})))
     mock_client.delete.assert_called_with(f"profile_{user_payload['id']}")
 
 
 # noinspection DuplicatedCode
 @patch("typesense.client.Client")
-def test_space_created(mock_client: Any) -> None:
+def test_space_created(mock_client: MagicMock) -> None:
     process_event(mock_client, CloudEvent(attributes, message_data("SpaceCreated", "1.2.0", {"space": space_payload})))
     mock_client.upsert.assert_called_with(
         {
@@ -191,7 +259,7 @@ def test_space_created(mock_client: Any) -> None:
 
 # noinspection DuplicatedCode
 @patch("typesense.client.Client")
-def test_space_created_v11(mock_client: Any) -> None:
+def test_space_created_v11(mock_client: MagicMock) -> None:
     process_event(mock_client, CloudEvent(attributes, message_data("SpaceCreated", "1.1.0", {"space": space_payload})))
     mock_client.upsert.assert_called_with(
         {
@@ -217,10 +285,9 @@ def test_space_created_v11(mock_client: Any) -> None:
 
 # noinspection DuplicatedCode
 @patch("typesense.client.Client")
-def test_space_updated(mock_client: Any) -> None:
+def test_space_updated(mock_client: MagicMock) -> None:
     process_event(mock_client, CloudEvent(attributes, message_data("SpaceUpdated", "1.2.0", {"space": space_payload})))
-    assert mock_client.upsert.call_count == 2
-    mock_client.upsert.assert_any_call(
+    mock_client.upsert.assert_called_with(
         {
             "id": f"space_{space_payload['id']}",
             "type": "space",
@@ -240,14 +307,11 @@ def test_space_updated(mock_client: Any) -> None:
             "topics_v2": space_payload["topicsV2"],
         }
     )
-    mock_client.upsert.assert_any_call(
-        {"topics_v2": space_payload["topicsV2"]}, {"filter_by": f"type:=task && space_id:={space_payload['id']}"}
-    )
 
 
 # noinspection DuplicatedCode
 @patch("typesense.client.Client")
-def test_space_updated_v11(mock_client: Any) -> None:
+def test_space_updated_v11(mock_client: MagicMock) -> None:
     process_event(mock_client, CloudEvent(attributes, message_data("SpaceUpdated", "1.1.0", {"space": space_payload})))
     # assert it will only update the space and not associated tasks (only introduced for event version 1.2.0)
     mock_client.upsert.assert_called_once_with(
@@ -273,13 +337,18 @@ def test_space_updated_v11(mock_client: Any) -> None:
 
 
 @patch("typesense.client.Client")
-def test_space_deleted(mock_client: Any) -> None:
+def test_space_deleted(mock_client: MagicMock) -> None:
     process_event(mock_client, CloudEvent(attributes, message_data("SpaceDeleted", "1.2.0", {"space": space_payload})))
     mock_client.delete.assert_called_with(f"space_{space_payload['id']}")
 
 
 @patch("typesense.client.Client")
-def test_task_created(mock_client: Any) -> None:
+def test_task_created(mock_client: MagicMock, mock_task_classifier: MagicMock) -> None:
+    # GIVEN no cached classification result
+    mock_task_classifier.get_cached_classification.return_value = None
+    mock_task_classifier.classify_item_and_cache_classification.return_value = mock_classification_result
+
+    # WHEN receiving a TaskCreated event
     process_event(
         mock_client,
         CloudEvent(
@@ -287,31 +356,48 @@ def test_task_created(mock_client: Any) -> None:
             message_data("TaskCreated", "1.0.0", {"user": user_payload, "space": space_payload, "task": task_payload}),
         ),
     )
+
+    # THEN classification cache should have been checked and classification should have been calculated
+    mock_task_classifier.get_cached_classification.assert_called_once()
+    mock_task_classifier.classify_item_and_cache_classification.assert_called_once()
+
+    # THEN Typesense index should have been updated
     mock_client.upsert.assert_called_with(
-        {
-            "id": f"task_{task_payload['id']}",
-            "type": "task",
-            "title_de": task_payload["name"],
-            "title_en": task_payload["name"],
-            "description_de": task_payload["description"],
-            "description_en": task_payload["description"],
-            "location": task_payload["location"],
-            "location_lat_lng": [
-                task_payload["geolocationGeoJson"]["coordinates"][0],
-                task_payload["geolocationGeoJson"]["coordinates"][1],
-            ],
-            "image_url": task_payload["thumbnail"],
-            "link_locators": {"space": space_payload["slug"], "task": task_payload["id"]},
-            "topics_v2": space_payload["topicsV2"],
-            "skills_v2": task_payload["skillsV2"],
-            "topics_skills_embedding_v2": None,  # TODO
-            "similarity_embedding": None,  # TODO
-        }
+        _expected_task_ts_doc(space_payload, task_payload, mock_topics_skills_embedding_v2, mock_similarity_embedding)
     )
 
 
 @patch("typesense.client.Client")
-def test_task_updated(mock_client: Any) -> None:
+def test_task_created_cached_classification(mock_client: MagicMock, mock_task_classifier: MagicMock) -> None:
+    # GIVEN a cached classification result
+    mock_task_classifier.get_cached_classification.return_value = mock_classification_result
+
+    # WHEN receiving a TaskCreated event
+    process_event(
+        mock_client,
+        CloudEvent(
+            attributes,
+            message_data("TaskCreated", "1.0.0", {"user": user_payload, "space": space_payload, "task": task_payload}),
+        ),
+    )
+
+    # THEN classification should have been retrieved from cache and not been calculated
+    mock_task_classifier.get_cached_classification.assert_called_once()
+    mock_task_classifier.classify_item_and_cache_classification.assert_not_called()
+
+    # THEN Typesense index should have been updated
+    mock_client.upsert.assert_called_with(
+        _expected_task_ts_doc(space_payload, task_payload, mock_topics_skills_embedding_v2, mock_similarity_embedding)
+    )
+
+
+@patch("typesense.client.Client")
+def test_task_updated(mock_client: MagicMock, mock_task_classifier: MagicMock) -> None:
+    # GIVEN no cached classification result
+    mock_task_classifier.get_cached_classification.return_value = None
+    mock_task_classifier.classify_item_and_cache_classification.return_value = mock_classification_result
+
+    # WHEN receiving a TaskUpdated event
     process_event(
         mock_client,
         CloudEvent(
@@ -319,31 +405,43 @@ def test_task_updated(mock_client: Any) -> None:
             message_data("TaskUpdated", "1.0.0", {"user": user_payload, "space": space_payload, "task": task_payload}),
         ),
     )
+
+    # THEN classification cache should have been checked and classification should have been calculated
+    mock_task_classifier.get_cached_classification.assert_called_once()
+    mock_task_classifier.classify_item_and_cache_classification.assert_called_once()
+
+    # THEN Typesense index should have been updated
     mock_client.upsert.assert_called_with(
-        {
-            "id": f"task_{task_payload['id']}",
-            "type": "task",
-            "title_de": task_payload["name"],
-            "title_en": task_payload["name"],
-            "description_de": task_payload["description"],
-            "description_en": task_payload["description"],
-            "location": task_payload["location"],
-            "location_lat_lng": [
-                task_payload["geolocationGeoJson"]["coordinates"][0],
-                task_payload["geolocationGeoJson"]["coordinates"][1],
-            ],
-            "image_url": task_payload["thumbnail"],
-            "link_locators": {"space": space_payload["slug"], "task": task_payload["id"]},
-            "topics_v2": space_payload["topicsV2"],
-            "skills_v2": task_payload["skillsV2"],
-            "topics_skills_embedding_v2": None,  # TODO
-            "similarity_embedding": None,  # TODO
-        }
+        _expected_task_ts_doc(space_payload, task_payload, mock_topics_skills_embedding_v2, mock_similarity_embedding)
     )
 
 
 @patch("typesense.client.Client")
-def test_task_deleted(mock_client: Any) -> None:
+def test_task_updated_cached_classification(mock_client: MagicMock, mock_task_classifier: MagicMock) -> None:
+    # GIVEN a cached classification result
+    mock_task_classifier.get_cached_classification.return_value = mock_classification_result
+
+    # WHEN receiving a TaskUpdated event
+    process_event(
+        mock_client,
+        CloudEvent(
+            attributes,
+            message_data("TaskUpdated", "1.0.0", {"user": user_payload, "space": space_payload, "task": task_payload}),
+        ),
+    )
+
+    # THEN classification cache should have been checked and classification should have been calculated
+    mock_task_classifier.get_cached_classification.assert_called_once()
+    mock_task_classifier.classify_item_and_cache_classification.assert_not_called()
+
+    # THEN Typesense index should have been updated
+    mock_client.upsert.assert_called_with(
+        _expected_task_ts_doc(space_payload, task_payload, mock_topics_skills_embedding_v2, mock_similarity_embedding)
+    )
+
+
+@patch("typesense.client.Client")
+def test_task_deleted(mock_client: MagicMock) -> None:
     process_event(
         mock_client,
         CloudEvent(
@@ -355,7 +453,7 @@ def test_task_deleted(mock_client: Any) -> None:
 
 
 @patch("typesense.client.Client")
-def test_user_updated_with_missing_optional_fields(mock_client: Any) -> None:
+def test_user_updated_with_missing_optional_fields(mock_client: MagicMock) -> None:
     # Test with missing optional fields
     user = user_payload.copy()
     del user["avatar"]
@@ -379,7 +477,7 @@ def test_user_updated_with_missing_optional_fields(mock_client: Any) -> None:
 
 
 @patch("typesense.client.Client")
-def test_user_updated_with_wrong_version(mock_client: Any) -> None:
+def test_user_updated_with_wrong_version(mock_client: MagicMock) -> None:
     # Test with unsupported version
     with pytest.raises(ValueError):
         process_event(
@@ -390,7 +488,7 @@ def test_user_updated_with_wrong_version(mock_client: Any) -> None:
 
 
 @patch("typesense.client.Client")
-def test_space_updated_with_missing_location_data(mock_client: Any) -> None:
+def test_space_updated_with_missing_location_data(mock_client: MagicMock) -> None:
     # Test with missing location data
     space = space_payload.copy()
     del space["locationLatLng"]
@@ -416,7 +514,7 @@ def test_space_updated_with_missing_location_data(mock_client: Any) -> None:
 
 
 @patch("typesense.client.Client")
-def test_space_updated_with_empty_topics(mock_client: Any) -> None:
+def test_space_updated_with_empty_topics(mock_client: MagicMock) -> None:
     # Test with empty topics list
     space = space_payload.copy()
     space["topicsV2"] = []
@@ -445,7 +543,7 @@ def test_space_updated_with_empty_topics(mock_client: Any) -> None:
 
 
 @patch("typesense.client.Client")
-def test_space_updated_with_wrong_version(mock_client: Any) -> None:
+def test_space_updated_with_wrong_version(mock_client: MagicMock) -> None:
     # Test with unsupported version (should be >=1.2.0)
     with pytest.raises(ValueError):
         process_event(
@@ -456,7 +554,7 @@ def test_space_updated_with_wrong_version(mock_client: Any) -> None:
 
 
 @patch("typesense.client.Client")
-def test_task_updated_with_missing_optional_fields(mock_client: Any) -> None:
+def test_task_updated_with_missing_optional_fields(mock_client: MagicMock) -> None:
     # Test with missing optional fields
     task = task_payload.copy()
     del task["thumbnail"]
@@ -488,14 +586,14 @@ def test_task_updated_with_missing_optional_fields(mock_client: Any) -> None:
             "link_locators": {"space": space_payload["slug"], "task": task_payload["id"]},
             "topics_v2": ["animal-welfare", "arts-culture"],
             "skills_v2": [],
-            "topics_skills_embedding_v2": None,  # TODO
-            "similarity_embedding": None,  # TODO
+            "topics_skills_embedding_v2": None,
+            "similarity_embedding": None,
         }
     )
 
 
 @patch("typesense.client.Client")
-def test_task_updated_with_broken_geojson(mock_client: Any) -> None:
+def test_task_updated_with_broken_geojson(mock_client: MagicMock) -> None:
     # Test with missing optional fields
     task = task_payload.copy()
     del task["geolocationGeoJson"]["coordinates"]
@@ -528,7 +626,7 @@ def test_task_updated_with_broken_geojson(mock_client: Any) -> None:
 
 
 @patch("typesense.client.Client")
-def test_unknown_event_type(mock_client: Any) -> None:
+def test_unknown_event_type(mock_client: MagicMock) -> None:
     # Test with unknown event type
     process_event(
         mock_client, CloudEvent(attributes, message_data("UnknownEventType", "1.1.0", {"user": user_payload}))
@@ -538,7 +636,7 @@ def test_unknown_event_type(mock_client: Any) -> None:
 
 
 @patch("typesense.client.Client")
-def test_malformed_event_missing_attributes(mock_client: Any) -> None:
+def test_malformed_event_missing_attributes(mock_client: MagicMock) -> None:
     # Test with missing event attributes
     malformed_attributes = attributes.copy()
     malformed_data = message_data("UserUpdated", "1.1.0", {"user": user_payload})
@@ -556,7 +654,7 @@ def test_malformed_event_missing_attributes(mock_client: Any) -> None:
 
 
 @patch("typesense.client.Client")
-def test_malformed_event_missing_data(mock_client: Any) -> None:
+def test_malformed_event_missing_data(mock_client: MagicMock) -> None:
     # Test with missing data
     malformed_data = message_data("UserUpdated", "1.1.0", {})
 

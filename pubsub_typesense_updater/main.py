@@ -3,7 +3,6 @@ from logging import getLogger
 from typing import Union, Optional, List, Any
 
 import vertexai
-from semver import Version
 import functions_framework
 from google.cloud import bigquery
 from cloudevents.http.event import CloudEvent
@@ -58,10 +57,6 @@ def process_space_upserting_event(
 ) -> None:
     logger.debug(f"Processing {event}")
     ts_client.upsert(event.as_typesense_document())
-    if event.event_type == "SpaceUpdated" and event.event_version >= Version(1, 2, 0):
-        ts_client.upsert(
-            {"topics_v2": event.space.topics_v2}, {"filter_by": f"type:=task && space_id:={event.space.id}"}
-        )
     logger.info(f"Upserted space {event.space.id} in Typesense")
 
 
