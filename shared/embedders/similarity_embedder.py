@@ -46,6 +46,7 @@ class SimilarityEmbedder(ABC):
     @limits(calls=MODEL_RATE_LIMIT_PER_MINUTE, period=60)  # type: ignore
     def embed(self, item: ClassificationItem) -> SimilarityEmbedding:
         text_input = TextEmbeddingInput(self._combine_text_fields(item), TEXT_EMBEDDING_TASK_TYPE)
+        self.logger.debug(f'Calculating similarity embedding for input: "{text_input}"')
         try:
             embeddings = self.model.get_embeddings([text_input], output_dimensionality=EMBEDDING_DIMENSIONALITY)
             return embeddings[0].values

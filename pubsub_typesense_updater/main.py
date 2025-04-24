@@ -1,11 +1,11 @@
 import os
 import dataclasses
-from logging import getLogger
+import logging
 from typing import Union, Optional, List, Any
 
 import vertexai
 import functions_framework
-from google.cloud import bigquery
+from google.cloud import bigquery, logging as gcloud_logging
 from cloudevents.http.event import CloudEvent
 from events import (
     SpaceCreatedEvent,
@@ -24,7 +24,10 @@ from shared.classifiers.classification_item import ClassificationItem
 from typesense_client import TypesenseClient
 from typesense.exceptions import ObjectNotFound
 
-logger = getLogger(__name__)
+gcloud_logging_client = gcloud_logging.Client()
+gcloud_logging_client.setup_logging(log_level=logging.DEBUG)
+
+logger = logging.getLogger(__name__)
 
 
 def gcloud_project_id() -> str:

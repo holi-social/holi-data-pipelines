@@ -78,9 +78,9 @@ class Classifier(ABC):
 
     def get_cached_classification(self, item: ClassificationItem) -> ClassificationResult | None:
         query = f"""
-            SELECT * FROM {self.table_name_classifications}
-            WHERE id={item.id}
-            AND `hash`={item.hash}
+            SELECT * FROM `{self.table_name_classifications}`
+            WHERE id="{item.id}"
+            AND `hash`="{item.hash}"
         """  # noqa: S608
         query_job = self.bqclient.query(query)
         rows = list(query_job.result(max_results=1))
