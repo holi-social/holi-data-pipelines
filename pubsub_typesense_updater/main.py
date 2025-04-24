@@ -7,7 +7,7 @@ import vertexai
 import functions_framework
 from google.cloud import bigquery
 from cloudevents.http.event import CloudEvent
-from events import (
+from pubsub_typesense_updater.events import (
     SpaceCreatedEvent,
     SpaceDeletedEvent,
     SpaceUpdatedEvent,
@@ -21,14 +21,22 @@ from events import (
 from pubsub_typesense_updater.task_classifier import TaskClassifier
 from shared.classifiers.classification_item import ClassificationItem
 
-from typesense_client import TypesenseClient
+from pubsub_typesense_updater.typesense_client import TypesenseClient
 from typesense.exceptions import ObjectNotFound
 
 logger = getLogger(__name__)
 
-GCLOUD_PROJECT_ID = os.environ.get("GCLOUD_PROJECT_ID")
-GCLOUD_LOCATION = os.environ.get("GCLOUD_LOCATION")
-TABLE_NAME_CLASSIFICATIONS = os.environ.get("BIGQUERY_TABLE_NAME_CLASSIFICATIONS")
+
+def gcloud_project_id() -> str:
+    return os.environ.get("GCLOUD_PROJECT_ID", "")
+
+
+def gcloud_location() -> str:
+    return os.environ.get("GCLOUD_LOCATION", "")
+
+
+def bigquery_table_name_classifications() -> str:
+    return os.environ.get("BIGQUERY_TABLE_NAME_CLASSIFICATIONS", "")
 
 
 def process_user_updated_event(ts_client: TypesenseClient, event: UserUpdatedEvent) -> None:
@@ -84,9 +92,9 @@ class TaskClassificationItem(ClassificationItem):
 
 def process_task_upserting_event(ts_client: TypesenseClient, event: Union[TaskCreatedEvent, TaskUpdatedEvent]) -> None:
     logger.debug(f"Processing {event}")
-    vertexai.init(project=GCLOUD_PROJECT_ID, location=GCLOUD_LOCATION)
-    bq_client = bigquery.Client(project=GCLOUD_PROJECT_ID, location=GCLOUD_LOCATION)
-    classifier = TaskClassifier(TABLE_NAME_CLASSIFICATIONS, logger, bq_client)
+    vertexai.init(project=gcloud_project_id, location=gcloud_location)
+    bq_client = bigquery.Client(project=gcloud_project_id(), location=gcloud_location())
+    classifier = TaskClassifier(bigquery_table_name_classifications(), logger, bq_client)
     item = TaskClassificationItem(
         id=event.task.id,
         hash=event.farm_fingerprint(),

@@ -25,15 +25,9 @@ repos:
         entry: mypy --python-executable=.venv/bin/python src shared
         pass_filenames: false
         always_run: true
-      - id: mypy_pubsub-typesense-updater
-        name: mypy pubsub_typesense_updater
-        language: system
-        entry: cd pubsub_typesense_updater && mypy --python-executable=./.venv/bin/python --explicit-package-bases --namespace-packages .
-        pass_filenames: false
-        always_run: true
       - id: mypy_pubsub-typesense-updater_shared
         name: mypy pubsub_typesense_updater shared
         language: system
-        entry: mypy --python-executable=pubsub_typesense_updater/.venv/bin/python shared
+        entry: mypy --python-executable=pubsub_typesense_updater/.venv/bin/python --explicit-package-bases --namespace-packages pubsub_typesense_updater shared
         pass_filenames: false
         always_run: true

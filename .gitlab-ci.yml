@@ -111,13 +111,9 @@ pubsub_typesense_updater_install_test:
     # validate and test
     - ruff check pubsub_typesense_updater shared
     - ruff format --check pubsub_typesense_updater shared
-    # change the mypy call to run from within the cloud function directory
+    - mypy --python-executable=pubsub_typesense_updater/.venv/bin/python --explicit-package-bases --namespace-packages pubsub_typesense_updater shared
     - cd pubsub_typesense_updater
-    - PYTHONPATH=$CI_PROJECT_DIR:$CI_PROJECT_DIR/pubsub_typesense_updater mypy --python-executable=./.venv/bin/python --explicit-package-bases --namespace-packages .
-    - cd $CI_PROJECT_DIR
-    - mypy --python-executable=pubsub_typesense_updater/.venv/bin/python shared
-    - cd pubsub_typesense_updater
-    - PYTHONPATH=$CI_PROJECT_DIR/pubsub_typesense_updater pytest
+    - pytest
     - cd $CI_PROJECT_DIR
   rules:
     - !reference [ .rule_templates, only_pubsub_typesense_updater ]
@@ -144,14 +140,14 @@ pubsub_typesense_updater_install_test:
     FUNCTION_NAME: pubsub_typesense_updater
   script:
     - apk add zip
-    - cd pubsub_typesense_updater
     # Create a deployment directory with all required files
-    - mkdir -p .build
-    - cp -r ../shared .build/
-    - cp -r *.py .build/
+    - mkdir -p .build/shared
+    - mkdir -p .build/pubsub_typesense_updater
+    - cp -r shared/ .build/shared/
+    - cp -r pubsub_typesense_updater/*.py .build/pubsub_typesense_updater/
     # create a single consolidated requirements file without relative paths
-    - cat ../shared-requirements.txt | grep -v "^-r" | grep -v "^#" >> .build/requirements.txt
-    - cat requirements.txt | grep -v "^-r" | grep -v "^#" >> .build/requirements.txt
+    - cat shared-requirements.txt | grep -v "^-r" | grep -v "^#" >> .build/requirements.txt
+    - cat pubsub_typesense_updater/requirements.txt | grep -v "^-r" | grep -v "^#" >> .build/requirements.txt
     - cd .build
     - zip -r pubsub_typesense_updater.zip .
     - cd ..

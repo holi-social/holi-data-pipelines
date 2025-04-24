@@ -8,7 +8,7 @@ resource "random_id" "pubsub_typesense_updater" {
 resource "google_storage_bucket_object" "function_source" {
   name   = "${random_id.pubsub_typesense_updater.hex}/pubsub_typesense_updater.zip"
   bucket = data.terraform_remote_state.holi_infra_state.outputs.gcf_sources_upload_bucket_name
-  source = "../../.build/pubsub_typesense_updater.zip"
+  source = "../../../.build/pubsub_typesense_updater.zip"
 }
 
 resource "google_cloudfunctions2_function" "pubsub_typesense_updater" {
@@ -19,7 +19,7 @@ resource "google_cloudfunctions2_function" "pubsub_typesense_updater" {
 
   build_config {
     runtime           = "python312"
-    entry_point       = "process_message"
+    entry_point       = "pubsub_typesense_updater.main.process_message"
     docker_repository = data.terraform_remote_state.holi_infra_state.outputs.cloudfunctions_repository_id
 
     source {
