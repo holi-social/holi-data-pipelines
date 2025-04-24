@@ -28,6 +28,6 @@ repos:
       - id: mypy_pubsub-typesense-updater_shared
         name: mypy pubsub_typesense_updater shared
         language: system
-        entry: cd pubsub_typesense_updater && mypy --python-executable=./.venv/bin/python --explicit-package-bases --namespace-packages . shared
+        entry: cd pubsub_typesense_updater && source .venv/bin/activate && mypy --python-executable=./.venv/bin/python --explicit-package-bases --namespace-packages . ../shared
         pass_filenames: false
         always_run: true
