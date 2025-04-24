@@ -47,6 +47,7 @@ resource "google_cloudfunctions2_function" "pubsub_typesense_updater" {
       GCLOUD_PROJECT_ID                   = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
       GCLOUD_LOCATION                     = local.default_region
       BIGQUERY_TABLE_NAME_CLASSIFICATIONS = data.terraform_remote_state.data_pipelines_environment_state.outputs.bigquery_table_name_classifications
+      GOOGLE_FUNCTION_SOURCE              = "pubsub_typesense_updater/main.py"
     }
 
     vpc_connector                  = data.terraform_remote_state.holi_infra_state.outputs.vpc_access_connector_name
