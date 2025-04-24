@@ -24,8 +24,8 @@ from shared.classifiers.classification_item import ClassificationItem
 from typesense_client import TypesenseClient
 from typesense.exceptions import ObjectNotFound
 
-gcloud_logging_client = gcloud_logging.Client()
-gcloud_logging_client.setup_logging(log_level=logging.DEBUG)
+gcloud_logging_client = gcloud_logging.Client()  # type: ignore
+gcloud_logging_client.setup_logging(log_level=logging.DEBUG)  # type: ignore
 
 logger = logging.getLogger(__name__)
 
