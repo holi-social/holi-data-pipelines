@@ -67,6 +67,10 @@ resource "google_bigquery_table" "classifications" {
   }
 }
 
+output "bigquery_table_name_classifications" {
+  value = "${local.datalake}.${google_bigquery_table.classifications.table_id}"
+}
+
 resource "google_bigquery_table" "tasks_without_classifications" {
   project    = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
   dataset_id = local.dataset_id_datapool

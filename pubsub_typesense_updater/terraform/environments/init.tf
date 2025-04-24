@@ -25,6 +25,14 @@ data "terraform_remote_state" "pubsub_typesense_updater_common_state" {
   }
 }
 
+data "terraform_remote_state" "data_pipelines_environment_state" {
+  backend = "gcs"
+  config = {
+    bucket = "holi-shared-terraform-state"
+    prefix = "data-pipeline-environment"
+  }
+}
+
 data "terraform_remote_state" "holi_infra_state" {
   backend = "gcs"
   config = {

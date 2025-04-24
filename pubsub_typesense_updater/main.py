@@ -1,3 +1,4 @@
+import os
 import dataclasses
 from logging import getLogger
 from typing import Union, Optional, List, Any
@@ -25,10 +26,9 @@ from typesense.exceptions import ObjectNotFound
 
 logger = getLogger(__name__)
 
-# TODO get from environment (?)
-GCLOUD_PROJECT_ID = "holi-shared"
-GCLOUD_LOCATION = "europe-north1"
-TABLE_NAME_CLASSIFICATIONS = "holi-shared.datalake_development.classifications"
+GCLOUD_PROJECT_ID = os.environ.get("GCLOUD_PROJECT_ID")
+GCLOUD_LOCATION = os.environ.get("GCLOUD_LOCATION")
+TABLE_NAME_CLASSIFICATIONS = os.environ.get("BIGQUERY_TABLE_NAME_CLASSIFICATIONS")
 
 
 def process_user_updated_event(ts_client: TypesenseClient, event: UserUpdatedEvent) -> None:
