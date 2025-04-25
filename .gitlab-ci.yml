@@ -163,7 +163,7 @@ pubsub_typesense_updater_staging_deploy:
   rules:
     - if: $CI_COMMIT_BRANCH == 'main' && $CI_PIPELINE_SOURCE == 'web'
       when: on_success
-    - if: ($CI_COMMIT_BRANCH == 'main' || $CI_COMMIT_BRANCH == 'HOLI-11364_classification-in-cloud-function') && $CI_PIPELINE_SOURCE == 'push'
+    - if: $CI_COMMIT_BRANCH == 'main' && $CI_PIPELINE_SOURCE == 'push'
       when: on_success
       changes:
         - shared-requirements.txt
