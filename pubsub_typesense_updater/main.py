@@ -1,7 +1,6 @@
 import os
-import dataclasses
 import logging
-from typing import Union, Optional, List, Any
+from typing import Union
 
 import vertexai
 import functions_framework
@@ -18,8 +17,8 @@ from events import (
     UserUpdatedEvent,
     get_event_type,
 )
+from shared.classifiers.task_classification_input import TaskClassificationInput
 from task_classifier import TaskClassifier
-from shared.classifiers.classification_item import ClassificationItem
 
 from typesense_client import TypesenseClient
 from typesense.exceptions import ObjectNotFound
@@ -83,31 +82,21 @@ def process_space_deleted_event(ts_client: TypesenseClient, event: SpaceDeletedE
     logger.info(f"Deleted space {event.space.id} in Typesense")
 
 
-@dataclasses.dataclass
-class TaskClassificationItem(ClassificationItem):
-    id: str
-    hash: str
-    topics_skills_embedding_v2: Optional[List[float]]
-    topics_v2: Optional[List[str]]
-    skills_v2: Optional[List[str]]
-    similarity_embedding: Optional[List[float]]
-
-    # makes mypy type checking happy (means that the data may have arbitrary other fields not listed above)
-    def __getattr__(self, name: str) -> Any: ...
-
-
 def process_task_upserting_event(ts_client: TypesenseClient, event: Union[TaskCreatedEvent, TaskUpdatedEvent]) -> None:
     logger.debug(f"Processing {event}")
     vertexai.init(project=gcloud_project_id(), location=gcloud_location())
     bq_client = bigquery.Client(project=gcloud_project_id(), location=gcloud_location())
     classifier = TaskClassifier(bigquery_table_name_classifications(), logger, bq_client)
-    item = TaskClassificationItem(
+    item = TaskClassificationInput(
         id=event.task.id,
         hash=event.farm_fingerprint(),
+        name=event.task.name,
+        description=event.task.description,
         topics_skills_embedding_v2=None,
         topics_v2=event.space.topics_v2,
         skills_v2=event.task.skills_v2,
         similarity_embedding=None,
+        location=event.task.location,
     )
     classification = classifier.get_cached_classification(item)
     if not classification:

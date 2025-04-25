@@ -1,11 +1,12 @@
+from abc import abstractmethod
 from concurrent.futures import ALL_COMPLETED, ThreadPoolExecutor, wait
 from logging import Logger
-from typing import Optional, cast
+from typing import Optional, cast, Generic, Any
 
 from prefect_gcp import GcpCredentials
 
-from shared.classifiers.classification_item import ClassificationItem
 from shared.classifiers.classifier import Classifier
+from shared.classifiers.classification_input import ClassificationInputT
 
 import vertexai
 from shared.classifiers.topics_skills_classifier_v2 import TopicsSkillsClassifierV2
@@ -16,15 +17,15 @@ GCLOUD_PROJECT_ID = "holi-shared"
 GCLOUD_LOCATION = "europe-north1"
 
 
-class PipelineBatchClassifier(Classifier):
+class PipelineBatchClassifier(Generic[ClassificationInputT], Classifier[ClassificationInputT]):
     batch_size: int
     stop_after_batch_nr: Optional[int]
     view_name_without_classifications: str
 
     def __init__(
         self,
-        topics_skills_classifier_v2: TopicsSkillsClassifierV2,
-        similarity_embedder: SimilarityEmbedder,
+        topics_skills_classifier_v2: TopicsSkillsClassifierV2[ClassificationInputT],
+        similarity_embedder: SimilarityEmbedder[ClassificationInputT],
         item_type: str,
         table_name_classifications: str,
         view_name_without_classifications: str,
@@ -46,6 +47,10 @@ class PipelineBatchClassifier(Classifier):
         self.batch_size = batch_size if batch_size else DEFAULT_BATCH_SIZE
         self.stop_after_batch_nr = stop_after_batch_nr
         self.view_name_without_classifications = view_name_without_classifications
+
+    @abstractmethod
+    def _to_classification_input(self, item: Any) -> ClassificationInputT:
+        pass
 
     def compute_classifications(self) -> None:
         self.logger.info(f"Starting classification for {self.item_type}")
@@ -71,7 +76,7 @@ class PipelineBatchClassifier(Classifier):
             self.logger.info(f"Batch {batch_nr} - starting classification of {batch_items.total_rows} items")
 
             futures = [
-                pool.submit(self.classify_item_and_cache_classification, cast(ClassificationItem, item))
+                pool.submit(self.classify_item_and_cache_classification, cast(ClassificationInputT, item))
                 for item in batch_items
             ]
             wait(futures, return_when=ALL_COMPLETED)

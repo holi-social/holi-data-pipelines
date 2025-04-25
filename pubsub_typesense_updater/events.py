@@ -9,7 +9,7 @@ from semver import Version
 from cloudevents.http.event import CloudEvent
 
 from farm_fingerprint import farm_fingerprint
-from shared.classifiers.classification_result import ClassificationResult
+from shared.classifiers.classifier import ClassificationResult
 
 
 class GeoJSONPoint(TypedDict):

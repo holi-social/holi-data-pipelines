@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import List
+from typing import List, Generic
 from logging import Logger
 
-from shared.classifiers.classification_item import ClassificationItem
+from shared.classifiers.classification_input import ClassificationInputT
 
 
 @dataclass
@@ -13,12 +13,12 @@ class TopicsSkillsClassificationV2:
     skills_v2: List[str]
 
 
-class TopicsSkillsClassifierV2(ABC):
+class TopicsSkillsClassifierV2(Generic[ClassificationInputT], ABC):
     logger: Logger
 
     def __init__(self, logger: Logger):
         self.logger = logger
 
     @abstractmethod
-    def get_classification(self, item: ClassificationItem) -> TopicsSkillsClassificationV2:
+    def get_classification(self, item: ClassificationInputT) -> TopicsSkillsClassificationV2:
         pass
