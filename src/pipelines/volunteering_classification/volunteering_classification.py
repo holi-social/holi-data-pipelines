@@ -1,8 +1,10 @@
+from dataclasses import dataclass
 import logging
-from typing import Optional
+from typing import Optional, List, Any
 
 from prefect.states import Completed, State
 
+from shared.classifiers.classifier import ClassificationInput
 from src.common.classifiers.pipeline_batch_classifier import PipelineBatchClassifier
 from src.common.logging.PipelineLogger import PipelineLogger
 from src.common.monitoring.flow import monitored_flow
@@ -17,7 +19,21 @@ topics_skills_classification_logger = PipelineLogger("volunteering_topics_skills
 similarity_classification_logger = PipelineLogger("volunteering_similarity_classification")
 
 
-class VolunteeringBatchClassifier(PipelineBatchClassifier):
+@dataclass
+class VolunteeringClassificationInput(ClassificationInput):
+    id: str
+    hash: str
+    title: str
+    description: str
+    topics_skills_embedding_v2: Optional[List[float]] = None
+    topics_v2: Optional[List[str]] = None
+    skills_v2: Optional[List[str]] = None
+    similarity_embedding: Optional[List[float]] = None
+    hashTags: Optional[List[str]] = None  # noqa: N815
+    uses: Optional[List[str]] = None
+
+
+class VolunteeringBatchClassifier(PipelineBatchClassifier[VolunteeringClassificationInput]):
     def __init__(self, stop_after_batch_nr: Optional[int]) -> None:
         super().__init__(
             topics_skills_classifier_v2=VolunteeringTopicsSkillsClassifierV2(topics_skills_classification_logger),
@@ -28,6 +44,12 @@ class VolunteeringBatchClassifier(PipelineBatchClassifier):
             logger=logger,
             stop_after_batch_nr=stop_after_batch_nr,
         )
+
+    def _to_classification_input(self, item: Any) -> VolunteeringClassificationInput:
+        for field in ["id", "hash", "title"]:
+            if field not in item:
+                raise ValueError(f"Dictionary missing required field {field}")
+        return VolunteeringClassificationInput(**item)
 
 
 @monitored_flow

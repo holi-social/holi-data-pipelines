@@ -1,13 +1,13 @@
 import re
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Generic
 from logging import Logger
 
 from bs4 import BeautifulSoup
 from ratelimit import limits, sleep_and_retry
 from vertexai.language_models import TextEmbeddingInput, TextEmbeddingModel
 
-from shared.classifiers.classification_item import ClassificationItem
+from shared.classifiers.classifier import ClassificationInputT
 
 TEXT_EMBEDDING_MODEL_NAME = "text-multilingual-embedding-002"
 MODEL_RATE_LIMIT_PER_MINUTE = 2000
@@ -17,7 +17,7 @@ TEXT_EMBEDDING_TASK_TYPE = "RETRIEVAL_DOCUMENT"
 type SimilarityEmbedding = List[float]
 
 
-class SimilarityEmbedder(ABC):
+class SimilarityEmbedder(Generic[ClassificationInputT], ABC):
     model: TextEmbeddingModel
     logger: Logger
 
@@ -39,12 +39,12 @@ class SimilarityEmbedder(ABC):
         return text
 
     @abstractmethod
-    def _combine_text_fields(self, item: ClassificationItem) -> str:
+    def _combine_text_fields(self, item: ClassificationInputT) -> str:
         pass
 
     @sleep_and_retry  # type: ignore
     @limits(calls=MODEL_RATE_LIMIT_PER_MINUTE, period=60)  # type: ignore
-    def embed(self, item: ClassificationItem) -> SimilarityEmbedding:
+    def embed(self, item: ClassificationInputT) -> SimilarityEmbedding:
         text_input = TextEmbeddingInput(self._combine_text_fields(item), TEXT_EMBEDDING_TASK_TYPE)
         self.logger.debug(f'Calculating similarity embedding for input: "{text_input}"')
         try:

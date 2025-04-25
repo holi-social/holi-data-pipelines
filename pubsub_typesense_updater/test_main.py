@@ -11,7 +11,7 @@ from pytest import fail
 
 from typesense.exceptions import ObjectNotFound, RequestUnauthorized
 
-from shared.classifiers.classification_result import ClassificationResult
+from shared.classifiers.classifier import ClassificationResult
 
 attributes: Any = {
     "id": "12833783708309476",

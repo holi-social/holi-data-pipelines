@@ -1,7 +1,8 @@
 import logging
-
+from typing import Any
 from prefect.states import Completed, State
 
+from shared.classifiers.task_classification_input import TaskClassificationInput
 from src.common.classifiers.pipeline_batch_classifier import PipelineBatchClassifier
 from src.common.logging.PipelineLogger import PipelineLogger
 from src.common.monitoring.flow import monitored_flow
@@ -14,7 +15,7 @@ topics_skills_classifier_logger = PipelineLogger("task_topics_skills_classifier_
 similarity_embedder_logger = PipelineLogger("task_similarity_embedder")
 
 
-class TaskBatchClassifier(PipelineBatchClassifier):
+class TaskBatchClassifier(PipelineBatchClassifier[TaskClassificationInput]):
     def __init__(self, batch_size: int | None = None, stop_after_batch_nr: int | None = None) -> None:
         super().__init__(
             topics_skills_classifier_v2=TaskTopicsSkillsClassifierV2(topics_skills_classifier_logger),
@@ -26,6 +27,12 @@ class TaskBatchClassifier(PipelineBatchClassifier):
             batch_size=batch_size,
             stop_after_batch_nr=stop_after_batch_nr,
         )
+
+    def _to_classification_input(self, item: Any) -> TaskClassificationInput:
+        for field in ["id", "hash", "name", "description"]:
+            if field not in item:
+                raise ValueError(f"Dictionary missing required field {field}")
+        return TaskClassificationInput(**item)
 
 
 @monitored_flow

@@ -1,18 +1,45 @@
 from abc import ABC
 from logging import Logger
+from typing import Protocol, Optional, List, Any, TypeVar, Dict, Generic
+from dataclasses import dataclass, asdict
 
 from google.cloud.bigquery import Client as BigQueryClient
 from tenacity import RetryError
 
-from shared.classifiers.classification_item import ClassificationItem
-from shared.classifiers.classification_result import ClassificationResult
 from shared.classifiers.topics_skills_classifier_v2 import TopicsSkillsClassificationV2, TopicsSkillsClassifierV2
 from shared.embedders.similarity_embedder import SimilarityEmbedder
 
 
-class Classifier(ABC):
-    topics_skills_v2_classifier: TopicsSkillsClassifierV2
-    similarity_embedder: SimilarityEmbedder
+class ClassificationInput(Protocol):
+    id: str
+    hash: str
+    topics_skills_embedding_v2: Optional[List[float]]
+    topics_v2: Optional[List[str]]
+    skills_v2: Optional[List[str]]
+    similarity_embedding: Optional[List[float]]
+
+
+ClassificationInputT = TypeVar("ClassificationInputT", bound=ClassificationInput)
+
+
+@dataclass
+class ClassificationResult:
+    type: str
+    id: str
+    hash: str
+    topics_skills_embedding_v2: List[float]
+    topics_v2: List[str]
+    skills_v2: List[str]
+    similarity_embedding: List[float]
+
+    def to_dict(self) -> Dict[str, Any]:
+        # noinspection PyTypeChecker
+        return asdict(self)
+
+
+class Classifier(Generic[ClassificationInputT], ABC):
+    topics_skills_v2_classifier: TopicsSkillsClassifierV2[ClassificationInputT]
+    similarity_embedder: SimilarityEmbedder[ClassificationInputT]
     bqclient: BigQueryClient
     item_type: str
     table_name_classifications: str
@@ -20,8 +47,8 @@ class Classifier(ABC):
 
     def __init__(
         self,
-        topics_skills_classifier_v2: TopicsSkillsClassifierV2,
-        similarity_embedder: SimilarityEmbedder,
+        topics_skills_classifier_v2: TopicsSkillsClassifierV2[ClassificationInputT],
+        similarity_embedder: SimilarityEmbedder[ClassificationInputT],
         item_type: str,
         table_name_classifications: str,
         logger: Logger,
@@ -35,7 +62,7 @@ class Classifier(ABC):
         self.logger = logger
         # TODO implement context manager API to cleanly handle resource shutdown
 
-    def _classify_item(self, item: ClassificationItem) -> ClassificationResult | None:
+    def _classify_item(self, item: ClassificationInputT) -> ClassificationResult | None:
         try:
             if not item.topics_skills_embedding_v2:
                 self.logger.debug(
@@ -76,7 +103,7 @@ class Classifier(ABC):
             self.logger.error(f"[id={item.id}] failed to classify", exc_info=e)
             return None
 
-    def get_cached_classification(self, item: ClassificationItem) -> ClassificationResult | None:
+    def get_cached_classification(self, item: ClassificationInputT) -> ClassificationResult | None:
         query = f"""
             SELECT * FROM `{self.table_name_classifications}`
             WHERE id="{item.id}"
@@ -92,7 +119,7 @@ class Classifier(ABC):
 
     def classify_item_and_cache_classification(
         self,
-        item: ClassificationItem,
+        item: ClassificationInputT,
     ) -> ClassificationResult | None:
         self.logger.info(f"[id={item.id}] classifying item")
         try:
