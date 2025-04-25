@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 from ratelimit import limits, sleep_and_retry
 from vertexai.language_models import TextEmbeddingInput, TextEmbeddingModel
 
-from shared.classifiers.classifier import ClassificationInputT
+from shared.classifiers.classification_input import ClassificationInputT
 
 TEXT_EMBEDDING_MODEL_NAME = "text-multilingual-embedding-002"
 MODEL_RATE_LIMIT_PER_MINUTE = 2000

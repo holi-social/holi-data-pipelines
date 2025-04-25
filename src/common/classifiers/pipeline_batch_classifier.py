@@ -5,7 +5,8 @@ from typing import Optional, cast, Generic, Any
 
 from prefect_gcp import GcpCredentials
 
-from shared.classifiers.classifier import Classifier, ClassificationInputT
+from shared.classifiers.classifier import Classifier
+from shared.classifiers.classification_input import ClassificationInputT
 
 import vertexai
 from shared.classifiers.topics_skills_classifier_v2 import TopicsSkillsClassifierV2

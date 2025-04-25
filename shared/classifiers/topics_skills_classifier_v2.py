@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import List, Generic
 from logging import Logger
 
-from shared.classifiers.classifier import ClassificationInputT
+from shared.classifiers.classification_input import ClassificationInputT
 
 
 @dataclass

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional, List
 
-from shared.classifiers.classifier import ClassificationInput
+from shared.classifiers.classification_input import ClassificationInput
 
 
 @dataclass

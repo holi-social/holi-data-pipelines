@@ -4,7 +4,7 @@ from typing import Optional, List, Any
 
 from prefect.states import Completed, State
 
-from shared.classifiers.classifier import ClassificationInput
+from shared.classifiers.classification_input import ClassificationInput
 from src.common.classifiers.pipeline_batch_classifier import PipelineBatchClassifier
 from src.common.logging.PipelineLogger import PipelineLogger
 from src.common.monitoring.flow import monitored_flow

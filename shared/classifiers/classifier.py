@@ -1,25 +1,14 @@
 from abc import ABC
 from logging import Logger
-from typing import Protocol, Optional, List, Any, TypeVar, Dict, Generic
+from typing import List, Any, Dict, Generic
 from dataclasses import dataclass, asdict
 
 from google.cloud.bigquery import Client as BigQueryClient
 from tenacity import RetryError
 
+from shared.classifiers.classification_input import ClassificationInputT
 from shared.classifiers.topics_skills_classifier_v2 import TopicsSkillsClassificationV2, TopicsSkillsClassifierV2
 from shared.embedders.similarity_embedder import SimilarityEmbedder
-
-
-class ClassificationInput(Protocol):
-    id: str
-    hash: str
-    topics_skills_embedding_v2: Optional[List[float]]
-    topics_v2: Optional[List[str]]
-    skills_v2: Optional[List[str]]
-    similarity_embedding: Optional[List[float]]
-
-
-ClassificationInputT = TypeVar("ClassificationInputT", bound=ClassificationInput)
 
 
 @dataclass
