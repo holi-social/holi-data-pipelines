@@ -2,3 +2,5 @@
 
 functions_framework==3.8.2
 semver==3.0.4
+pyfarmhash==0.4.0
+google-cloud-logging==3.12.1

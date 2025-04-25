@@ -98,23 +98,24 @@ variables:
 pubsub_typesense_updater_install_test:
   image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/python:3.13-slim"
   cache: !reference [ .pip_cache_rw_pubsub_typesense_updater ]
+  before_script:
+    - apt-get update -qq
+    - apt-get install -y build-essential
   script:
     # install dependencies for cloud functions
     - python3 -m venv pubsub_typesense_updater/.venv
     - source pubsub_typesense_updater/.venv/bin/activate
     - pip install --upgrade pip
-    - pip install -r pubsub_typesense_updater/requirements.txt --exists-action s
-    - pip install -r pubsub_typesense_updater/dev-requirements.txt --exists-action s
+    - pip install --exists-action s -r shared-requirements.txt
+    - pip install --exists-action s -r shared-dev-requirements.txt
+    - pip install --exists-action s -r pubsub_typesense_updater/requirements.txt
+    - pip install --exists-action s -r pubsub_typesense_updater/dev-requirements.txt
     # validate and test
     - ruff check pubsub_typesense_updater shared
     - ruff format --check pubsub_typesense_updater shared
-    # change the mypy call to run from within the cloud function directory
     - cd pubsub_typesense_updater
-    - PYTHONPATH=$CI_PROJECT_DIR:$CI_PROJECT_DIR/pubsub_typesense_updater mypy --python-executable=./.venv/bin/python --explicit-package-bases --namespace-packages .
-    - cd $CI_PROJECT_DIR
-    - mypy --python-executable=pubsub_typesense_updater/.venv/bin/python shared
-    - cd pubsub_typesense_updater
-    - PYTHONPATH=$CI_PROJECT_DIR/pubsub_typesense_updater pytest
+    - mypy --python-executable=./.venv/bin/python --explicit-package-bases --namespace-packages . ../shared
+    - pytest
     - cd $CI_PROJECT_DIR
   rules:
     - !reference [ .rule_templates, only_pubsub_typesense_updater ]
@@ -141,10 +142,10 @@ pubsub_typesense_updater_install_test:
     FUNCTION_NAME: pubsub_typesense_updater
   script:
     - apk add zip
-    - cd pubsub_typesense_updater
     # Create a deployment directory with all required files
+    - cd pubsub_typesense_updater
     - mkdir -p .build
-    - cp -r ../shared .build/
+    - cp -r ../shared/ .build/shared/
     - cp -r *.py .build/
     # create a single consolidated requirements file without relative paths
     - cat ../shared-requirements.txt | grep -v "^-r" | grep -v "^#" >> .build/requirements.txt

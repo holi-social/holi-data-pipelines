@@ -1,1 +1,3 @@
 -r ../shared-dev-requirements.txt
+
+types-pyfarmhash==0.4.0.20240902

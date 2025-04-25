@@ -77,7 +77,7 @@ resource "google_bigquery_table" "tasks_without_classifications" {
     # ATTENTION: if you change the hash calculation function, make sure to also change it in
     #  * the JOIN clause AND
     #  * the "tasks_with_classifications" view
-    query          = <<SQL
+    query = <<SQL
       SELECT
         task.* EXCEPT(skills_v2),
         JSON_VALUE_ARRAY(task.skills_v2) AS skills_v2,
@@ -112,7 +112,7 @@ resource "google_bigquery_table" "tasks_with_classifications" {
     # ATTENTION: if you change the hash calculation function, make sure to also change it in
     #  * the JOIN clause AND
     #  * the "tasks_without_classifications" view
-    query          = <<SQL
+    query = <<SQL
       SELECT
         task.* EXCEPT(skills_v2),
         classification.* EXCEPT(id, type, `hash`),
@@ -172,9 +172,9 @@ resource "google_bigquery_table" "volunteering_voltastics_without_classification
 # TODO - location_cache
 
 resource "google_bigquery_table" "volunteering_voltastics_classified_enriched_partitioned" {
-  project    = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
-  dataset_id = local.dataset_id_datalake
-  table_id   = "volunteering_voltastics_classified_enriched_partitioned"
+  project     = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
+  dataset_id  = local.dataset_id_datalake
+  table_id    = "volunteering_voltastics_classified_enriched_partitioned"
   description = "View holding all (partitioned) volunteering data, together with topics&skill classification, similarity classification and location enrichment. Used by the volunteering-to-typesense pipeline."
 
   view {

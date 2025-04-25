@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import List
+from logging import Logger
 
-from src.common.classifiers.classification_item import ClassificationItem
-from src.common.logging.PipelineLogger import PipelineLogger
+from shared.classifiers.classification_item import ClassificationItem
 
 
 @dataclass
@@ -14,9 +14,9 @@ class TopicsSkillsClassificationV2:
 
 
 class TopicsSkillsClassifierV2(ABC):
-    logger: PipelineLogger
+    logger: Logger
 
-    def __init__(self, logger: PipelineLogger):
+    def __init__(self, logger: Logger):
         self.logger = logger
 
     @abstractmethod

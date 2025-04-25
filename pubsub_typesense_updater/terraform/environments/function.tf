@@ -33,17 +33,20 @@ resource "google_cloudfunctions2_function" "pubsub_typesense_updater" {
   service_config {
     max_instance_count               = 1
     min_instance_count               = 0
-    available_memory                 = "200Mi"
+    available_memory                 = "512Mi"
     timeout_seconds                  = 120
     available_cpu                    = 1
     max_instance_request_concurrency = 5
 
     environment_variables = {
-      ENVIRONMENT               = local.environment_name
-      TYPESENSE_HOST            = "t9vemwkibxajcorqp-1.a1.typesense.net"
-      TYPESENSE_PORT            = "443"
-      TYPESENSE_PROTOCOL        = "https"
-      TYPESENSE_COLLECTION_NAME = local.environment_name == "production" ? "holi_search_production" : "holi_search_staging"
+      ENVIRONMENT                         = local.environment_name
+      TYPESENSE_HOST                      = "t9vemwkibxajcorqp-1.a1.typesense.net"
+      TYPESENSE_PORT                      = "443"
+      TYPESENSE_PROTOCOL                  = "https"
+      TYPESENSE_COLLECTION_NAME           = local.environment_name == "production" ? "holi_search_production" : "holi_search_staging"
+      GCLOUD_PROJECT_ID                   = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
+      GCLOUD_LOCATION                     = local.default_region
+      BIGQUERY_TABLE_NAME_CLASSIFICATIONS = data.terraform_remote_state.data_pipelines_environment_state.outputs.bigquery_table_name_classifications
     }
 
     vpc_connector                  = data.terraform_remote_state.holi_infra_state.outputs.vpc_access_connector_name

@@ -22,9 +22,15 @@ resource "google_project_iam_member" "secretmanager_accessor" {
 }
 
 resource "google_project_iam_member" "function_invoker" {
+  for_each = toset([
+    "roles/run.invoker",
+    "roles/bigquery.jobUser",
+    "roles/bigquery.dataEditor",
+    "roles/aiplatform.user"
+  ])
   project = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
   member  = "serviceAccount:${local.service_account_ids.pubsub_typesense_updater}"
-  role    = "roles/run.invoker"
+  role    = each.key
 }
 
 output "function_service_account" {
