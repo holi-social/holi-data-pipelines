@@ -3,7 +3,7 @@ from typing import Optional, Any
 
 from cloudevents.http import CloudEvent
 
-from pubsub_typesense_updater.events import (
+from events import (
     DomainEvent,
     get_message_id,
     get_event_type,
@@ -18,7 +18,7 @@ class EventProcessorLogger(logging.Logger):
     cloud_event: Optional[CloudEvent] = None
     domain_event: Optional[DomainEvent] = None
 
-    def _get_labels(self) -> dict:
+    def _get_labels(self) -> dict[str, str]:
         """Get labels based on cloud_event and domain_event properties."""
         labels = {}
 
@@ -49,7 +49,7 @@ class EventProcessorLogger(logging.Logger):
 
         return labels
 
-    def _add_labels_to_kwargs(self, kwargs: dict) -> dict:
+    def _add_labels_to_kwargs(self, kwargs: dict[str, Any]) -> dict[str, Any]:
         """Add labels to the extra dict in kwargs."""
         labels = self._get_labels()
         if not labels:

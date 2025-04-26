@@ -8,6 +8,7 @@ from google.cloud import bigquery, logging as gcloud_logging
 from cloudevents.http.event import CloudEvent
 from event_processor_logger import EventProcessorLogger
 from events import (
+    DomainEvent,
     SpaceCreatedEvent,
     SpaceDeletedEvent,
     SpaceUpdatedEvent,
@@ -17,8 +18,8 @@ from events import (
     UserDeletedEvent,
     UserUpdatedEvent,
     get_event_type,
+    get_event_version,
 )
-from pubsub_typesense_updater.events import DomainEvent
 
 from shared.classifiers.task_classification_input import TaskClassificationInput
 from task_classifier import TaskClassifier
@@ -120,56 +121,58 @@ def process_task_deleted_event(ts_client: TypesenseClient, event: TaskDeletedEve
 
 
 def process_event(ts_client: TypesenseClient, cloud_event: CloudEvent) -> None:
-    def add_logging_context(event: DomainEvent):
+    def add_logging_context(event: DomainEvent) -> None:
         if isinstance(logger, EventProcessorLogger):
             logger.domain_event = event
 
-    match get_event_type(cloud_event):
-        case "UserUpdated":
-            event = UserUpdatedEvent(cloud_event)
-            add_logging_context(event)
-            return process_user_updated_event(ts_client, event)
-        case "UserDeleted":
-            event = UserDeletedEvent(cloud_event)
-            add_logging_context(event)
-            return process_user_deleted_event(ts_client, event)
-        case "UserNameUpdated":
-            # no need to process, it is sufficient to handle UserUpdated
-            logger.debug("Ignoring UserNameUpdated event")
-            return None
-        case "UserEmailUpdated":
-            # no need to process, it is sufficient to handle UserUpdated
-            # also, no PII must be in Typesense as there's no authentication
-            logger.debug("Ignoring UserEmailUpdated event")
-            return None
-        case "SpaceCreated":
-            event = SpaceCreatedEvent(cloud_event)
-            add_logging_context(event)
-            return process_space_upserting_event(ts_client, event)
-        case "SpaceUpdated":
-            event = SpaceUpdatedEvent(cloud_event)
-            add_logging_context(event)
-            return process_space_upserting_event(ts_client, event)
-        case "SpaceDeleted":
-            event = SpaceDeletedEvent(cloud_event)
-            add_logging_context(event)
-            return process_space_deleted_event(ts_client, event)
-        case "TaskCreated":
-            event = TaskCreatedEvent(cloud_event)
-            add_logging_context(event)
-            return process_task_upserting_event(ts_client, event)
-        case "TaskUpdated":
-            event = TaskUpdatedEvent(cloud_event)
-            add_logging_context(event)
-            return process_task_upserting_event(ts_client, event)
-        case "TaskDeleted":
-            event = TaskDeletedEvent(cloud_event)
-            add_logging_context(event)
-            return process_task_deleted_event(ts_client, event)
-        case (eventType, eventVersion):
-            # other events than handled above are assumed to (currently) not be of interest in search
-            logger.debug(f"Ignoring {eventType} ({eventVersion}) event.")
-            return
+    event_type = get_event_type(cloud_event)
+    event_version = get_event_version(cloud_event)
+
+    if event_type == "UserUpdated":
+        user_updated_event = UserUpdatedEvent(cloud_event)
+        add_logging_context(user_updated_event)
+        return process_user_updated_event(ts_client, user_updated_event)
+    elif event_type == "UserDeleted":
+        user_deleted_event = UserDeletedEvent(cloud_event)
+        add_logging_context(user_deleted_event)
+        return process_user_deleted_event(ts_client, user_deleted_event)
+    elif event_type == "UserNameUpdated":
+        # no need to process, it is sufficient to handle UserUpdated
+        logger.debug("Ignoring UserNameUpdated event")
+        return None
+    elif event_type == "UserEmailUpdated":
+        # no need to process, it is sufficient to handle UserUpdated
+        # also, no PII must be in Typesense as there's no authentication
+        logger.debug("Ignoring UserEmailUpdated event")
+        return None
+    elif event_type == "SpaceCreated":
+        space_created_event = SpaceCreatedEvent(cloud_event)
+        add_logging_context(space_created_event)
+        return process_space_upserting_event(ts_client, space_created_event)
+    elif event_type == "SpaceUpdated":
+        space_updated_event = SpaceUpdatedEvent(cloud_event)
+        add_logging_context(space_updated_event)
+        return process_space_upserting_event(ts_client, space_updated_event)
+    elif event_type == "SpaceDeleted":
+        space_deleted_event = SpaceDeletedEvent(cloud_event)
+        add_logging_context(space_deleted_event)
+        return process_space_deleted_event(ts_client, space_deleted_event)
+    elif event_type == "TaskCreated":
+        task_created_event = TaskCreatedEvent(cloud_event)
+        add_logging_context(task_created_event)
+        return process_task_upserting_event(ts_client, task_created_event)
+    elif event_type == "TaskUpdated":
+        task_updated_event = TaskUpdatedEvent(cloud_event)
+        add_logging_context(task_updated_event)
+        return process_task_upserting_event(ts_client, task_updated_event)
+    elif event_type == "TaskDeleted":
+        task_deleted_event = TaskDeletedEvent(cloud_event)
+        add_logging_context(task_deleted_event)
+        return process_task_deleted_event(ts_client, task_deleted_event)
+    else:
+        # other events than handled above are assumed to (currently) not be of interest in search
+        logger.debug(f"Ignoring {event_type} (v{event_version}) event.")
+        return
 
 
 @functions_framework.cloud_event
