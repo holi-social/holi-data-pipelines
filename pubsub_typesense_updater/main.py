@@ -29,7 +29,7 @@ if "K_SERVICE" in os.environ:
     gcloud_logging_client = gcloud_logging.Client()  # type: ignore
     gcloud_logging_client.setup_logging(log_level=logging.INFO)  # type: ignore
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("pubsub_typesense_updater")
 logger.setLevel(logging.DEBUG)
 
 
