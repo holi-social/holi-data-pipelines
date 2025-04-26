@@ -50,7 +50,7 @@ def bigquery_table_name_classifications() -> str:
 
 
 def process_user_updated_event(ts_client: TypesenseClient, event: UserUpdatedEvent) -> None:
-    logger.debug(f"Processing {event}")
+    logger.debug(f"[id={event.user.id}] Processing event")
     if event.user.name is None or event.user.name.strip() == "":
         try:
             ts_client.delete(f"profile_{event.user.id}")
@@ -58,37 +58,37 @@ def process_user_updated_event(ts_client: TypesenseClient, event: UserUpdatedEve
             pass
     else:
         ts_client.upsert(event.as_typesense_document())
-    logger.info(f"Upserted user {event.user.id} in Typesense")
+    logger.info(f"[id={event.user.id}] Upserted user {event.user.id} in Typesense")
 
 
 def process_user_deleted_event(ts_client: TypesenseClient, event: UserDeletedEvent) -> None:
-    logger.debug(f"Processing {event}")
+    logger.debug(f"[id={event.user.id}] Processing event")
     try:
         ts_client.delete(f"profile_{event.user.id}")
     except ObjectNotFound:
         pass
-    logger.info(f"Deleted user {event.user.id} from Typesense")
+    logger.info(f"[id={event.user.id}] Deleted user {event.user.id} from Typesense")
 
 
 def process_space_upserting_event(
     ts_client: TypesenseClient, event: Union[SpaceCreatedEvent, SpaceUpdatedEvent]
 ) -> None:
-    logger.debug(f"Processing {event}")
+    logger.debug(f"[id={event.space.id}] Processing event")
     ts_client.upsert(event.as_typesense_document())
-    logger.info(f"Upserted space {event.space.id} in Typesense")
+    logger.info(f"[id={event.space.id}] Upserted space {event.space.id} in Typesense")
 
 
 def process_space_deleted_event(ts_client: TypesenseClient, event: SpaceDeletedEvent) -> None:
-    logger.debug(f"Processing {event}")
+    logger.debug(f"[id={event.space.id}] Processing event")
     try:
         ts_client.delete(f"space_{event.space.id}")
     except ObjectNotFound:
         pass
-    logger.info(f"Deleted space {event.space.id} in Typesense")
+    logger.info(f"[id={event.space.id}] Deleted space {event.space.id} in Typesense")
 
 
 def process_task_upserting_event(ts_client: TypesenseClient, event: Union[TaskCreatedEvent, TaskUpdatedEvent]) -> None:
-    logger.debug(f"Processing {event}")
+    logger.debug(f"[id={event.task.id}] Processing event")
     vertexai.init(project=gcloud_project_id(), location=gcloud_location())
     bq_client = bigquery.Client(project=gcloud_project_id(), location=gcloud_location())
     classifier = TaskClassifier(bigquery_table_name_classifications(), logger, bq_client)
@@ -107,16 +107,16 @@ def process_task_upserting_event(ts_client: TypesenseClient, event: Union[TaskCr
     if not classification:
         classification = classifier.classify_item_and_cache_classification(item)
     ts_client.upsert(event.as_typesense_document(classification))
-    logger.info(f"Upserted task {event.task.id} in Typesense")
+    logger.info(f"[id={event.task.id}] Upserted task in Typesense")
 
 
 def process_task_deleted_event(ts_client: TypesenseClient, event: TaskDeletedEvent) -> None:
-    logger.debug(f"Processing {event}")
+    logger.debug(f"[id={event.task.id}] Processing event")
     try:
         ts_client.delete(f"task_{event.task.id}")
     except ObjectNotFound:
         pass
-    logger.info(f"Deleted task {event.task.id} in Typesense")
+    logger.info(f"[id={event.task.id}] Deleted task in Typesense")
 
 
 def process_event(ts_client: TypesenseClient, cloud_event: CloudEvent) -> None:
