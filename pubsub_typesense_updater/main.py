@@ -6,6 +6,7 @@ import vertexai
 import functions_framework
 from google.cloud import bigquery, logging as gcloud_logging
 from cloudevents.http.event import CloudEvent
+from event_processor_logger import EventProcessorLogger
 from events import (
     SpaceCreatedEvent,
     SpaceDeletedEvent,
@@ -17,12 +18,15 @@ from events import (
     UserUpdatedEvent,
     get_event_type,
 )
+from pubsub_typesense_updater.events import DomainEvent
+
 from shared.classifiers.task_classification_input import TaskClassificationInput
 from task_classifier import TaskClassifier
 
 from typesense_client import TypesenseClient
 from typesense.exceptions import ObjectNotFound
 
+logging.setLoggerClass(EventProcessorLogger)
 
 # only log to Google Cloud Logging if run in that environment
 if "K_SERVICE" in os.environ:
@@ -115,12 +119,20 @@ def process_task_deleted_event(ts_client: TypesenseClient, event: TaskDeletedEve
     logger.info(f"Deleted task {event.task.id} in Typesense")
 
 
-def process_event(ts_client: TypesenseClient, event: CloudEvent) -> None:
-    match get_event_type(event):
+def process_event(ts_client: TypesenseClient, cloud_event: CloudEvent) -> None:
+    def add_logging_context(event: DomainEvent):
+        if isinstance(logger, EventProcessorLogger):
+            logger.domain_event = event
+
+    match get_event_type(cloud_event):
         case "UserUpdated":
-            return process_user_updated_event(ts_client, UserUpdatedEvent(event))
+            event = UserUpdatedEvent(cloud_event)
+            add_logging_context(event)
+            return process_user_updated_event(ts_client, event)
         case "UserDeleted":
-            return process_user_deleted_event(ts_client, UserDeletedEvent(event))
+            event = UserDeletedEvent(cloud_event)
+            add_logging_context(event)
+            return process_user_deleted_event(ts_client, event)
         case "UserNameUpdated":
             # no need to process, it is sufficient to handle UserUpdated
             logger.debug("Ignoring UserNameUpdated event")
@@ -131,17 +143,29 @@ def process_event(ts_client: TypesenseClient, event: CloudEvent) -> None:
             logger.debug("Ignoring UserEmailUpdated event")
             return None
         case "SpaceCreated":
-            return process_space_upserting_event(ts_client, SpaceCreatedEvent(event))
+            event = SpaceCreatedEvent(cloud_event)
+            add_logging_context(event)
+            return process_space_upserting_event(ts_client, event)
         case "SpaceUpdated":
-            return process_space_upserting_event(ts_client, SpaceUpdatedEvent(event))
+            event = SpaceUpdatedEvent(cloud_event)
+            add_logging_context(event)
+            return process_space_upserting_event(ts_client, event)
         case "SpaceDeleted":
-            return process_space_deleted_event(ts_client, SpaceDeletedEvent(event))
+            event = SpaceDeletedEvent(cloud_event)
+            add_logging_context(event)
+            return process_space_deleted_event(ts_client, event)
         case "TaskCreated":
-            return process_task_upserting_event(ts_client, TaskCreatedEvent(event))
+            event = TaskCreatedEvent(cloud_event)
+            add_logging_context(event)
+            return process_task_upserting_event(ts_client, event)
         case "TaskUpdated":
-            return process_task_upserting_event(ts_client, TaskUpdatedEvent(event))
+            event = TaskUpdatedEvent(cloud_event)
+            add_logging_context(event)
+            return process_task_upserting_event(ts_client, event)
         case "TaskDeleted":
-            return process_task_deleted_event(ts_client, TaskDeletedEvent(event))
+            event = TaskDeletedEvent(cloud_event)
+            add_logging_context(event)
+            return process_task_deleted_event(ts_client, event)
         case (eventType, eventVersion):
             # other events than handled above are assumed to (currently) not be of interest in search
             logger.debug(f"Ignoring {eventType} ({eventVersion}) event.")
@@ -151,4 +175,6 @@ def process_event(ts_client: TypesenseClient, event: CloudEvent) -> None:
 @functions_framework.cloud_event
 def process_message(event: CloudEvent) -> None:
     ts_client = TypesenseClient()
+    if isinstance(logger, EventProcessorLogger):
+        logger.cloud_event = event
     process_event(ts_client, event)

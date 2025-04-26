@@ -1,7 +1,7 @@
 import base64
 import json
 from dataclasses import dataclass
-from typing import Dict, Any, Optional, Literal, List, TypedDict
+from typing import Dict, Any, Optional, Literal, List, TypedDict, Protocol
 from datetime import datetime, date
 from semver import Version
 
@@ -15,6 +15,10 @@ from shared.classifiers.classifier import ClassificationResult
 class GeoJSONPoint(TypedDict):
     type: Literal["Point"]
     coordinates: List[float]  # longitude, latitude
+
+
+def get_message_id(cloud_event: CloudEvent) -> str:
+    return cloud_event.data["message"]["messageId"]
 
 
 def get_event_type(cloud_event: CloudEvent) -> str:
@@ -39,6 +43,11 @@ def _validate_event_version(cloud_event: CloudEvent, min_version: Version, max_v
         )
 
 
+class DomainEvent(Protocol):
+    event_type: str
+    event_version: Version
+
+
 @dataclass
 class UserPayload:
     id: str
@@ -60,7 +69,7 @@ class UserPayload:
 
 
 @dataclass
-class UserEvent:
+class UserEvent(DomainEvent):
     event_type: str
     event_version: Version
     user: UserPayload
@@ -142,7 +151,7 @@ class SpacePayload:
 
 
 @dataclass
-class SpaceEvent:
+class SpaceEvent(DomainEvent):
     event_type: str
     event_version: Version
     space: SpacePayload
@@ -241,7 +250,7 @@ class TaskPayload:
 
 
 @dataclass
-class TaskEvent:
+class TaskEvent(DomainEvent):
     event_type: str
     event_version: Version
     user: UserPayload
