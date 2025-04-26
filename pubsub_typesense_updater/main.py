@@ -27,9 +27,10 @@ from typesense.exceptions import ObjectNotFound
 # only log to Google Cloud Logging if run in that environment
 if "K_SERVICE" in os.environ:
     gcloud_logging_client = gcloud_logging.Client()  # type: ignore
-    gcloud_logging_client.setup_logging(log_level=logging.DEBUG)  # type: ignore
+    gcloud_logging_client.setup_logging(log_level=logging.INFO)  # type: ignore
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 def gcloud_project_id() -> str:
