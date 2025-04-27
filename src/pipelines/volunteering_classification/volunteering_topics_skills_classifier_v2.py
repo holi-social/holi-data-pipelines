@@ -16,7 +16,7 @@ from src.pipelines.skills_v2 import skill_v2_titles, skill_v2_slugs
 
 from tenacity import retry, stop_after_attempt
 
-from src.pipelines.volunteering_classification.volunteering_classification import VolunteeringClassificationInput
+from src.pipelines.volunteering_classification.volunteering_classification_input import VolunteeringClassificationInput
 
 MODEL_NAME = "gemini-2.0-flash-001"
 MODEL_RATE_LIMIT_PER_MINUTE = 2000

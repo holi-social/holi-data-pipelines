@@ -1,14 +1,13 @@
-from dataclasses import dataclass
 import logging
-from typing import Optional, List, Any
+from typing import Optional, Any
 
 from prefect.states import Completed, State
 
-from shared.classifiers.classification_input import ClassificationInput
 from src.common.classifiers.pipeline_batch_classifier import PipelineBatchClassifier
 from src.common.logging.PipelineLogger import PipelineLogger
 from src.common.monitoring.flow import monitored_flow
 from src.pipelines.bigquery import volunteering_voltastics_without_classifications, table_classifications
+from src.pipelines.volunteering_classification.volunteering_classification_input import VolunteeringClassificationInput
 from src.pipelines.volunteering_classification.volunteering_topics_skills_classifier_v2 import (
     VolunteeringTopicsSkillsClassifierV2,
 )
@@ -17,20 +16,6 @@ from src.pipelines.volunteering_classification.volunteering_similarity_embedder 
 logger = PipelineLogger("volunteering_classification")
 topics_skills_classification_logger = PipelineLogger("volunteering_topics_skills_classification_v2")
 similarity_classification_logger = PipelineLogger("volunteering_similarity_classification")
-
-
-@dataclass
-class VolunteeringClassificationInput(ClassificationInput):
-    id: str
-    hash: str
-    title: str
-    description: str
-    topics_skills_embedding_v2: Optional[List[float]] = None
-    topics_v2: Optional[List[str]] = None
-    skills_v2: Optional[List[str]] = None
-    similarity_embedding: Optional[List[float]] = None
-    hashTags: Optional[List[str]] = None  # noqa: N815
-    uses: Optional[List[str]] = None
 
 
 class VolunteeringBatchClassifier(PipelineBatchClassifier[VolunteeringClassificationInput]):

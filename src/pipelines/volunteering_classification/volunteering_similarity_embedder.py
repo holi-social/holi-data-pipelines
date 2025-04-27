@@ -1,7 +1,7 @@
 from logging import Logger
 
 from shared.embedders.similarity_embedder import SimilarityEmbedder
-from src.pipelines.volunteering_classification.volunteering_classification import VolunteeringClassificationInput
+from src.pipelines.volunteering_classification.volunteering_classification_input import VolunteeringClassificationInput
 
 
 class VolunteeringSimilarityEmbedder(SimilarityEmbedder[VolunteeringClassificationInput]):
