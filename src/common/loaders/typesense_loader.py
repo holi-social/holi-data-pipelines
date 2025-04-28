@@ -63,6 +63,7 @@ def upsert_typesense_documents(
     typesense_collection_name: str,
     new_or_updated_documents: List[Dict[str, Any]],
 ) -> bool:
+    logger.info(f'Upserting {len(new_or_updated_documents)} documents into collection "{typesense_collection_name}"')
     ingestion_succeeded = True
     for docs_batch, batch_count in batches(new_or_updated_documents, 100):
         failed_documents, success_count = upsert_documents_in_batches(
