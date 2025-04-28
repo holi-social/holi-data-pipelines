@@ -1,6 +1,7 @@
 import json
 from dataclasses import dataclass
 from typing import cast
+from urllib.parse import quote
 
 from typesense.client import Client
 from typesense.exceptions import ObjectNotFound
@@ -42,7 +43,7 @@ class TypesenseClient:
                 "nodes": [
                     {
                         "host": config.host,
-                        "port": config.port,
+                        "port": str(config.port),
                         "protocol": config.protocol,
                     }
                 ],
@@ -61,7 +62,8 @@ class TypesenseClient:
             collection_name (str): The name of the Typesense collection to delete.
         """
         try:
-            self.client.collections[collection_name].delete()
+            url_encoded_collection_name = quote(collection_name)
+            self.client.collections[url_encoded_collection_name].delete()
             logger.info(f"Typesense collection '{collection_name}' successfully deleted.")
         except ObjectNotFound:
             logger.warning(f"Collection '{collection_name}' not found. Skipping deletion.")
