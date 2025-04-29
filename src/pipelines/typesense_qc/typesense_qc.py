@@ -1,6 +1,7 @@
 import json
 import math
 from typing import cast
+from urllib.parse import quote
 
 from prefect import flow, task
 from prefect.states import Completed, Failed, State
@@ -67,7 +68,8 @@ def get_volunteering_count_bq() -> int:
 
 @task
 def get_count_ts(ts_client: TypesenseClient, ts_collection: str, document_type: str) -> int:
-    result = ts_client.client.collections[ts_collection].documents.search(
+    url_encoded_ts_collection = quote(ts_collection)
+    result = ts_client.client.collections[url_encoded_ts_collection].documents.search(
         {
             "q": "*",
             "filter_by": f"type:={document_type}",
