@@ -1,0 +1,22 @@
+[project]
+name = "pubsub_typesense_updater"
+version = "1.0.0"
+description = "A Cloud Function consuming domain events received via Pub/Sub to keep Typesense search/reco index in sync"
+readme = "README.md"
+requires-python = ">=3.13.3"
+dependencies = [
+    "functions-framework==3.8.2",
+    "google-cloud-logging==3.12.1",
+    "shared",
+    "pyfarmhash==0.4.0",
+    "semver==3.0.4",
+]
+
+[dependency-groups]
+dev = [
+    "faker==37.1.0",
+    "pre-commit==4.2.0",
+    "pytest==8.3.5",
+    "ruff==0.11.7",
+    "types-pyfarmhash==0.4.0.20240902",
+]

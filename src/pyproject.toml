@@ -1,0 +1,30 @@
+[project]
+name = "src"
+version = "1.0.0"
+dependencies = [
+    "codetiming==1.4.0",
+    "shared",
+    "langdetect==1.0.9",
+    "prefect-gcp[all-extras]==0.6.2",
+    "prefect[gcp]==3.2.11",
+    "pyarrow>=3.0.0",
+    "pydantic==2.11.3",
+    "python-dateutil==2.9.0.post0",
+    "requests==2.32.3",
+    "trycast==1.2.0",
+    "typing-extensions==4.13.2",
+    "opentelemetry-resourcedetector-gcp==1.9.0a0",
+    "opentelemetry-exporter-gcp-monitoring==1.9.0a0",
+]
+
+[dependency-groups]
+dev = [
+    "faker==37.1.0",
+    "mypy==1.15.0",
+    "pre-commit==4.2.0",
+    "pytest==8.3.5",
+    "ruff==0.11.7",
+    "types-python-dateutil==2.9.0.20241206",
+    "types-pyyaml==6.0.12.20250402",
+    "types-requests==2.32.0.20250328",
+]

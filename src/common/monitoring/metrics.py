@@ -1,4 +1,5 @@
 import platform
+import os
 from typing import Any, Optional, Mapping, Type
 
 import pendulum
@@ -136,15 +137,21 @@ class Metrics:
         return cls._instance
 
     def _initialize_once(self) -> None:
+        metrics_readers = (
+            []
+            if os.environ.get("PYTEST_VERSION")
+            is not None  # see https://doc.pytest.org/en/latest/example/simple.html#detect-if-running-from-within-a-pytest-run
+            else [
+                PeriodicExportingMetricReader(
+                    # https://cloud.google.com/monitoring/api/metrics_other
+                    CloudMonitoringMetricsExporter(prefix="external.googleapis.com/user"),
+                    export_interval_millis=5000,
+                )
+            ]
+        )
         metrics.set_meter_provider(
             MeterProvider(
-                metric_readers=[
-                    PeriodicExportingMetricReader(
-                        # https://cloud.google.com/monitoring/api/metrics_other
-                        CloudMonitoringMetricsExporter(prefix="external.googleapis.com/user"),
-                        export_interval_millis=5000,
-                    )
-                ],
+                metric_readers=metrics_readers,
                 resource=_get_resource(),
             ),
         )
