@@ -74,6 +74,7 @@ variables:
 pubsub_typesense_updater_validate:
   image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/python:3.13-slim"
   before_script:
+    - apt-get update -qq
     - apt-get install -y build-essential
     - pip install --root-user-action ignore --disable-pip-version-check uv
   script:
