@@ -211,7 +211,7 @@ resource "prefect_work_pool" "cloud_run" {
 }
 
 resource "docker_image" "prefect" {
-  name = "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.4.0-python3.12"
+  name = "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.4.0-python3.13"
 }
 
 resource "google_cloud_run_v2_service" "work_pool_cloud_run_worker" {

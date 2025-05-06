@@ -210,7 +210,7 @@ pubsub_typesense_updater_production_deploy:
   interruptible: false
 
 .prefect_deploy:
-  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.4.0-python3.12"
+  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.4.0-python3.13"
   variables:
     ENVIRONMENT_ID: $CI_ENVIRONMENT_SLUG
   cache: !reference [ .pip_cache_ro ]
@@ -220,7 +220,7 @@ pubsub_typesense_updater_production_deploy:
   resource_group: $ENVIRONMENT_ID
 
 .smoketest:
-  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.4.0-python3.12"
+  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.4.0-python3.13"
   cache: !reference [ .pip_cache_ro ]
   script:
     - source .venv/bin/activate
@@ -244,7 +244,7 @@ pubsub_typesense_updater_production_deploy:
     - docker push "$GCR_IMAGE":latest # for caching the build and for use by prefect pipelines
 
 pipelines_install_dependencies:
-  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/python:3.12-slim"
+  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/python:3.13-slim"
   cache: !reference [ .pip_cache_rw ]
   script:
     - python3 -m venv .venv
@@ -265,7 +265,7 @@ pipelines_install_dependencies:
         - .gitlab-ci.yml
 
 pipelines_validate:
-  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/python:3.12-slim"
+  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/python:3.13-slim"
   needs:
     - job: pipelines_install_dependencies
       optional: true
