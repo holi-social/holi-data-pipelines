@@ -8,7 +8,7 @@ dependencies = [
     "prefect-gcp[all-extras]==0.6.2",
     "prefect[gcp]==3.2.11",
     "pyarrow>=3.0.0",
-    "pydantic==2.11.3",
+    "pydantic==2.11.4",
     "python-dateutil==2.9.0.post0",
     "requests==2.32.3",
     "trycast==1.2.0",
