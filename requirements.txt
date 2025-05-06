@@ -5,7 +5,7 @@
 codetiming==1.4.0
 langdetect==1.0.9
 prefect[gcp]==3.4.0
-prefect-gcp[all_extras]==0.6.2
+prefect-gcp[all_extras]==0.6.7
 pyarrow>=3.0.0
 pydantic==2.11.4
 python-dateutil==2.9.0.post0

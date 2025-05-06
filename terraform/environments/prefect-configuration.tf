@@ -236,7 +236,7 @@ resource "google_cloud_run_v2_service" "work_pool_cloud_run_worker" {
       # See https://linen.prefect.io/t/23212478/when-i-use-a-prefect-worker-gcp-cloud-run-v2-worker-to-be-pr for inspiration to this fix.
       env {
         name  = "EXTRA_PIP_PACKAGES"
-        value = "prefect-gcp[all_extras]==0.6.2"
+        value = "prefect-gcp[all_extras]==0.6.7"
       }
       resources {
         cpu_idle          = false
