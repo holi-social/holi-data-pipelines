@@ -184,8 +184,7 @@ pubsub_typesense_updater_production_deploy:
     - uv sync --locked --link-mode=copy --package src
   script:
     - export PREFECT_API_URL="$(cat $PREFECT_SERVER_URL_PATH)/api"
-    - export PYTHONPATH=$PYTHONPATH:.
-    - python -m src.pipelines.deployments
+    - uv run --package src python -m src.pipelines.deployments
   resource_group: $ENVIRONMENT_ID
 
 .smoketest:
