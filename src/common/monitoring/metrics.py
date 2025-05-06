@@ -2,7 +2,7 @@ import platform
 import os
 from typing import Any, Optional, Mapping, Type
 
-import pendulum
+from whenever import Instant
 from opentelemetry import metrics
 from opentelemetry.exporter.cloud_monitoring import (
     CloudMonitoringMetricsExporter,
@@ -108,9 +108,9 @@ def record_after_flow_metrics(
 
     start_time = _run.start_time
     if start_time:
-        full_timedelta = pendulum.now("utc") - start_time
+        full_timedelta = Instant.now() - Instant.from_py_datetime(start_time)
         metrics_instance._common_gauges["pipeline_run.duration"].set(  # noqa
-            full_timedelta.total_seconds(),
+            full_timedelta.in_seconds(),
             metrics_instance.get_labels() | {"prefect_flow_state": _state.type.lower()},
         )
     else:
@@ -224,9 +224,9 @@ class Metrics:
 
         start_time = _run.start_time
         if start_time:
-            full_timedelta = pendulum.now("utc") - start_time
+            full_timedelta = Instant.now() - Instant.from_py_datetime(start_time)
             self._common_gauges["pipeline_run.duration"].set(
-                full_timedelta.total_seconds(),
+                full_timedelta.in_seconds(),
                 self.get_labels() | {"prefect_flow_state": _state.type.lower()},
             )
         else:

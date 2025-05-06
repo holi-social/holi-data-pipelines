@@ -1,4 +1,4 @@
-FROM europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.2.11-python3.12 AS builder
+FROM europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.4.0-python3.13 AS builder
 
 # ======= Installation of uv following https://docs.astral.sh/uv/guides/integration/docker/#installing-uv ==============
 # The installer requires curl (and certificates) to download the release archive
