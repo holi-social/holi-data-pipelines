@@ -1488,29 +1488,6 @@ wheels = [
 ]
 
 [[package]]
-name = "pendulum"
-version = "3.1.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "python-dateutil" },
-    { name = "tzdata" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/23/7c/009c12b86c7cc6c403aec80f8a4308598dfc5995e5c523a5491faaa3952e/pendulum-3.1.0.tar.gz", hash = "sha256:66f96303560f41d097bee7d2dc98ffca716fbb3a832c4b3062034c2d45865015", size = 85930, upload-time = "2025-04-19T14:30:01.675Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/8e/1f/af928ba4aa403dac9569f787adcf024005e7654433d71f7a84e608716837/pendulum-3.1.0-cp313-cp313-macosx_10_12_x86_64.whl", hash = "sha256:28658b0baf4b30eb31d096a375983cfed033e60c0a7bbe94fa23f06cd779b50b", size = 336209, upload-time = "2025-04-19T14:01:42.775Z" },
-    { url = "https://files.pythonhosted.org/packages/b6/16/b010643007ba964c397da7fa622924423883c1bbff1a53f9d1022cd7f024/pendulum-3.1.0-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:b114dcb99ce511cb8f5495c7b6f0056b2c3dba444ef1ea6e48030d7371bd531a", size = 323132, upload-time = "2025-04-19T14:01:44.577Z" },
-    { url = "https://files.pythonhosted.org/packages/64/19/c3c47aeecb5d9bceb0e89faafd800d39809b696c5b7bba8ec8370ad5052c/pendulum-3.1.0-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:2404a6a54c80252ea393291f0b7f35525a61abae3d795407f34e118a8f133a18", size = 341509, upload-time = "2025-04-19T14:01:46.084Z" },
-    { url = "https://files.pythonhosted.org/packages/38/cf/c06921ff6b860ff7e62e70b8e5d4dc70e36f5abb66d168bd64d51760bc4e/pendulum-3.1.0-cp313-cp313-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:d06999790d9ee9962a1627e469f98568bf7ad1085553fa3c30ed08b3944a14d7", size = 378674, upload-time = "2025-04-19T14:01:47.727Z" },
-    { url = "https://files.pythonhosted.org/packages/62/0b/a43953b9eba11e82612b033ac5133f716f1b76b6108a65da6f408b3cc016/pendulum-3.1.0-cp313-cp313-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:94751c52f6b7c306734d1044c2c6067a474237e1e5afa2f665d1fbcbbbcf24b3", size = 436133, upload-time = "2025-04-19T14:01:49.126Z" },
-    { url = "https://files.pythonhosted.org/packages/eb/a0/ec3d70b3b96e23ae1d039f132af35e17704c22a8250d1887aaefea4d78a6/pendulum-3.1.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:5553ac27be05e997ec26d7f004cf72788f4ce11fe60bb80dda604a64055b29d0", size = 351232, upload-time = "2025-04-19T14:01:50.575Z" },
-    { url = "https://files.pythonhosted.org/packages/f4/97/aba23f1716b82f6951ba2b1c9178a2d107d1e66c102762a9bf19988547ea/pendulum-3.1.0-cp313-cp313-musllinux_1_1_aarch64.whl", hash = "sha256:f8dee234ca6142bf0514368d01a72945a44685aaa2fc4c14c98d09da9437b620", size = 521563, upload-time = "2025-04-19T14:01:51.9Z" },
-    { url = "https://files.pythonhosted.org/packages/01/33/2c0d5216cc53d16db0c4b3d510f141ee0a540937f8675948541190fbd48b/pendulum-3.1.0-cp313-cp313-musllinux_1_1_x86_64.whl", hash = "sha256:7378084fe54faab4ee481897a00b710876f2e901ded6221671e827a253e643f2", size = 523221, upload-time = "2025-04-19T14:01:53.275Z" },
-    { url = "https://files.pythonhosted.org/packages/51/89/8de955c339c31aeae77fd86d3225509b998c81875e9dba28cb88b8cbf4b3/pendulum-3.1.0-cp313-cp313-win_amd64.whl", hash = "sha256:8539db7ae2c8da430ac2515079e288948c8ebf7eb1edd3e8281b5cdf433040d6", size = 260501, upload-time = "2025-04-19T14:01:54.749Z" },
-    { url = "https://files.pythonhosted.org/packages/15/c3/226a3837363e94f8722461848feec18bfdd7d5172564d53aa3c3397ff01e/pendulum-3.1.0-cp313-cp313-win_arm64.whl", hash = "sha256:1ce26a608e1f7387cd393fba2a129507c4900958d4f47b90757ec17656856571", size = 253087, upload-time = "2025-04-19T14:01:55.998Z" },
-    { url = "https://files.pythonhosted.org/packages/6e/23/e98758924d1b3aac11a626268eabf7f3cf177e7837c28d47bf84c64532d0/pendulum-3.1.0-py3-none-any.whl", hash = "sha256:f9178c2a8e291758ade1e8dd6371b1d26d08371b4c7730a6e9a3ef8b16ebae0f", size = 111799, upload-time = "2025-04-19T14:02:34.739Z" },
-]
-
-[[package]]
 name = "platformdirs"
 version = "4.3.7"
 source = { registry = "https://pypi.org/simple" }
@@ -1546,7 +1523,7 @@ wheels = [
 
 [[package]]
 name = "prefect"
-version = "3.2.11"
+version = "3.4.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiosqlite" },
@@ -1578,7 +1555,6 @@ dependencies = [
     { name = "orjson" },
     { name = "packaging" },
     { name = "pathspec" },
-    { name = "pendulum" },
     { name = "prometheus-client" },
     { name = "pydantic" },
     { name = "pydantic-core" },
@@ -1602,10 +1578,11 @@ dependencies = [
     { name = "uv" },
     { name = "uvicorn" },
     { name = "websockets" },
+    { name = "whenever" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ca/d5/c45393722125152eb45daeefb11aab01bf79dba040c2f5ce0423a91a4035/prefect-3.2.11.tar.gz", hash = "sha256:f6227a1f4db1bb49a04c9f6c94518edaa6befda7423927874b3c70e849ddb460", size = 5785742, upload-time = "2025-03-05T22:12:29.653Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/19/c2/998a4c759aafc32f8c1c72c2dd45a0a8fbe727902b403a66c94e9833a77e/prefect-3.4.0.tar.gz", hash = "sha256:ba0ba1eac388cb498e01216cc3c0036fcbe99909bb4beb78652ffa3051588a27", size = 5501181, upload-time = "2025-05-02T20:11:31.205Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/de/ca/4e05755d47b5666f19f663289a9de50d26552d7a75782bacd964a48237b0/prefect-3.2.11-py3-none-any.whl", hash = "sha256:47b0f8dab3aec26c921b3d92be8243f802e09f74420da0faa68cd984e1e03583", size = 6272249, upload-time = "2025-03-05T22:12:25.745Z" },
+    { url = "https://files.pythonhosted.org/packages/f8/c4/65d9e4aa336d9a54b1d4537391861163f256051fff83106b77d4dfc4d3c2/prefect-3.4.0-py3-none-any.whl", hash = "sha256:fabc51b289358492e1fe614aefec654eb15744f4224d47ff3eb7d026d3995c73", size = 5985530, upload-time = "2025-05-02T20:11:28.578Z" },
 ]
 
 [package.optional-dependencies]
@@ -1615,7 +1592,7 @@ gcp = [
 
 [[package]]
 name = "prefect-gcp"
-version = "0.6.2"
+version = "0.6.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "google-api-python-client" },
@@ -1625,9 +1602,9 @@ dependencies = [
     { name = "python-slugify" },
     { name = "tenacity" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d5/0f/f4cb9ca38962e23155c77465fb2f3352ce4e44cbc2fa533d7bed85897e53/prefect_gcp-0.6.2.tar.gz", hash = "sha256:ddda99ec9fc22527a38bb8c7414468ff24be4f44790ec9af1f6bbdfb5b557b61", size = 68627, upload-time = "2024-11-15T17:17:07.847Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/7c/70/806604ea3bddf151b6350409bf48f4e22d575241815bd338eef1acc0a544/prefect_gcp-0.6.7.tar.gz", hash = "sha256:e3ac9be4660c34ed4a36dda0b6a8df06e82483ecbb5ebba73f4534028fe1863e", size = 73696, upload-time = "2025-04-23T16:23:59.466Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/09/ba/c7b07b7ac975c89f0c6b908277f20a59f271d1b18f12229e6ec5e22ef793/prefect_gcp-0.6.2-py3-none-any.whl", hash = "sha256:f2b0172a079bc0a6af6ae00d6824f019460587893874ec7946a91d41f87c4b60", size = 56107, upload-time = "2024-11-15T17:17:05.266Z" },
+    { url = "https://files.pythonhosted.org/packages/03/74/e95ca2201e2038140029af0dcb1c8453ed123f072865547f4c0338938e82/prefect_gcp-0.6.7-py3-none-any.whl", hash = "sha256:36afe44e7bf87dff718e36831685864a548bf3e4c0a1b576405b899e36bab906", size = 59852, upload-time = "2025-04-23T16:23:58.257Z" },
 ]
 
 [package.optional-dependencies]
@@ -2359,8 +2336,8 @@ requires-dist = [
     { name = "langdetect", specifier = "==1.0.9" },
     { name = "opentelemetry-exporter-gcp-monitoring", specifier = "==1.9.0a0" },
     { name = "opentelemetry-resourcedetector-gcp", specifier = "==1.9.0a0" },
-    { name = "prefect", extras = ["gcp"], specifier = "==3.2.11" },
-    { name = "prefect-gcp", extras = ["all-extras"], specifier = "==0.6.2" },
+    { name = "prefect", extras = ["gcp"], specifier = "==3.4.0" },
+    { name = "prefect-gcp", extras = ["all-extras"], specifier = "==0.6.7" },
     { name = "pyarrow", specifier = ">=3.0.0" },
     { name = "pydantic", specifier = "==2.11.4" },
     { name = "python-dateutil", specifier = "==2.9.0.post0" },
