@@ -70,7 +70,6 @@ variables:
         - .gitlab-ci.yml
       when: on_success
 
-# TODO use docker image with uv preinstalled
 pubsub_typesense_updater_validate:
   image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/python:3.13-slim"
   before_script:
@@ -216,7 +215,6 @@ pubsub_typesense_updater_production_deploy:
     - docker push "$GCR_IMAGE":"$CI_COMMIT_SHA" # we use latest in prefect, this is just extra information for humans.
     - docker push "$GCR_IMAGE":latest # for caching the build and for use by prefect pipelines
 
-# TODO use docker image with uv preinstalled
 pipelines_validate:
   image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/python:3.13-slim"
   cache: !reference [ .uv_cache_rw_pipelines ]
