@@ -4,11 +4,11 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "6.33.0"
+      version = "6.34.0"
     }
     google-beta = {
       source  = "hashicorp/google-beta"
-      version = "6.29.0"
+      version = "6.34.0"
     }
     prefect = {
       source  = "prefecthq/prefect"
@@ -20,7 +20,7 @@ terraform {
     }
     docker = {
       source  = "kreuzwerker/docker"
-      version = "3.0.2"
+      version = "3.5.0"
     }
   }
   backend "gcs" {
