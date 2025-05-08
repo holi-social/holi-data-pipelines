@@ -8,7 +8,6 @@ default:
 
 variables:
   PREFECT_SERVER_URL_PATH: "$CI_PROJECT_DIR/prefect_server_url"
-  UV_CACHE_DIR: .uv-cache
 
 .uv_cache_rw_pipelines:
   policy: pull-push
@@ -24,7 +23,7 @@ variables:
       - "uv.lock"
   policy: pull
   paths:
-    - .venv/
+    - .uv-cache
 
 .rule_templates:
   only_pipelines:
