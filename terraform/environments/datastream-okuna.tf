@@ -378,7 +378,7 @@ resource "google_monitoring_alert_policy" "schema_change_alert" {
       threshold_value = 0
 
       aggregations {
-        alignment_period   = "60s"
+        alignment_period   = "3600s"
         per_series_aligner = "ALIGN_COUNT"
       }
 
