@@ -38,11 +38,13 @@ class TaskBatchClassifier(PipelineBatchClassifier[TaskClassificationInput]):
             hash=item.hash,
             name=item.name,
             description=item.description,
-            topics_skills_embedding_v2=item.topics_skills_embedding_v2 if hasattr(item, "topics_skills_embedding_v2") else None,
+            topics_skills_embedding_v2=item.topics_skills_embedding_v2
+            if hasattr(item, "topics_skills_embedding_v2")
+            else None,
             topics_v2=item.topics_v2 if hasattr(item, "topics_v2") else None,
             skills_v2=item.skills_v2 if hasattr(item, "skills_v2") else None,
             similarity_embedding=item.similarity_embedding,
-            location=item.location
+            location=item.location,
         )
 
 
