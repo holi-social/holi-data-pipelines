@@ -80,6 +80,8 @@ resource "google_bigquery_table" "tasks_without_classifications" {
     query = <<SQL
       SELECT
         task.* EXCEPT(skills_v2),
+        classification.topics_skills_embedding_v2 as topics_skills_embedding_v2,
+        classification.similarity_embedding as similarity_embedding,
         JSON_VALUE_ARRAY(task.skills_v2) AS skills_v2,
         JSON_VALUE_ARRAY(community.topics_v2) AS topics_v2,
         community.name AS community_slug,
@@ -144,8 +146,8 @@ resource "google_bigquery_table" "volunteering_voltastics_without_classification
     query          = <<SQL
       SELECT
         raw_deduped.*,
-        classifications.topics_skills_embedding_v2,
-        classifications.similarity_embedding
+        classifications.topics_skills_embedding_v2 as topics_skills_embedding_v2,
+        classifications.similarity_embedding as similarity_embeddiung
       FROM `${local.datalake}.volunteering_voltastics_raw_deduped` raw_deduped
       LEFT OUTER JOIN `${google_bigquery_table.classifications.dataset_id}.${google_bigquery_table.classifications.table_id}` classifications
       ON
