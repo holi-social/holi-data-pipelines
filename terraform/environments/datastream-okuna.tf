@@ -333,7 +333,7 @@ resource "google_datastream_stream" "okuna_to_bigquery" {
 resource "google_logging_metric" "datastream_schema_change" {
   name        = "datastream_postgres_schema_change_${local.environment_name}"
   description = "Count of schema change events in Okuna PostgreSQL tables replicated via Datastream"
-  filter      = "resource.type=\"datastream.googleapis.com/Stream\" AND resource.labels.stream_id=\"${local.environment_name}-okuna-to-bigquery\" jsonPayload.event_code=\"BIGQUERY_WRITER_TABLE_SCHEMA_CHANGED\""
+  filter      = "resource.type=\"datastream.googleapis.com/Stream\" AND resource.labels.stream_id=\"${local.environment_name}-okuna-to-bigquery\" AND jsonPayload.event_type=\"SCHEMA_CHANGE\""
 
   metric_descriptor {
     metric_kind = "DELTA"
