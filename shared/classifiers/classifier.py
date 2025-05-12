@@ -110,7 +110,7 @@ class Classifier(Generic[ClassificationInputT], ABC):
         self,
         item: ClassificationInputT,
     ) -> ClassificationResult | None:
-        self.logger.info(f"[id={item.id}] classifying item")
+        self.logger.info(f"[id={item.id}] classifying item {item}")
         try:
             classification = self._classify_item(item)
             if classification is None:
