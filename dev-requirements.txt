@@ -1,3 +1,0 @@
-# contains requirements that are needed by data pipelines during development, but not at runtime
-
--r shared-dev-requirements.txt

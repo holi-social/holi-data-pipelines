@@ -1,3 +1,17 @@
+[project]
+name = "holi-data-pipelines"
+version = "1.0.0"
+requires-python = ">=3.13.3"
+dependencies = []
+
+[tool.uv.sources]
+shared                   = { workspace = true }
+pubsub_typesense_updater = { workspace = true }
+src                      = { workspace = true }
+
+[tool.uv.workspace]
+members = ["shared", "pubsub_typesense_updater", "src"]
+
 [tool.mypy]
 # things we explicitly allow
 disallow_any_decorated = false  # we want to explicitly use the Any type in e.g. Dicts
@@ -56,6 +70,7 @@ extend-ignore = [
     "E501",  # "line too long" - only triggers in edge cases of the formatter
     "N806",  # "non-lowercase-variable-in-function" - we use that to reference model classes in functions
 ]
+
 [tool.ruff.lint.extend-per-file-ignores]
 # S101 use of assert - allowed in tests
 "**/test_*.py" = ["S101"]
