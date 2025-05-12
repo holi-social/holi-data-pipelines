@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from concurrent.futures import ALL_COMPLETED, ThreadPoolExecutor, wait
 from logging import Logger
-from typing import Optional, cast, Generic, Any
+from typing import Optional, Generic, Any
 
 from prefect_gcp import GcpCredentials
 
