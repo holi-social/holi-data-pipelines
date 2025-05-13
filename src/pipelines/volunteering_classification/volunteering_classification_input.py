@@ -16,3 +16,4 @@ class VolunteeringClassificationInput(ClassificationInput):
     similarity_embedding: Optional[List[float]] = None
     hashTags: Optional[List[str]] = None  # noqa: N815
     uses: Optional[List[str]] = None
+    source: Optional[str] = None  # Source identifier (e.g., "Aktion Mensch", "vostel.de")

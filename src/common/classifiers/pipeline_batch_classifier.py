@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from concurrent.futures import ALL_COMPLETED, ThreadPoolExecutor, wait
 from logging import Logger
-from typing import Optional, Generic, Any
+from typing import Optional, Generic, Any, Callable
 
 from prefect_gcp import GcpCredentials
 
@@ -32,6 +32,7 @@ class PipelineBatchClassifier(Generic[ClassificationInputT], Classifier[Classifi
         logger: Logger,
         batch_size: int | None = DEFAULT_BATCH_SIZE,
         stop_after_batch_nr: int | None = None,
+        commitment_label_extractor: Optional[Callable[[Any], Optional[str]]] = None,
     ):
         super().__init__(
             topics_skills_classifier_v2,
@@ -42,6 +43,7 @@ class PipelineBatchClassifier(Generic[ClassificationInputT], Classifier[Classifi
             GcpCredentials(project=GCLOUD_PROJECT_ID).get_bigquery_client(
                 project=GCLOUD_PROJECT_ID, location=GCLOUD_LOCATION
             ),
+            commitment_label_extractor=commitment_label_extractor,
         )
         vertexai.init(project=GCLOUD_PROJECT_ID, location=GCLOUD_LOCATION)
         self.batch_size = batch_size if batch_size else DEFAULT_BATCH_SIZE

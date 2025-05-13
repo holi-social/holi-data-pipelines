@@ -6,12 +6,19 @@ from prefect.states import Completed, State
 from src.common.classifiers.pipeline_batch_classifier import PipelineBatchClassifier
 from src.common.logging.PipelineLogger import PipelineLogger
 from src.common.monitoring.flow import monitored_flow
-from src.pipelines.bigquery import volunteering_voltastics_without_classifications, table_classifications
+
 from src.pipelines.volunteering_classification.volunteering_classification_input import VolunteeringClassificationInput
+from src.pipelines.bigquery import volunteering_voltastics_without_classifications, table_classifications
 from src.pipelines.volunteering_classification.volunteering_topics_skills_classifier_v2 import (
     VolunteeringTopicsSkillsClassifierV2,
 )
-from src.pipelines.volunteering_classification.volunteering_similarity_embedder import VolunteeringSimilarityEmbedder
+
+from src.pipelines.volunteering_classification.commitment_labels_mapping import (
+    extract_commitment_label_from_item,
+)
+from src.pipelines.volunteering_classification.volunteering_similarity_embedder import (
+    VolunteeringSimilarityEmbedder,
+)
 
 logger = PipelineLogger("volunteering_classification")
 topics_skills_classification_logger = PipelineLogger("volunteering_topics_skills_classification_v2")
@@ -28,6 +35,7 @@ class VolunteeringBatchClassifier(PipelineBatchClassifier[VolunteeringClassifica
             view_name_without_classifications=volunteering_voltastics_without_classifications(),
             logger=logger,
             stop_after_batch_nr=stop_after_batch_nr,
+            commitment_label_extractor=extract_commitment_label_from_item,
         )
 
     def _to_classification_input(self, item: Any) -> VolunteeringClassificationInput:
@@ -42,7 +50,7 @@ def volunteering_classification(stop_after_batch_nr: Optional[int] = None) -> St
     # TODO use context manager to create and shut down classifier
     classifier = VolunteeringBatchClassifier(stop_after_batch_nr)
     classifier.compute_classifications()
-    return Completed()
+    return Completed(message="Volunteering classification completed successfully")
 
 
 if __name__ == "__main__":
