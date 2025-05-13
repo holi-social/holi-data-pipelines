@@ -18,7 +18,7 @@ resource "google_cloudfunctions2_function" "pubsub_typesense_updater" {
   kms_key_name = data.terraform_remote_state.holi_infra_state.outputs.artifact_registry_cloudfunctions_key_id
 
   build_config {
-    runtime           = "python312"
+    runtime           = "python313"
     entry_point       = "process_message"
     docker_repository = data.terraform_remote_state.holi_infra_state.outputs.cloudfunctions_repository_id
 

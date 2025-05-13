@@ -122,7 +122,9 @@ class VolunteeringTopicsSkillsClassifierV2(TopicsSkillsClassifierV2[Volunteering
         weights: Dict[str, Any], titles: List[str], slugs: List[str], confidence_threshold: float
     ) -> TermClassificationResult:
         embedding = [weights[titles[i]] for i in range(len(titles))]
-        slugs = list(map(lambda x: x[0], filter(lambda x: x[1] >= confidence_threshold, zip(slugs, embedding))))
+        slugs = list(
+            map(lambda x: x[0], filter(lambda x: x[1] >= confidence_threshold, zip(slugs, embedding, strict=False)))
+        )
         return TermClassificationResult(embedding, slugs)
 
     @staticmethod

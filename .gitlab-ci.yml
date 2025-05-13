@@ -9,47 +9,21 @@ default:
 variables:
   PREFECT_SERVER_URL_PATH: "$CI_PROJECT_DIR/prefect_server_url"
 
-.pip_cache_rw:
-  key:
-    files:
-      # GitLab CI only allows listing 2 files to calculate a cache key, this is a workaround
-      - "*requirements.txt"
+.uv_cache_rw_pipelines:
   policy: pull-push
-  paths:
-    - .cache/pip
-    - .venv/
-
-.pip_cache_ro:
   key:
     files:
-      # GitLab CI only allows listing 2 files to calculate a cache key, this is a workaround
-      - "*requirements.txt"
+      - "uv.lock"
+  paths:
+    - .uv-cache
+
+.uv_cache_ro_pipelines:
+  key:
+    files:
+      - "uv.lock"
   policy: pull
   paths:
-    - .cache/pip
-    - .venv/
-
-.pip_cache_rw_pubsub_typesense_updater:
-  key:
-    files:
-      # GitLab CI only allows listing 2 files to calculate a cache key, this is a workaround
-      - "shared*requirements.txt"
-      - "pubsub_typesense_updater/*requirements.txt"
-  policy: pull-push
-  paths:
-    - .cache/pip
-    - pubsub_typesense_updater/.venv
-
-.pip_cache_ro_pubsub_typesense_updater:
-  key:
-    files:
-      # GitLab CI only allows listing 2 files to calculate a cache key, this is a workaround
-      - "shared*requirements.txt"
-      - "pubsub_typesense_updater/*requirements.txt"
-  policy: pull
-  paths:
-    - .cache/pip
-    - pubsub_typesense_updater/.venv
+    - .uv-cache
 
 .rule_templates:
   only_pipelines:
@@ -88,48 +62,39 @@ variables:
   only_pubsub_typesense_updater:
     - if: $CI_PIPELINE_SOURCE == 'push'
       changes:
-        - shared-requirements.txt
-        - shared-dev-requirements.txt
+        - uv.lock
+        - pyproject.toml
         - shared/**/*
         - pubsub_typesense_updater/**/*
         - .gitlab-ci.yml
       when: on_success
 
-pubsub_typesense_updater_install_test:
+pubsub_typesense_updater_validate:
   image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/python:3.13-slim"
-  cache: !reference [ .pip_cache_rw_pubsub_typesense_updater ]
   before_script:
     - apt-get update -qq
     - apt-get install -y build-essential
+    - pip install --root-user-action ignore --disable-pip-version-check uv
   script:
-    # install dependencies for cloud functions
-    - python3 -m venv pubsub_typesense_updater/.venv
-    - source pubsub_typesense_updater/.venv/bin/activate
-    - pip install --upgrade pip
-    - pip install --exists-action s -r shared-requirements.txt
-    - pip install --exists-action s -r shared-dev-requirements.txt
-    - pip install --exists-action s -r pubsub_typesense_updater/requirements.txt
-    - pip install --exists-action s -r pubsub_typesense_updater/dev-requirements.txt
-    # validate and test
-    - ruff check pubsub_typesense_updater shared
-    - ruff format --check pubsub_typesense_updater shared
-    - cd pubsub_typesense_updater
-    - mypy --python-executable=./.venv/bin/python --explicit-package-bases --namespace-packages . ../shared
-    - pytest
-    - cd $CI_PROJECT_DIR
+    - uv run --package pubsub_typesense_updater pytest shared pubsub_typesense_updater
+    - uv run --package pubsub_typesense_updater ruff check shared pubsub_typesense_updater
+    - uv run --package pubsub_typesense_updater ruff format --check shared pubsub_typesense_updater
+    - uv export --package pubsub_typesense_updater > pubsub_typesense_updater/requirements.txt
+  artifacts:
+    paths:
+      - 'pubsub_typesense_updater/requirements.txt' # needed in .pubsub_typesense_updater_deploy which runs without uv
   rules:
     - !reference [ .rule_templates, only_pubsub_typesense_updater ]
   interruptible: true
 
 .pubsub_typesense_updater_deploy:
   needs:
-    - job: pubsub_typesense_updater_install_test
+    - job: pubsub_typesense_updater_validate
   image:
     name: "europe-north1-docker.pkg.dev/holi-shared/docker/holi-docker/terraform-docker"
   services:
     - name: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/docker:28-dind"
       alias: "docker"
-  cache: !reference [ .pip_cache_ro_pubsub_typesense_updater ]
   resource_group: $ENVIRONMENT_ID
   artifacts:
     paths:
@@ -140,16 +105,14 @@ pubsub_typesense_updater_install_test:
     expire_in: 1 week
   variables:
     FUNCTION_NAME: pubsub_typesense_updater
-  script:
+  before_script:
     - apk add zip
+  script:
     # Create a deployment directory with all required files
     - cd pubsub_typesense_updater
     - mkdir -p .build
     - cp -r ../shared/ .build/shared/
-    - cp -r *.py .build/
-    # create a single consolidated requirements file without relative paths
-    - cat ../shared-requirements.txt | grep -v "^-r" | grep -v "^#" >> .build/requirements.txt
-    - cat requirements.txt | grep -v "^-r" | grep -v "^#" >> .build/requirements.txt
+    - cp -r *.py requirements.txt .build/
     - cd .build
     - zip -r pubsub_typesense_updater.zip .
     - cd ..
@@ -166,8 +129,8 @@ pubsub_typesense_updater_staging_deploy:
     - if: $CI_COMMIT_BRANCH == 'main' && $CI_PIPELINE_SOURCE == 'push'
       when: on_success
       changes:
-        - shared-requirements.txt
-        - shared-dev-requirements.txt
+        - uv.lock
+        - pyproject.toml
         - shared/**/*
         - pubsub_typesense_updater/**/*
         - .gitlab-ci.yml
@@ -182,8 +145,8 @@ pubsub_typesense_updater_production_deploy:
     - if: $CI_COMMIT_BRANCH == 'production' && $CI_PIPELINE_SOURCE == 'push'
       when: on_success
       changes:
-        - shared-requirements.txt
-        - shared-dev-requirements.txt
+        - uv.lock
+        - pyproject.toml
         - shared/**/*
         - pubsub_typesense_updater/**/*
         - .gitlab-ci.yml
@@ -213,19 +176,25 @@ pubsub_typesense_updater_production_deploy:
   image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.4.0-python3.13"
   variables:
     ENVIRONMENT_ID: $CI_ENVIRONMENT_SLUG
-  cache: !reference [ .pip_cache_ro ]
+  cache: !reference [ .uv_cache_ro_pipelines ]
+  before_script:
+    - pip install --root-user-action ignore --disable-pip-version-check uv
+    - uv sync --locked --link-mode=copy --package src
   script:
-    - source .venv/bin/activate
-    - PREFECT_API_URL="$(cat $PREFECT_SERVER_URL_PATH)/api" PYTHONPATH=$PYTHONPATH:. python -m src.pipelines.deployments
+    - export PREFECT_API_URL="$(cat $PREFECT_SERVER_URL_PATH)/api"
+    - uv run --package src python -m src.pipelines.deployments
   resource_group: $ENVIRONMENT_ID
 
 .smoketest:
   image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.4.0-python3.13"
-  cache: !reference [ .pip_cache_ro ]
+  cache: !reference [ .uv_cache_ro_pipelines ]
+  before_script:
+    - pip install --root-user-action ignore --disable-pip-version-check uv
+    - uv sync --locked --link-mode=copy --package src
   script:
-    - source .venv/bin/activate
-    - PREFECT_API_URL="$(cat $PREFECT_SERVER_URL_PATH)/api" prefect shell watch --flow-run-name ci-test-$CI_PIPELINE_IID --tag ci-test "echo smoketesting"
-    - PREFECT_API_URL="$(cat $PREFECT_SERVER_URL_PATH)/api" prefect deployment run --tag ci-test --watch hello-universe/hello-universe
+    - export PREFECT_API_URL="$(cat $PREFECT_SERVER_URL_PATH)/api"
+    - prefect shell watch --flow-run-name ci-test-$CI_PIPELINE_IID --tag ci-test "echo smoketesting"
+    - prefect deployment run --tag ci-test --watch hello-universe/hello-universe
 
 .build_prefect_flow_docker_image:
   image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/docker:28"
@@ -237,45 +206,27 @@ pubsub_typesense_updater_production_deploy:
     GCR_IMAGE_PREFIX: europe-north1-docker.pkg.dev/holi-shared/docker/data-pipeline-job
     ENVIRONMENT_SUFFIX: staging
   script:
+    - pwd
+    - ls -la
     - GCR_IMAGE=${GCR_IMAGE_PREFIX}-${ENVIRONMENT_SUFFIX}
     - docker pull "$GCR_IMAGE" || true # Allows us to use --cache-from, we need to tag with latest in the next command for this to work
     - docker build --cache-from "$GCR_IMAGE" -t "$GCR_IMAGE":latest -t "$GCR_IMAGE":"$CI_COMMIT_SHA" .
     - docker push "$GCR_IMAGE":"$CI_COMMIT_SHA" # we use latest in prefect, this is just extra information for humans.
     - docker push "$GCR_IMAGE":latest # for caching the build and for use by prefect pipelines
 
-pipelines_install_dependencies:
-  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/python:3.13-slim"
-  cache: !reference [ .pip_cache_rw ]
-  script:
-    - python3 -m venv .venv
-    - source .venv/bin/activate
-    - pip install -r requirements.txt --exists-action s
-    - pip install -r dev-requirements.txt --exists-action s
-  rules:
-    # always run when triggered manually
-    - if: $CI_COMMIT_BRANCH && $CI_PIPELINE_SOURCE == 'web'
-      when: on_success
-    # only run on specific file changes when triggered by git push
-    - if: $CI_COMMIT_BRANCH
-      changes:
-        - shared-requirements.txt
-        - shared-dev-requirements.txt
-        - requirements.txt
-        - dev-requirements.txt
-        - .gitlab-ci.yml
-
 pipelines_validate:
   image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/python:3.13-slim"
-  needs:
-    - job: pipelines_install_dependencies
-      optional: true
-  cache: !reference [ .pip_cache_ro ]
+  cache: !reference [ .uv_cache_rw_pipelines ]
+  before_script:
+    - pip install --root-user-action ignore --disable-pip-version-check uv
+    - uv sync --locked --link-mode=copy --package src
   script:
-    - source .venv/bin/activate
-    - ruff check src shared
-    - ruff format --check src shared
-    - mypy --python-executable=.venv/bin/python src shared
-    - pytest src
+    - uv run --exact --package src ruff check shared src
+    - uv run --exact --package src ruff format --check shared src
+    - uv run --exact --package src mypy shared src
+    - uv run --exact --package src pytest src
+    # remove pre-built wheels from cache, keep source-built wheels (see https://docs.astral.sh/uv/concepts/cache/#caching-in-continuous-integration)
+    - uv cache prune --ci
   rules:
     - !reference [ .rule_templates, only_pipelines ]
 
@@ -292,10 +243,8 @@ build_prefect_flow_docker_image_staging:
     # only run on specific file changes when triggered by git push
     - if: $CI_COMMIT_BRANCH == 'main' && $CI_PIPELINE_SOURCE == 'push'
       changes:
-        - shared-requirements.txt
-        - shared-dev-requirements.txt
-        - requirements.txt
-        - dev-requirements.txt
+        - uv.lock
+        - pyproject.toml
         - shared/**/*
         - src/**/*
         - .gitlab-ci.yml
@@ -343,10 +292,8 @@ build_prefect_flow_docker_image_production:
     # only run on specific file changes when triggered by git push
     - if: $CI_COMMIT_BRANCH == 'production' && $CI_PIPELINE_SOURCE == 'push'
       changes:
-        - shared-requirements.txt
-        - shared-dev-requirements.txt
-        - requirements.txt
-        - dev-requirements.txt
+        - uv.lock
+        - pyproject.toml
         - shared/**/*
         - src/**/*
         - .gitlab-ci.yml
