@@ -1,5 +1,5 @@
 repos:
-  - repo: git@gitlab-holi:app/holi-meta.git
+  - repo: git@gitlab.holi.team:app/holi-meta.git
     rev: 71898ea41a32935663e4f9041ccde6189b7edcaa
     hooks:
       - id: scan-comments
