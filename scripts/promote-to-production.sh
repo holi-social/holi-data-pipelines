@@ -41,7 +41,7 @@ git pull --ff-only
 git merge --no-edit --no-ff "$SHA_TO_PROMOTE"
 
 set +e
-git diff origin/production..main requirements.txt|grep '+prefect\[gcp\]=='
+git diff origin/production..main **/pyproject.toml|grep '\+\s*"prefect\[gcp\]=='
 retval=$?
 set -e
 if [ $retval -eq 0 ]; then
