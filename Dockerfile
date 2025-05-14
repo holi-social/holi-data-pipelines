@@ -4,7 +4,7 @@ FROM europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefec
 # The installer requires curl (and certificates) to download the release archive
 RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates
 # Download the latest installer
-ADD https://astral.sh/uv/0.7.2/install.sh /uv-installer.sh
+ADD https://astral.sh/uv/0.7.3/install.sh /uv-installer.sh
 # Run the installer then remove it
 RUN sh /uv-installer.sh && rm /uv-installer.sh
 # Ensure the installed binary is on the `PATH`
@@ -17,6 +17,6 @@ COPY uv.lock pyproject.toml /opt/prefect/holi-data-pipelines/
 COPY shared /opt/prefect/holi-data-pipelines/shared
 COPY src /opt/prefect/holi-data-pipelines/src
 ENV UV_LINK_MODE=copy
-RUN uv sync --compile-bytecode --locked --package src
+RUN uv sync --compile-bytecode --package src
 ENV PATH="/opt/prefect/holi-data-pipelines/.venv/bin:$PATH"
 
