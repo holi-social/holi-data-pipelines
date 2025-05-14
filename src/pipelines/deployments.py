@@ -9,6 +9,7 @@ from prefect.events import DeploymentTriggerTypes, TriggerTypes
 
 from src.common.variables import variable_value_as
 from src.pipelines.all_to_typesense.ingest_from_scratch import all_to_typesense_ingest_from_scratch_flow
+from src.pipelines.crawlers.aktion_mensch.pipeline import crawl_aktion_mensch
 from src.pipelines.crawlers.betterplace.pipeline import crawl_betterplace
 from src.pipelines.crawlers.voltastics.pipeline import crawl_voltastics
 from src.pipelines.example.pipeline import hello_universe
@@ -17,6 +18,7 @@ from src.pipelines.spaces_to_typesense.ingest_from_scratch import spaces_to_type
 from src.pipelines.task_classification.task_classification import task_classification_flow
 from src.pipelines.tasks_to_typesense.ingest_from_scratch import tasks_to_typesense_ingest_from_scratch_flow
 from src.pipelines.typesense_qc.typesense_qc import typesense_qc
+from src.pipelines.volunteering_classification.aktion_mensch_classification import aktion_mensch_classification
 from src.pipelines.volunteering_classification.volunteering_classification import volunteering_classification
 from src.pipelines.volunteering_geo_enrichment.volunteering_geo_enrichment import volunteering_geo_enrichment
 from src.pipelines.volunteering_to_typesense.ingest_from_scratch import (
@@ -117,6 +119,11 @@ def get_deployments() -> List[RunnerDeployment]:
             job_variables_overrides={"memory": "4096Mi"},
         ),
         deployment_for_flow(
+            crawl_aktion_mensch,
+            description="Crawls Aktion Mensch for volunteering opportunities and ingests them into BigQuery",
+            job_variables_overrides={"memory": "1024Mi"},
+        ),
+        deployment_for_flow(
             crawl_voltastics,
             description="Crawls voltastics.com for volunteering opportunities and ingests them into BigQuery",
             job_variables_overrides={"memory": "1024Mi"},
@@ -138,6 +145,11 @@ def get_deployments() -> List[RunnerDeployment]:
             description="Quality check for the state of replication of entities into Typesense",
             schedules=[cron_schedule("00 7 * * *")],
             job_variables_overrides={"memory": "1024Mi"},
+        ),
+        deployment_for_flow(
+            aktion_mensch_classification,
+            description="Runs classifications on unclassified Aktion Mensch volunteering opportunities",
+            job_variables_overrides={"memory": "4096Mi"},
         ),
         deployment_for_flow(
             volunteering_classification,
