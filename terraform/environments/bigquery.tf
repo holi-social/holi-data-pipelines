@@ -58,7 +58,8 @@ resource "google_bigquery_table" "classifications" {
     { "name": "topics_skills_embedding_v2", "type": "FLOAT", "mode": "REPEATED"},
     { "name": "topics_v2", "type": "STRING", "mode": "REPEATED"},
     { "name": "skills_v2", "type": "STRING", "mode": "REPEATED"},
-    { "name": "similarity_embedding", "type": "FLOAT", "mode": "REPEATED"}
+    { "name": "similarity_embedding", "type": "FLOAT", "mode": "REPEATED"},
+    { "name": "commitment_label", "type": "STRING", "mode": "NULLABLE" }
   ]
   EOF
 
@@ -77,9 +78,11 @@ resource "google_bigquery_table" "tasks_without_classifications" {
     # ATTENTION: if you change the hash calculation function, make sure to also change it in
     #  * the JOIN clause AND
     #  * the "tasks_with_classifications" view
-    query          = <<SQL
+    query = <<SQL
       SELECT
         task.* EXCEPT(skills_v2),
+        classification.topics_skills_embedding_v2 as topics_skills_embedding_v2,
+        classification.similarity_embedding as similarity_embedding,
         JSON_VALUE_ARRAY(task.skills_v2) AS skills_v2,
         JSON_VALUE_ARRAY(community.topics_v2) AS topics_v2,
         community.name AS community_slug,
@@ -112,7 +115,7 @@ resource "google_bigquery_table" "tasks_with_classifications" {
     # ATTENTION: if you change the hash calculation function, make sure to also change it in
     #  * the JOIN clause AND
     #  * the "tasks_without_classifications" view
-    query          = <<SQL
+    query = <<SQL
       SELECT
         task.* EXCEPT(skills_v2),
         classification.* EXCEPT(id, type, `hash`),
@@ -144,8 +147,8 @@ resource "google_bigquery_table" "volunteering_voltastics_without_classification
     query          = <<SQL
       SELECT
         raw_deduped.*,
-        classifications.topics_skills_embedding_v2,
-        classifications.similarity_embedding
+        classifications.topics_skills_embedding_v2 as topics_skills_embedding_v2,
+        classifications.similarity_embedding as similarity_embeddiung
       FROM `${local.datalake}.volunteering_voltastics_raw_deduped` raw_deduped
       LEFT OUTER JOIN `${google_bigquery_table.classifications.dataset_id}.${google_bigquery_table.classifications.table_id}` classifications
       ON
@@ -166,15 +169,16 @@ resource "google_bigquery_table" "volunteering_voltastics_without_classification
   }
 }
 
+
 # TODO migrate table / view definitions from holi-data-classification once it is "shut down":
 # TODO - volunteering_voltastics_raw_deduped_aggregated_images
 # TODO - volunteering_voltastics_raw_deduped
 # TODO - location_cache
 
 resource "google_bigquery_table" "volunteering_voltastics_classified_enriched_partitioned" {
-  project    = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
-  dataset_id = local.dataset_id_datalake
-  table_id   = "volunteering_voltastics_classified_enriched_partitioned"
+  project     = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
+  dataset_id  = local.dataset_id_datalake
+  table_id    = "volunteering_voltastics_classified_enriched_partitioned"
   description = "View holding all (partitioned) volunteering data, together with topics&skill classification, similarity classification and location enrichment. Used by the volunteering-to-typesense pipeline."
 
   view {
@@ -187,7 +191,8 @@ resource "google_bigquery_table" "volunteering_voltastics_classified_enriched_pa
         classifications.topics_skills_embedding_v2 AS topics_skills_embedding_v2,
         classifications.topics_v2 AS topics_v2,
         classifications.skills_v2 AS skills_v2,
-        classifications.similarity_embedding AS similarity_embedding
+        classifications.similarity_embedding AS similarity_embedding,
+        classifications.commitment_label AS commitment_label
       FROM
         `${local.datalake}.volunteering_voltastics_raw_deduped` AS raw_deduped
       LEFT OUTER JOIN
@@ -200,14 +205,102 @@ resource "google_bigquery_table" "volunteering_voltastics_classified_enriched_pa
   }
 }
 
+resource "google_bigquery_table" "volunteering_aktion_mensch_raw" {
+  project    = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
+  dataset_id = local.dataset_id_datalake
+  table_id   = "volunteering_aktion_mensch_raw"
+
+  time_partitioning {
+    type          = "DAY"
+    expiration_ms = 2592000000 # 30 days
+  }
+
+  deletion_protection = true
+
+  lifecycle {
+    ignore_changes = [encryption_configuration]
+  }
+
+  schema = <<EOF
+[
+    { "name": "id", "type": "STRING", "mode": "NULLABLE" },
+    { "name": "titel", "type": "STRING", "mode": "NULLABLE" },
+    { "name": "kurzbeschreibung", "type": "STRING", "mode": "NULLABLE" },
+    { "name": "beschreibung", "type": "STRING", "mode": "NULLABLE" },
+    { "name": "barrierefreiheit", "type": "STRING", "mode": "NULLABLE" },
+    { "name": "durchfuehrendeOrganisation", "type": "JSON", "mode": "NULLABLE" },
+    { "name": "bild", "type": "JSON", "mode": "NULLABLE" },
+    { "name": "attribute", "type": "JSON", "mode": "NULLABLE" },
+    { "name": "verortung", "type": "JSON", "mode": "NULLABLE" },
+    { "name": "einsatzort", "type": "JSON", "mode": "NULLABLE" },
+    { "name": "geoposition", "type": "JSON", "mode": "NULLABLE" },
+    { "name": "kontaktDurchfuehrendeOrganisation", "type": "JSON", "mode": "NULLABLE" },
+    { "name": "kontaktVermittelndeStelle", "type": "JSON", "mode": "NULLABLE" }
+]
+EOF
+}
+
+resource "google_bigquery_table" "volunteering_aktion_mensch_without_classifications" {
+  project    = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
+  dataset_id = local.dataset_id_datapool
+  table_id   = "volunteering_aktion_mensch_without_classifications"
+
+  view {
+    use_legacy_sql = false
+    query          = <<SQL
+      SELECT
+        raw.*,
+        classifications.topics_skills_embedding_v2,
+        classifications.similarity_embedding,
+        CAST(FARM_FINGERPRINT(CONCAT(
+          IFNULL(raw.titel, ''), '|', 
+          IFNULL(raw.beschreibung, ''), '|', 
+          IFNULL(raw.kurzbeschreibung, ''), '|',
+          IFNULL(JSON_EXTRACT_SCALAR(raw.durchfuehrendeOrganisation, "$.name"), ''), '|',
+          IFNULL(TO_JSON_STRING(raw.verortung), ''), '|',
+          IFNULL(JSON_EXTRACT_SCALAR(raw.einsatzort, "$.plz"), ''), '|',
+          IFNULL(JSON_EXTRACT_SCALAR(raw.einsatzort, "$.ort"), ''), '|',
+          IFNULL(TO_JSON_STRING(raw.attribute), ''), '|',
+          IFNULL(JSON_EXTRACT_SCALAR(raw.kontaktDurchfuehrendeOrganisation, "$.email"), ''), '|',
+          IFNULL(JSON_EXTRACT_SCALAR(raw.kontaktDurchfuehrendeOrganisation, "$.telefon"), ''), '|',
+          IFNULL(TO_JSON_STRING(raw.kontaktVermittelndeStelle), '')
+        )) AS STRING) AS `hash`
+      FROM `${local.datalake}.volunteering_aktion_mensch_raw` raw
+      LEFT OUTER JOIN `${google_bigquery_table.classifications.dataset_id}.${google_bigquery_table.classifications.table_id}` classifications
+      ON
+        raw.id = classifications.id AND
+        CAST(FARM_FINGERPRINT(CONCAT(
+          IFNULL(raw.titel, ''), '|', 
+          IFNULL(raw.beschreibung, ''), '|', 
+          IFNULL(raw.kurzbeschreibung, ''), '|',
+          IFNULL(JSON_EXTRACT_SCALAR(raw.durchfuehrendeOrganisation, "$.name"), ''), '|',
+          IFNULL(TO_JSON_STRING(raw.verortung), ''), '|',
+          IFNULL(JSON_EXTRACT_SCALAR(raw.einsatzort, "$.plz"), ''), '|',
+          IFNULL(JSON_EXTRACT_SCALAR(raw.einsatzort, "$.ort"), ''), '|',
+          IFNULL(TO_JSON_STRING(raw.attribute), ''), '|',
+          IFNULL(JSON_EXTRACT_SCALAR(raw.kontaktDurchfuehrendeOrganisation, "$.email"), ''), '|',
+          IFNULL(JSON_EXTRACT_SCALAR(raw.kontaktDurchfuehrendeOrganisation, "$.telefon"), ''), '|',
+          IFNULL(TO_JSON_STRING(raw.kontaktVermittelndeStelle), '')
+        )) AS STRING) = classifications.hash AND
+        classifications.type = 'aktion_mensch_volunteering'
+      WHERE DATE(raw._PARTITIONDATE) = (
+          SELECT MAX(DATE(_PARTITIONDATE))
+          FROM `${local.datalake}.volunteering_aktion_mensch_raw`
+          WHERE _PARTITIONDATE IS NOT NULL
+      )
+      AND (
+          classifications.hash IS NULL OR
+          classifications.topics_skills_embedding_v2 IS NULL OR
+          classifications.similarity_embedding IS NULL
+      )
+    SQL
+  }
+}
 
 output "volunteering_voltastics_raw_table" {
   value = google_bigquery_table.volunteering_voltastics_raw.table_id
 }
 
-output "volunteering_voltastics_raw_table_full" {
-  value = "${google_bigquery_table.volunteering_voltastics_raw.project}.${google_bigquery_table.volunteering_voltastics_raw.dataset_id}.${google_bigquery_table.volunteering_voltastics_raw.table_id}"
-}
 
 resource "google_bigquery_table" "donations_betterplace_raw" {
   project    = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id

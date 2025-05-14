@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Any, List, Dict, Optional, cast, Tuple
+from urllib.parse import quote
 
 from prefect import task, State
 from prefect.states import Failed, Completed
@@ -69,7 +70,8 @@ def delete_typesense_documents(
     filter_str = f"id: [{', '.join([str(doc_id) for doc_id in document_ids_to_delete])}]"
 
     try:
-        response = typesense_client.client.collections[typesense_collection_name].documents.delete(
+        url_encoded_collection_name = quote(typesense_collection_name)
+        response = typesense_client.client.collections[url_encoded_collection_name].documents.delete(
             {"filter_by": filter_str}
         )
 
@@ -98,7 +100,8 @@ def delete_typesense_documents(
 def validate_collection(typesense_client: TypesenseClient, collection_name: str) -> State:
     """Validate the new collection before switching the alias."""
     # test a sample search
-    sample_search = typesense_client.client.collections[collection_name].documents.search(
+    url_encoded_collection_name = quote(collection_name)
+    sample_search = typesense_client.client.collections[url_encoded_collection_name].documents.search(
         {
             "q": "*",
             "query_by": "type",

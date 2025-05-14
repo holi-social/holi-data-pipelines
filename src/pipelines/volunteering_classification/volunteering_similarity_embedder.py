@@ -1,8 +1,13 @@
-from src.common.classifiers.classification_item import ClassificationItem
-from src.common.embedders.similarity_embedder import SimilarityEmbedder
+from logging import Logger
+
+from shared.embedders.similarity_embedder import SimilarityEmbedder
+from src.pipelines.volunteering_classification.volunteering_classification_input import VolunteeringClassificationInput
 
 
-class VolunteeringSimilarityEmbedder(SimilarityEmbedder):
-    def _combine_text_fields(self, item: ClassificationItem) -> str:
-        combined_text = f"{item.title} {item.description} {' '.join(item.hashTags)} {' '.join(item.uses)}"
+class VolunteeringSimilarityEmbedder(SimilarityEmbedder[VolunteeringClassificationInput]):
+    def __init__(self, logger: Logger):
+        super().__init__(logger)
+
+    def _combine_text_fields(self, item: VolunteeringClassificationInput) -> str:
+        combined_text = f"{item.title} {item.description} {' '.join(item.hashTags or [])} {' '.join(item.uses or [])}"
         return SimilarityEmbedder._normalize_text(combined_text)

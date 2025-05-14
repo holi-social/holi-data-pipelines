@@ -1,7 +1,8 @@
 import platform
+import os
 from typing import Any, Optional, Mapping, Type
 
-import pendulum
+from whenever import Instant
 from opentelemetry import metrics
 from opentelemetry.exporter.cloud_monitoring import (
     CloudMonitoringMetricsExporter,
@@ -107,9 +108,9 @@ def record_after_flow_metrics(
 
     start_time = _run.start_time
     if start_time:
-        full_timedelta = pendulum.now("utc") - start_time
+        full_timedelta = Instant.now() - Instant.from_py_datetime(start_time)
         metrics_instance._common_gauges["pipeline_run.duration"].set(  # noqa
-            full_timedelta.total_seconds(),
+            full_timedelta.in_seconds(),
             metrics_instance.get_labels() | {"prefect_flow_state": _state.type.lower()},
         )
     else:
@@ -136,15 +137,21 @@ class Metrics:
         return cls._instance
 
     def _initialize_once(self) -> None:
+        metrics_readers = (
+            []
+            if os.environ.get("PYTEST_VERSION")
+            is not None  # see https://doc.pytest.org/en/latest/example/simple.html#detect-if-running-from-within-a-pytest-run
+            else [
+                PeriodicExportingMetricReader(
+                    # https://cloud.google.com/monitoring/api/metrics_other
+                    CloudMonitoringMetricsExporter(prefix="external.googleapis.com/user"),
+                    export_interval_millis=5000,
+                )
+            ]
+        )
         metrics.set_meter_provider(
             MeterProvider(
-                metric_readers=[
-                    PeriodicExportingMetricReader(
-                        # https://cloud.google.com/monitoring/api/metrics_other
-                        CloudMonitoringMetricsExporter(prefix="external.googleapis.com/user"),
-                        export_interval_millis=5000,
-                    )
-                ],
+                metric_readers=metrics_readers,
                 resource=_get_resource(),
             ),
         )
@@ -217,9 +224,9 @@ class Metrics:
 
         start_time = _run.start_time
         if start_time:
-            full_timedelta = pendulum.now("utc") - start_time
+            full_timedelta = Instant.now() - Instant.from_py_datetime(start_time)
             self._common_gauges["pipeline_run.duration"].set(
-                full_timedelta.total_seconds(),
+                full_timedelta.in_seconds(),
                 self.get_labels() | {"prefect_flow_state": _state.type.lower()},
             )
         else:

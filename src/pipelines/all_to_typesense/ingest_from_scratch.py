@@ -10,7 +10,6 @@ from src.common.monitoring.flow import monitored_flow
 from src.common.monitoring.metrics import report_number_of_processed_entities
 from src.common.typesense import extract_collection_name_from_schema
 from src.common.typesense_client import TypesenseClient, TypesenseClientConfig
-from src.pipelines.bigquery import volunteering_voltastics_classified_enriched_partitioned
 from src.pipelines.profiles_to_typesense.ingest_from_scratch import profiles_to_typesense_ingest_from_scratch
 from src.pipelines.spaces_to_typesense.ingest_from_scratch import spaces_to_typesense_ingest_from_scratch
 from src.pipelines.tasks_to_typesense.ingest_from_scratch import (
@@ -64,7 +63,6 @@ def all_to_typesense_ingest_from_scratch_flow() -> State:
     volunteering_result = volunteering_to_typesense_ingest_updates(
         typesense_client=typesense_client,
         typesense_collection_name=next_collection,
-        table_name=volunteering_voltastics_classified_enriched_partitioned(),
         last_complete_ingestion_timestamp=None,
     )
     if isinstance(volunteering_result, State) and volunteering_result.is_failed():

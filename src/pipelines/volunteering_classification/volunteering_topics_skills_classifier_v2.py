@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from logging import Logger
 from typing import List, Dict, Any
 
 import re
@@ -7,15 +8,15 @@ import yaml
 from vertexai.preview.generative_models import GenerativeModel
 from vertexai.generative_models import GenerationConfig
 
-from src.common.classifiers.classification_item import ClassificationItem
-from src.common.classifiers.topics_skills_classifier_v2 import TopicsSkillsClassifierV2, TopicsSkillsClassificationV2
-from src.common.logging.PipelineLogger import PipelineLogger
+from shared.classifiers.topics_skills_classifier_v2 import TopicsSkillsClassifierV2, TopicsSkillsClassificationV2
 from ratelimit import limits, sleep_and_retry
 
 from src.pipelines.topics_v2 import topic_v2_titles, topic_v2_slugs
 from src.pipelines.skills_v2 import skill_v2_titles, skill_v2_slugs
 
 from tenacity import retry, stop_after_attempt
+
+from src.pipelines.volunteering_classification.volunteering_classification_input import VolunteeringClassificationInput
 
 MODEL_NAME = "gemini-2.0-flash-001"
 MODEL_RATE_LIMIT_PER_MINUTE = 2000
@@ -37,8 +38,6 @@ YAML_RE = re.compile(r"```yaml([\S\s]*)```")
 # Gemini output contains ellipsis lines quite often
 ELLIPSIS_RE = re.compile(r"\.\.\.\n")
 
-logger = PipelineLogger("volunteering_topics_skills_classification_v2")
-
 
 @dataclass
 class TermClassificationResult:
@@ -46,13 +45,14 @@ class TermClassificationResult:
     slugs: List[str]
 
 
-class VolunteeringTopicsSkillsClassifierV2(TopicsSkillsClassifierV2):
+class VolunteeringTopicsSkillsClassifierV2(TopicsSkillsClassifierV2[VolunteeringClassificationInput]):
     model: GenerativeModel
 
-    def __init__(self) -> None:
+    def __init__(self, logger: Logger) -> None:
+        super().__init__(logger)
         self.model = GenerativeModel(MODEL_NAME, generation_config=(GenerationConfig()))
 
-    def get_classification(self, item: ClassificationItem) -> TopicsSkillsClassificationV2:
+    def get_classification(self, item: VolunteeringClassificationInput) -> TopicsSkillsClassificationV2:
         topics_result = self._get_topic_v2_classification(item)
         skills_result = self._get_skill_v2_classification(item)
         topics_skills_embedding_v2 = topics_result.embedding + skills_result.embedding
@@ -63,10 +63,10 @@ class VolunteeringTopicsSkillsClassifierV2(TopicsSkillsClassifierV2):
         )
 
     @retry(stop=stop_after_attempt(MODEL_INVOCATION_RETRY_ATTEMPTS))
-    def _get_skill_v2_classification(self, item: ClassificationItem) -> TermClassificationResult:
+    def _get_skill_v2_classification(self, item: VolunteeringClassificationInput) -> TermClassificationResult:
         prompt = self._create_skills_prompt_volunteering(item)
         response = self._invoke_model(prompt)
-        logger.debug(f"raw skill classification response: {response}")
+        self.logger.debug(f"raw skill classification response: {response}")
         return self._validate_and_transform_response(
             skill_v2_titles,
             skill_v2_slugs,
@@ -75,10 +75,10 @@ class VolunteeringTopicsSkillsClassifierV2(TopicsSkillsClassifierV2):
         )
 
     @retry(stop=stop_after_attempt(MODEL_INVOCATION_RETRY_ATTEMPTS))
-    def _get_topic_v2_classification(self, item: ClassificationItem) -> TermClassificationResult:
+    def _get_topic_v2_classification(self, item: VolunteeringClassificationInput) -> TermClassificationResult:
         prompt = self._create_topics_prompt_volunteering(item)
         response = self._invoke_model(prompt)
-        logger.debug(f"raw topic classification response: {response}")
+        self.logger.debug(f"raw topic classification response: {response}")
         return self._validate_and_transform_response(
             topic_v2_titles,
             topic_v2_slugs,
@@ -122,7 +122,9 @@ class VolunteeringTopicsSkillsClassifierV2(TopicsSkillsClassifierV2):
         weights: Dict[str, Any], titles: List[str], slugs: List[str], confidence_threshold: float
     ) -> TermClassificationResult:
         embedding = [weights[titles[i]] for i in range(len(titles))]
-        slugs = list(map(lambda x: x[0], filter(lambda x: x[1] >= confidence_threshold, zip(slugs, embedding))))
+        slugs = list(
+            map(lambda x: x[0], filter(lambda x: x[1] >= confidence_threshold, zip(slugs, embedding, strict=False)))
+        )
         return TermClassificationResult(embedding, slugs)
 
     @staticmethod
@@ -139,12 +141,12 @@ class VolunteeringTopicsSkillsClassifierV2(TopicsSkillsClassifierV2):
             raise Exception(f"Invalid response:\n{str(response)}") from e
 
     @staticmethod
-    def _create_skills_prompt_volunteering(item: ClassificationItem) -> str:
+    def _create_skills_prompt_volunteering(item: VolunteeringClassificationInput) -> str:
         title = VolunteeringTopicsSkillsClassifierV2._shorten_title(item.title)
         desc = VolunteeringTopicsSkillsClassifierV2._shorten_description(item.description)
         # Description can be empty
         desc_part = f' und der Beschreibung "{desc}"' if desc else ""
-        categories = VolunteeringTopicsSkillsClassifierV2._join_categories(item.uses)
+        categories = VolunteeringTopicsSkillsClassifierV2._join_categories(item.uses or [])
         # Categories might be empty
         categories_part = f" Das Freiwilligenprojekt ist den Kategorien {categories} zugeordnet." if categories else ""
         titles_list = "\n".join(map(lambda skill_title: f"- {skill_title}", skill_v2_titles))
@@ -156,13 +158,13 @@ class VolunteeringTopicsSkillsClassifierV2(TopicsSkillsClassifierV2):
         """
 
     @staticmethod
-    def _create_topics_prompt_volunteering(item: ClassificationItem) -> str:
+    def _create_topics_prompt_volunteering(item: VolunteeringClassificationInput) -> str:
         title = VolunteeringTopicsSkillsClassifierV2._shorten_title(item.title)
         titles_list = "\n".join(map(lambda topic_title: f"- {topic_title}", topic_v2_titles))
         desc = VolunteeringTopicsSkillsClassifierV2._shorten_description(item.description)
         # Description can be empty
         desc_part = f' und der Beschreibung "{desc}"' if desc else ""
-        categories = VolunteeringTopicsSkillsClassifierV2._join_categories(item.uses)
+        categories = VolunteeringTopicsSkillsClassifierV2._join_categories(item.uses or [])
         # Categories might be empty
         categories_part = f" Das Freiwilligenprojekt ist den Kategorien {categories} zugeordnet." if categories else ""
         return f"""

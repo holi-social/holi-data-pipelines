@@ -1,6 +1,6 @@
 import unittest
 
-from src.pipelines.task_classification.task_topics_skills_classifier_v2 import (
+from shared.classifiers.task_topics_skills_classifier_v2 import (
     to_topics_skills_embedding_v2,
     TOPICS_V2_VECTOR_INDICES,
     SKILLS_V2_VECTOR_INDICES,

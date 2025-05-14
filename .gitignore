@@ -5,3 +5,4 @@
 .gitlab-ci-local
 *.pyc
 /.gitlab-ci-local
+.build
