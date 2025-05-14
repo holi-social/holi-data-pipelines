@@ -1,4 +1,10 @@
 repos:
+  - repo: git@gitlab.holi.team:app/holi-meta.git
+    rev: 345e2cab6704f708a946c08a9eaa1ba769c455fb
+    hooks:
+      - id: scan-comments
+      - id: security-checks
+      - id: gitleaks
   - repo: local
     hooks:
       - id: uv-lock-check
@@ -14,7 +20,7 @@ repos:
         pass_filenames: false
         always_run: true
       - id: ruff-format
-        name: ruff format --check
+        name: ruff-format
         language: system
         entry: uv run ruff format --check
         pass_filenames: false
