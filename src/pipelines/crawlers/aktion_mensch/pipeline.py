@@ -26,6 +26,7 @@ from src.pipelines.crawlers.crawler_common_code import (
     update_last_run_day,
 )
 from src.pipelines.crawlers.crawler_config import CrawlerConfig
+from src.pipelines.crawlers.aktion_mensch.proxy_request import with_proxy_fetch, with_proxy_fetch_total
 
 logger = prefect.logging.get_logger()
 _CONFIG: Optional[CrawlerConfig] = None
@@ -149,11 +150,21 @@ def crawl_aktion_mensch(force_run: bool = False, wait_for_bq: bool = True) -> No
                 logger.warning("Streaming buffer not empty. Aborting flow.")
                 return
 
-        update_last_run_day(config())
-        processed_count = asyncio.run(source_to_sink(crawl(), bigquery_sink(config(), _STOP_DOC)))
-        update_last_successful_day(config())
-        report_number_of_processed_entities(processed_count)
-        logger.info(f"Successfully processed {processed_count} Aktion Mensch opportunities")
+        original_fetch_documents = RestCrawler._fetch_documents
+        RestCrawler._fetch_documents = with_proxy_fetch(RestCrawler._fetch_documents)
+        
+        original_fetch_total = RestCrawler._fetch_total_entries            
+        RestCrawler._fetch_total_entries = with_proxy_fetch_total(RestCrawler._fetch_total_entries)
+
+        try:
+            update_last_run_day(config())
+            processed_count = asyncio.run(source_to_sink(crawl(), bigquery_sink(config(), _STOP_DOC)))
+            update_last_successful_day(config())
+            report_number_of_processed_entities(processed_count)
+            logger.info(f"Successfully processed {processed_count} Aktion Mensch opportunities")
+        finally:
+            RestCrawler._fetch_documents = original_fetch_documents
+            RestCrawler._fetch_total_entries = original_fetch_total
 
         if wait_for_bq:
             wait_for_bigquery_data_to_be_accessible(table_name)
