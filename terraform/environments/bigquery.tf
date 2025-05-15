@@ -297,6 +297,92 @@ resource "google_bigquery_table" "volunteering_aktion_mensch_without_classificat
   }
 }
 
+resource "google_bigquery_table" "volunteering_aktion_mensch_classified_enriched_partitioned" {
+  project     = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
+  dataset_id  = local.dataset_id_datalake
+  table_id    = "volunteering_aktion_mensch_classified_enriched_partitioned"
+  description = "View joining Aktion Mensch volunteering data with classifications, for ingestion to Typesense. Used by the aktion-mensch-to-typesense pipeline."
+
+  view {
+    use_legacy_sql = false
+    query          = <<SQL
+      SELECT
+        am.id,
+        CAST(FARM_FINGERPRINT(CONCAT(
+          IFNULL(am.titel, ''), '|', 
+          IFNULL(am.beschreibung, ''), '|', 
+          IFNULL(am.kurzbeschreibung, ''), '|',
+          IFNULL(JSON_EXTRACT_SCALAR(am.durchfuehrendeOrganisation, "$.name"), ''), '|',
+          IFNULL(TO_JSON_STRING(am.verortung), ''), '|',
+          IFNULL(JSON_EXTRACT_SCALAR(am.einsatzort, "$.plz"), ''), '|',
+          IFNULL(JSON_EXTRACT_SCALAR(am.einsatzort, "$.ort"), ''), '|',
+          IFNULL(TO_JSON_STRING(am.attribute), ''), '|',
+          IFNULL(JSON_EXTRACT_SCALAR(am.kontaktDurchfuehrendeOrganisation, "$.email"), ''), '|',
+          IFNULL(JSON_EXTRACT_SCALAR(am.kontaktDurchfuehrendeOrganisation, "$.telefon"), ''), '|',
+          IFNULL(TO_JSON_STRING(am.kontaktVermittelndeStelle), '')
+        )) AS STRING) AS `hash`,
+        
+        am.titel AS title,
+        am.beschreibung AS description,
+        
+        JSON_EXTRACT_SCALAR(am.einsatzort, "$.ort") AS location,
+        
+        SAFE_CAST(JSON_EXTRACT_SCALAR(am.geoposition, "$.longitude") AS FLOAT64) AS longitude,
+        SAFE_CAST(JSON_EXTRACT_SCALAR(am.geoposition, "$.latitude") AS FLOAT64) AS latitude,
+        
+        JSON_EXTRACT_SCALAR(am.durchfuehrendeOrganisation, "$.name") AS orga,
+        
+        CONCAT(
+          JSON_EXTRACT_SCALAR(am.bild, "$.basisUrl"), 
+          JSON_EXTRACT_SCALAR(am.bild, "$.jpg")
+        ) AS image,
+        NULL AS imageOrga,
+        
+        JSON_EXTRACT_SCALAR(am.durchfuehrendeOrganisation, "$.homepage") AS link,
+        
+        ARRAY(
+          SELECT JSON_EXTRACT_SCALAR(attr, "$.name") 
+          FROM UNNEST(JSON_EXTRACT_ARRAY(am.attribute)) attr 
+          WHERE JSON_EXTRACT_SCALAR(attr, "$.typ") = 'schlagwort'
+        ) AS hashTags,
+        
+        ARRAY(
+          SELECT JSON_EXTRACT_SCALAR(attr, "$.name") 
+          FROM UNNEST(JSON_EXTRACT_ARRAY(am.attribute)) attr
+        ) AS uses,
+        
+        classifications.topics_v2,
+        classifications.skills_v2, 
+        classifications.topics_skills_embedding_v2,
+        classifications.similarity_embedding,
+        classifications.commitment_label,
+        
+        'Aktion Mensch' AS source,
+        am._PARTITIONTIME AS partitiontime
+      FROM
+        `${local.datalake}.volunteering_aktion_mensch_raw` AS am
+      JOIN 
+        `${local.datalake}.classifications` AS classifications
+      ON 
+        am.id = classifications.id 
+        AND classifications.hash = CAST(FARM_FINGERPRINT(CONCAT(
+          IFNULL(am.titel, ''), '|', 
+          IFNULL(am.beschreibung, ''), '|', 
+          IFNULL(am.kurzbeschreibung, ''), '|',
+          IFNULL(JSON_EXTRACT_SCALAR(am.durchfuehrendeOrganisation, "$.name"), ''), '|',
+          IFNULL(TO_JSON_STRING(am.verortung), ''), '|',
+          IFNULL(JSON_EXTRACT_SCALAR(am.einsatzort, "$.plz"), ''), '|',
+          IFNULL(JSON_EXTRACT_SCALAR(am.einsatzort, "$.ort"), ''), '|',
+          IFNULL(TO_JSON_STRING(am.attribute), ''), '|',
+          IFNULL(JSON_EXTRACT_SCALAR(am.kontaktDurchfuehrendeOrganisation, "$.email"), ''), '|',
+          IFNULL(JSON_EXTRACT_SCALAR(am.kontaktDurchfuehrendeOrganisation, "$.telefon"), ''), '|',
+          IFNULL(TO_JSON_STRING(am.kontaktVermittelndeStelle), '')
+        )) AS STRING)
+        AND classifications.type = 'aktion_mensch_volunteering'
+    SQL
+  }
+}
+
 output "volunteering_voltastics_raw_table" {
   value = google_bigquery_table.volunteering_voltastics_raw.table_id
 }

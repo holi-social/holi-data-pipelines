@@ -127,6 +127,11 @@ resource "prefect_variable" "volunteering_to_typesense_state" {
   value = {}
 }
 
+resource "prefect_variable" "aktion_mensch_to_typesense_state" {
+  name  = "aktion_mensch_to_typesense_state"
+  value = {}
+}
+
 resource "prefect_variable" "typesense_host" {
   name  = "typesense_host"
   value = "t9vemwkibxajcorqp-1.a1.typesense.net"
