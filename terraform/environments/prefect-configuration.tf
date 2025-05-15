@@ -61,6 +61,20 @@ resource "prefect_block" "voltastics_api_key" {
   depends_on = [null_resource.prefect_server_available]
 }
 
+resource "prefect_block" "aktion_mensch_credentials" {
+  name      = "aktion-mensch-credentials"
+  type_slug = "gcpsecret"
+
+  data = jsonencode({
+    "gcp_credentials" = {
+      "project" = "holi-shared"
+    }
+    "secret_name"    = "AKTION_MENSCH_CREDENTIALS"
+    "secret_version" = "latest"
+  })
+  depends_on = [null_resource.prefect_server_available]
+}
+
 # crawler / betterplace
 resource "prefect_variable" "betterplace_crawler_table" {
   name = "betterplace_crawler_table"
@@ -71,9 +85,25 @@ resource "prefect_variable" "betterplace_crawler_table" {
   }
 }
 
+# crawler / aktion_mensch
+resource "prefect_variable" "aktion_mensch_crawler_table" {
+  name = "aktion_mensch_crawler_table"
+  value = {
+    project = local.default_project
+    dataset = local.dataset_datalake
+    table   = google_bigquery_table.volunteering_aktion_mensch_raw.table_id
+  }
+}
+
+
 resource "prefect_variable" "betterplace_api_url" {
   name  = "betterplace_api_url"
   value = "https://api.betterplace.org/de/api_v4"
+}
+
+resource "prefect_variable" "aktion_mensch_api_url" {
+  name  = "aktion_mensch_api_url"
+  value = "https://service.test-am.de/api/holi-social/v1/freiwilligendatenbank/export/angebote"
 }
 
 resource "prefect_variable" "bigquery_datalake" {

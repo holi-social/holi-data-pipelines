@@ -73,3 +73,8 @@ def volunteering_voltastics_without_classifications() -> str:
 @cache
 def volunteering_voltastics_classified_enriched_partitioned() -> str:
     return f"{bigquery_datalake()}.volunteering_voltastics_classified_enriched_partitioned"
+
+
+@cache
+def volunteering_aktion_mensch_without_classifications() -> str:
+    return f"{bigquery_datapool()}.volunteering_aktion_mensch_without_classifications"

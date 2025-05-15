@@ -9,6 +9,7 @@ from tenacity import RetryError
 from shared.classifiers.classification_input import ClassificationInputT
 from shared.classifiers.topics_skills_classifier_v2 import TopicsSkillsClassificationV2, TopicsSkillsClassifierV2
 from shared.embedders.similarity_embedder import SimilarityEmbedder
+from typing import Optional, Callable
 
 
 @dataclass
@@ -20,6 +21,7 @@ class ClassificationResult:
     topics_v2: List[str]
     skills_v2: List[str]
     similarity_embedding: List[float]
+    commitment_label: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         # noinspection PyTypeChecker
@@ -42,12 +44,14 @@ class Classifier(Generic[ClassificationInputT], ABC):
         table_name_classifications: str,
         logger: Logger,
         bqclient: BigQueryClient,
+        commitment_label_extractor: Optional[Callable[[Any], Optional[str]]] = None,
     ):
         self.topics_skills_v2_classifier = topics_skills_classifier_v2
         self.similarity_embedder = similarity_embedder
         self.bqclient = bqclient
         self.item_type = item_type
         self.table_name_classifications = table_name_classifications
+        self.commitment_label_extractor = commitment_label_extractor
         self.logger = logger
         # TODO implement context manager API to cleanly handle resource shutdown
 
@@ -71,6 +75,12 @@ class Classifier(Generic[ClassificationInputT], ABC):
             else:
                 self.logger.debug(f"[id={item.id}] using existing similarity classification")
                 similarity_embedding = item.similarity_embedding
+
+            commitment_label = None
+
+            if self.commitment_label_extractor:
+                commitment_label = self.commitment_label_extractor(item)
+
             return ClassificationResult(
                 type=self.item_type,
                 id=item.id,
@@ -79,7 +89,9 @@ class Classifier(Generic[ClassificationInputT], ABC):
                 topics_v2=topics_skills_classification.topics_v2,
                 skills_v2=topics_skills_classification.skills_v2,
                 similarity_embedding=similarity_embedding,
+                commitment_label=commitment_label,
             )
+
         except RetryError as e:
             last_attempt = e.last_attempt
             last_response = last_attempt.result() if last_attempt.result() else "No response"
