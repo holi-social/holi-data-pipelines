@@ -179,14 +179,7 @@ def diff_ingest(
     # Step 2: Transform new or updated records
     new_or_updated_documents = transform_data(changed_records.new_or_updated)
 
-    # Step 3: Upsert documents into Typesense
-    upsert_succeeded = upsert_typesense_documents(
-        typesense_client, logger, typesense_collection_name, new_or_updated_documents
-    )
-    if upsert_succeeded:
-        processed_items_count += len(new_or_updated_documents)
-
-    # Step 4: Delete outdated documents from Typesense
+    # Step 3: Delete outdated documents from Typesense
     deletion_succeeded = True
     if changed_records.deleted:
         document_ids_to_delete = [TypesenseDocId(record["id"]) for record in changed_records.deleted]
@@ -195,5 +188,14 @@ def diff_ingest(
         )
         if deletion_succeeded:
             processed_items_count += len(document_ids_to_delete)
+
+    # Step 4: Upsert documents into Typesense
+    # Please note that deletion must come first. If a record happens to be in both new_or_updated and deleted, this
+    # order ensures that the document will still be contained in Typesense after *successful* deletion/upsert of TS.
+    upsert_succeeded = upsert_typesense_documents(
+        typesense_client, logger, typesense_collection_name, new_or_updated_documents
+    )
+    if upsert_succeeded:
+        processed_items_count += len(new_or_updated_documents)
 
     return deletion_succeeded, upsert_succeeded, processed_items_count
