@@ -228,6 +228,7 @@ resource "google_bigquery_table" "volunteering_voltastics_without_classification
           classifications.topics_skills_embedding_v2 IS NULL OR
           classifications.similarity_embedding IS NULL
       )
+      AND raw_deduped.source != 'Aktion Mensch'
     SQL
   }
 }
@@ -264,6 +265,7 @@ resource "google_bigquery_table" "volunteering_voltastics_classified_enriched_pa
       LEFT OUTER JOIN `${local.datalake}.classifications` AS classifications
         ON CAST(raw_deduped.id AS STRING) = classifications.id
         AND raw_deduped.hash = classifications.hash
+      WHERE raw_deduped.source != 'Aktion Mensch'
     SQL
   }
 }
