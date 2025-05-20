@@ -2,9 +2,9 @@ from datetime import datetime, timezone
 
 from prefect import State, task
 from prefect.cache_policies import NONE
-from prefect.states import Failed, Completed
+from prefect.states import Failed
 from prefect.variables import Variable
-from typing import Dict, Any, cast, Optional, Tuple
+from typing import Dict, Any, cast
 
 from src.common.extractors.bq_extractor import extract_latest_partition_timestamp_from_bigquery
 from src.common.logging.PipelineLogger import PipelineLogger
@@ -13,7 +13,11 @@ from src.common.monitoring.metrics import report_number_of_processed_entities
 from src.common.typesense import extract_collection_name_from_schema
 from src.common.typesense_client import TypesenseClient, TypesenseClientConfig
 from src.pipelines.bigquery import volunteering_aktion_mensch_classified_enriched_partitioned
-from src.pipelines.typesense import schema_path
+from src.pipelines.typesense import (
+    schema_path, 
+    LAST_INGESTION_TIMESTAMP_KEY, 
+    AKTION_MENSCH_STATE_VARIABLE
+)
 from src.pipelines.volunteering_to_typesense.tasks import (
     validate_collection,
     diff_ingest,
@@ -21,14 +25,11 @@ from src.pipelines.volunteering_to_typesense.tasks import (
 
 logger = PipelineLogger(__name__)
 
-# Use a separate state variable for AM flow
-AM_STATE_VARIABLE = "aktion_mensch_to_typesense_state"
-
 
 def load_am_ingestion_timestamp() -> datetime | None:
     """Load the timestamp of the last successful ingestion from Prefect variables."""
-    state = cast(Dict[str, Any], Variable.get(AM_STATE_VARIABLE, default={}))
-    timestamp_str = state.get("last_complete_ingestion_timestamp")
+    state = cast(Dict[str, Any], Variable.get(AKTION_MENSCH_STATE_VARIABLE, default={}))
+    timestamp_str = state.get(LAST_INGESTION_TIMESTAMP_KEY)
     if not timestamp_str:
         return None
     else:
@@ -37,9 +38,9 @@ def load_am_ingestion_timestamp() -> datetime | None:
 
 def store_am_ingestion_timestamp(timestamp: datetime) -> None:
     """Store the timestamp of the last successful ingestion in Prefect variables."""
-    state = cast(Dict[str, Any], Variable.get(AM_STATE_VARIABLE, default={}))
-    state["last_complete_ingestion_timestamp"] = timestamp.isoformat()
-    Variable.set(AM_STATE_VARIABLE, state, overwrite=True)
+    state = cast(Dict[str, Any], Variable.get(AKTION_MENSCH_STATE_VARIABLE, default={}))
+    state[LAST_INGESTION_TIMESTAMP_KEY] = timestamp.isoformat()
+    Variable.set(AKTION_MENSCH_STATE_VARIABLE, state, overwrite=True)
 
 
 @monitored_flow
@@ -81,7 +82,6 @@ def aktion_mensch_to_typesense_ingest_updates(
         )
         return 0
 
-    # Use the existing diff_ingest task
     deletion_succeeded, upsert_succeeded, processed_item_count = diff_ingest(
         table_name=table_name,
         last_complete_ingestion_timestamp=last_complete_ingestion_timestamp,
