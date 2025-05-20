@@ -25,12 +25,18 @@ class TypesenseDocId:
         return f"volunteering_{self.id}"
 
 
+@dataclass
+class ChangedRecords:
+    new_or_updated: List[Dict[str, Any]]
+    deleted: List[Dict[str, Any]]
+
+
 @task
 def extract_changed_records(
     table_name: str,
     last_complete_ingestion_date: Optional[date],
     latest_partition_date: date,
-) -> List[Dict[str, Any]]:
+) -> ChangedRecords:
     """Extract changed data from BigQuery."""
     logger.info(
         f"Extracting changed records (table_name={table_name}, last_complete_ingestion_date={last_complete_ingestion_date}, latest_partition_date={latest_partition_date})."
@@ -41,7 +47,10 @@ def extract_changed_records(
         old_partition_date=last_complete_ingestion_date,
     )
     logger.info(f"Extracted {len(data)} changed records")
-    return data
+    return ChangedRecords(
+        new_or_updated=[record for record in data if record["change_type"] == "new_or_updated"],
+        deleted=[record for record in data if record["change_type"] == "deleted"],
+    )
 
 
 def transform_data(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -167,25 +176,20 @@ def diff_ingest(
 
     processed_items_count = 0
 
-    # Step 2: Segregate records by change type
-    new_or_updated_records = [record for record in changed_records if record["change_type"] == "new_or_updated"]
-    document_ids_to_delete: list[TypesenseDocId] = [
-        TypesenseDocId(record["id"]) for record in changed_records if record["change_type"] == "deleted"
-    ]
+    # Step 2: Transform new or updated records
+    new_or_updated_documents = transform_data(changed_records.new_or_updated)
 
-    # Step 3: Transform new or updated records
-    new_or_updated_documents = transform_data(new_or_updated_records)
-
-    # Step 4: Upsert documents into Typesense
+    # Step 3: Upsert documents into Typesense
     upsert_succeeded = upsert_typesense_documents(
         typesense_client, logger, typesense_collection_name, new_or_updated_documents
     )
     if upsert_succeeded:
         processed_items_count += len(new_or_updated_documents)
 
-    # Step 5: Delete outdated documents from Typesense
+    # Step 4: Delete outdated documents from Typesense
     deletion_succeeded = True
-    if document_ids_to_delete:
+    if changed_records.deleted:
+        document_ids_to_delete = [TypesenseDocId(record["id"]) for record in changed_records.deleted]
         deletion_succeeded = delete_typesense_documents(
             typesense_client, typesense_collection_name, document_ids_to_delete
         )
