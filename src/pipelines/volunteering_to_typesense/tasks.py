@@ -12,7 +12,7 @@ from src.common.loaders.typesense_loader import upsert_typesense_documents
 from src.common.logging.PipelineLogger import PipelineLogger
 from src.common.typesense_client import TypesenseClient
 from src.common.variables import variable_value
-from src.pipelines.typesense import LAST_INGESTION_TIMESTAMP_KEY, VOLUNTEERING_STATE_VARIABLE
+from src.pipelines.constants import LAST_INGESTION_TIMESTAMP_KEY, VOLUNTEERING_STATE_VARIABLE
 from src.pipelines.volunteering_to_typesense.typesense_transformer import transform_row
 
 logger = PipelineLogger(__name__)
