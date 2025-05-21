@@ -26,7 +26,11 @@ from src.pipelines.crawlers.crawler_common_code import (
     update_last_run_day,
 )
 from src.pipelines.crawlers.crawler_config import CrawlerConfig
-from src.pipelines.crawlers.aktion_mensch.proxy_request import with_proxy_fetch, with_proxy_fetch_total, setup_ssh_tunnel, cleanup_ssh_tunnel
+from src.pipelines.crawlers.aktion_mensch.proxy_request import (
+    proxy_request,
+    setup_ssh_tunnel,
+    cleanup_ssh_tunnel,
+)
 
 logger = prefect.logging.get_logger()
 _CONFIG: Optional[CrawlerConfig] = None
@@ -43,6 +47,7 @@ AM_COLUMNS_TO_JSON_STRING = [
     "verortung",
 ]
 
+
 def config() -> CrawlerConfig:
     """Get crawler configuration (API URL, BQ table)."""
     global _CONFIG
@@ -53,6 +58,7 @@ def config() -> CrawlerConfig:
             bigquery_table=cast(Dict[str, str], variable_value_as(Dict[str, str], "aktion_mensch_crawler_table")),
         )
     return _CONFIG
+
 
 def get_auth_headers() -> Dict[str, str]:
     """Fetches API credentials from Prefect secret block."""
@@ -66,6 +72,22 @@ def get_auth_headers() -> Dict[str, str]:
         "x-client_id": credentials.get("client_id"),
         "x-client_secret": credentials.get("client_secret"),
     }
+
+
+class ProxyRestCrawler(RestCrawler):
+    """RestCrawler that routes requests through SSH tunnel."""
+
+    async def _fetch_documents(self, retry_client: Any, paging_info: PagingInfo) -> Any:
+        """Override to use proxy for document fetching."""
+        return await proxy_request(url=self.url, headers=self.headers, params=self.get_params(paging_info))
+
+    async def _fetch_total_entries(self, retry_client: Any) -> int:
+        """Override to use proxy for fetching total entry count."""
+        if isinstance(self.get_full_count, int):
+            return self.get_full_count
+        data = await proxy_request(url=self.url, headers=self.headers, params=self.get_params(PagingInfo(0, 1)))
+        return self.get_full_count(data)
+
 
 @task
 def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
@@ -92,6 +114,7 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
             if not isinstance(page, dict) or "data" not in page or not isinstance(page["data"], list):
                 logger.warning(f"Unexpected page structure: {type(page)}")
                 return
+
             for document in page["data"]:
                 if isinstance(document, dict):
                     processed_document = document.copy()
@@ -102,7 +125,7 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
                     queue.put_nowait(processed_document)
                     document_count += 1
 
-        await RestCrawler(
+        await ProxyRestCrawler(
             url=config().api_url,
             get_params=paging_params,
             get_full_count=lambda page: page.get("meta", {}).get("pagination", {}).get("total", 0),
@@ -116,11 +139,14 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
 
     return crawl_to_queue
 
+
 @monitored_flow
 def crawl_aktion_mensch(force_run: bool = False, wait_for_bq: bool = True) -> None:
     """
     Main flow: crawl Aktion Mensch API and store results in BigQuery.
+
     Checks if run already completed for the day unless `force_run` is True.
+
     Args:
         force_run: Run even if already completed today.
         wait_for_bq: Wait for data to be queryable after load.
@@ -139,14 +165,11 @@ def crawl_aktion_mensch(force_run: bool = False, wait_for_bq: bool = True) -> No
 
         # Set up SSH tunnel with service account if available
         try:
-            setup_ssh_tunnel(service_account_key=secret_value("aktion-mensch-ssh-service-account"))
-        except:
+            service_account_key = secret_value("aktion-mensch-ssh-service-account")
+            setup_ssh_tunnel(service_account_key=service_account_key)
+        except Exception as e:
+            logger.warning(f"Failed to set up SSH tunnel with service account: {e}")
             setup_ssh_tunnel()
-
-        original_fetch_documents = RestCrawler._fetch_documents
-        original_fetch_total = RestCrawler._fetch_total_entries
-        RestCrawler._fetch_documents = with_proxy_fetch(RestCrawler._fetch_documents)
-        RestCrawler._fetch_total_entries = with_proxy_fetch_total(RestCrawler._fetch_total_entries)
 
         try:
             update_last_run_day(config())
@@ -155,14 +178,13 @@ def crawl_aktion_mensch(force_run: bool = False, wait_for_bq: bool = True) -> No
             report_number_of_processed_entities(processed_count)
             logger.info(f"Successfully processed {processed_count} Aktion Mensch opportunities")
         finally:
-            RestCrawler._fetch_documents = original_fetch_documents
-            RestCrawler._fetch_total_entries = original_fetch_total
             cleanup_ssh_tunnel()
 
         if wait_for_bq:
             wait_for_bigquery_data_to_be_accessible(table_name)
     else:
         logger.info("Skipping crawler - already ran successfully today")
+
 
 if __name__ == "__main__":
     crawl_aktion_mensch(force_run=True, wait_for_bq=False)  # type: ignore

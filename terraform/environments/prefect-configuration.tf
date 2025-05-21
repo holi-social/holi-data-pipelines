@@ -318,3 +318,17 @@ resource "google_cloud_run_v2_service" "work_pool_cloud_run_worker" {
 
   depends_on = [prefect_work_pool.cloud_run]
 }
+
+resource "prefect_block" "aktion_mensch_ssh_credentials" {
+  name      = "aktion-mensch-ssh-service-account"
+  type_slug = "gcpsecret"
+
+  data = jsonencode({
+    "gcp_credentials" = {
+      "project" = "holi-shared"
+    }
+    "secret_name"    = "AKTION_MENSCH_SSH_SERVICE_ACCOUNT"
+    "secret_version" = "latest"
+  })
+  depends_on = [null_resource.prefect_server_available]
+}
