@@ -8,7 +8,9 @@ from prefect.deployments.schedules import FlexibleScheduleList
 from prefect.events import DeploymentTriggerTypes, TriggerTypes
 
 from src.common.variables import variable_value_as
-from src.pipelines.aktion_mensch_to_typesense.ingest_from_scratch import aktion_mensch_to_typesense_ingest_from_scratch_flow
+from src.pipelines.aktion_mensch_to_typesense.ingest_from_scratch import (
+    aktion_mensch_to_typesense_ingest_from_scratch_flow,
+)
 from src.pipelines.aktion_mensch_to_typesense.ingest_updates import aktion_mensch_to_typesense_ingest_updates_flow
 from src.pipelines.all_to_typesense.ingest_from_scratch import all_to_typesense_ingest_from_scratch_flow
 from src.pipelines.crawlers.aktion_mensch.pipeline import crawl_aktion_mensch

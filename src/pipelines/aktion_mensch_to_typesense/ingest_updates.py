@@ -13,11 +13,7 @@ from src.common.monitoring.metrics import report_number_of_processed_entities
 from src.common.typesense import extract_collection_name_from_schema
 from src.common.typesense_client import TypesenseClient, TypesenseClientConfig
 from src.pipelines.bigquery import volunteering_aktion_mensch_classified_enriched_partitioned
-from src.pipelines.typesense import (
-    schema_path, 
-    LAST_INGESTION_TIMESTAMP_KEY, 
-    AKTION_MENSCH_STATE_VARIABLE
-)
+from src.pipelines.typesense import schema_path, LAST_INGESTION_TIMESTAMP_KEY, AKTION_MENSCH_STATE_VARIABLE
 from src.pipelines.volunteering_to_typesense.tasks import (
     validate_collection,
     diff_ingest,
