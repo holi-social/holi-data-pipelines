@@ -22,6 +22,7 @@ class ClassificationResult:
     skills_v2: List[str]
     similarity_embedding: List[float]
     commitment_label: Optional[str] = None
+    location_type: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         # noinspection PyTypeChecker
@@ -45,6 +46,7 @@ class Classifier(Generic[ClassificationInputT], ABC):
         logger: Logger,
         bqclient: BigQueryClient,
         commitment_label_extractor: Optional[Callable[[Any], Optional[str]]] = None,
+        location_type_extractor: Optional[Callable[[Any], Optional[str]]] = None,
     ):
         self.topics_skills_v2_classifier = topics_skills_classifier_v2
         self.similarity_embedder = similarity_embedder
@@ -52,6 +54,7 @@ class Classifier(Generic[ClassificationInputT], ABC):
         self.item_type = item_type
         self.table_name_classifications = table_name_classifications
         self.commitment_label_extractor = commitment_label_extractor
+        self.location_type_extractor = location_type_extractor
         self.logger = logger
         # TODO implement context manager API to cleanly handle resource shutdown
 
@@ -77,9 +80,12 @@ class Classifier(Generic[ClassificationInputT], ABC):
                 similarity_embedding = item.similarity_embedding
 
             commitment_label = None
-
             if self.commitment_label_extractor:
                 commitment_label = self.commitment_label_extractor(item)
+
+            location_type = None
+            if self.location_type_extractor:
+                location_type = self.location_type_extractor(item)
 
             return ClassificationResult(
                 type=self.item_type,
@@ -90,6 +96,7 @@ class Classifier(Generic[ClassificationInputT], ABC):
                 skills_v2=topics_skills_classification.skills_v2,
                 similarity_embedding=similarity_embedding,
                 commitment_label=commitment_label,
+                location_type=location_type,
             )
 
         except RetryError as e:

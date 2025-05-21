@@ -43,6 +43,7 @@ def _row() -> RowFixture:
             for i in range(fake.random_int(min=0, max=len(skill_v2_slugs) - 1))
         ],
         "similarity_embedding": [fake.pyfloat(min_value=-1, max_value=1) for i in range(SIMILARITY_EMBEDDING_LENGTH)],
+        "location_type": random.choice([None, "REMOTE"]),
     }
 
 
@@ -74,6 +75,7 @@ def test_german_all_fields(row: RowFixture) -> None:
     assert result["topics_v2"] == row["topics_v2"]
     assert result["skills_v2"] == row["skills_v2"]
     assert result["similarity_embedding"] == row["similarity_embedding"]
+    assert result["location_type"] == row["location_type"]
 
 
 def test_english_title_and_description(row: RowFixture) -> None:

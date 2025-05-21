@@ -59,7 +59,8 @@ resource "google_bigquery_table" "classifications" {
     { "name": "topics_v2", "type": "STRING", "mode": "REPEATED"},
     { "name": "skills_v2", "type": "STRING", "mode": "REPEATED"},
     { "name": "similarity_embedding", "type": "FLOAT", "mode": "REPEATED"},
-    { "name": "commitment_label", "type": "STRING", "mode": "NULLABLE" }
+    { "name": "commitment_label", "type": "STRING", "mode": "NULLABLE" },
+    { "name": "location_type", "type": "STRING", "mode": "NULLABLE" }
   ]
   EOF
 
@@ -192,7 +193,8 @@ resource "google_bigquery_table" "volunteering_voltastics_classified_enriched_pa
         classifications.topics_v2 AS topics_v2,
         classifications.skills_v2 AS skills_v2,
         classifications.similarity_embedding AS similarity_embedding,
-        classifications.commitment_label AS commitment_label
+        classifications.commitment_label AS commitment_label,
+        classifications.location_type AS location_type
       FROM
         `${local.datalake}.volunteering_voltastics_raw_deduped` AS raw_deduped
       LEFT OUTER JOIN

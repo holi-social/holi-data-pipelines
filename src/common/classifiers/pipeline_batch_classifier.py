@@ -33,6 +33,7 @@ class PipelineBatchClassifier(Generic[ClassificationInputT], Classifier[Classifi
         batch_size: int | None = DEFAULT_BATCH_SIZE,
         stop_after_batch_nr: int | None = None,
         commitment_label_extractor: Optional[Callable[[Any], Optional[str]]] = None,
+        location_type_extractor: Optional[Callable[[Any], Optional[str]]] = None,
     ):
         super().__init__(
             topics_skills_classifier_v2,
@@ -44,6 +45,7 @@ class PipelineBatchClassifier(Generic[ClassificationInputT], Classifier[Classifi
                 project=GCLOUD_PROJECT_ID, location=GCLOUD_LOCATION
             ),
             commitment_label_extractor=commitment_label_extractor,
+            location_type_extractor=location_type_extractor,
         )
         vertexai.init(project=GCLOUD_PROJECT_ID, location=GCLOUD_LOCATION)
         self.batch_size = batch_size if batch_size else DEFAULT_BATCH_SIZE

@@ -16,6 +16,9 @@ from src.pipelines.volunteering_classification.volunteering_topics_skills_classi
 from src.pipelines.volunteering_classification.commitment_labels_mapping import (
     extract_commitment_label_from_item,
 )
+from src.pipelines.volunteering_classification.location_type_mapping import (
+    extract_location_type_from_item,
+)
 from src.pipelines.volunteering_classification.volunteering_similarity_embedder import (
     VolunteeringSimilarityEmbedder,
 )
@@ -36,6 +39,7 @@ class VolunteeringBatchClassifier(PipelineBatchClassifier[VolunteeringClassifica
             logger=logger,
             stop_after_batch_nr=stop_after_batch_nr,
             commitment_label_extractor=extract_commitment_label_from_item,
+            location_type_extractor=extract_location_type_from_item,
         )
 
     def _to_classification_input(self, item: Any) -> VolunteeringClassificationInput:
