@@ -57,9 +57,10 @@ class GoLocationTypeMapper(LocationTypeMapper):
         if isinstance(category, str) and category == "REMOTE":
             return "REMOTE"
 
-        # Also check isRemote field
         is_remote = data.get("isRemote")
         if isinstance(is_remote, bool) and is_remote:
+            return "REMOTE"
+        elif isinstance(is_remote, str) and is_remote.lower() == "true":
             return "REMOTE"
 
         return None
@@ -75,7 +76,6 @@ class AktionMenschLocationTypeMapper(LocationTypeMapper):
         if not data:
             return None
 
-        # Handle verortung field
         verortung = None
         if hasattr(data, "verortung"):
             verortung = data.verortung
@@ -116,6 +116,7 @@ def _parse_additional_data(data: Any) -> Optional[Dict[str, Any]]:
     if isinstance(data, str):
         if data.strip() in ["", "{}", "null"]:
             return None
+
         try:
             data = json.loads(data)
         except json.JSONDecodeError:
@@ -136,8 +137,8 @@ def extract_location_type_from_item(item: Any) -> Optional[str]:
     source = getattr(item, "source", None)
     data = None
 
-    if hasattr(item, "additionalData") and item.additionalData:
-        data = _parse_additional_data(item.additionalData)
+    if hasattr(item, "additional_data") and item.additional_data:
+        data = _parse_additional_data(item.additional_data)
     elif source == "Aktion Mensch" and hasattr(item, "verortung"):
         data = {"verortung": item.verortung}
 

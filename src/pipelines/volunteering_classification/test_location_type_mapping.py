@@ -26,10 +26,11 @@ def mappers() -> Dict[str, LocationTypeMapper]:
 
 @dataclass
 class MockItem:
-    """Mock for classification input items."""
+    """Mock item for testing extract_location_type_from_item."""
 
+    id: str = "123"
     source: Optional[str] = None
-    additionalData: Optional[str] = None
+    additional_data: Optional[str] = None
     verortung: Optional[str] = None
 
 
@@ -61,33 +62,26 @@ class TestGoLocationTypeMapper:
         assert not mappers["go"].can_handle(None)
 
     def test_extract_location_type_remote(self, mappers: Dict[str, LocationTypeMapper]) -> None:
-        # Test with category field
         data = {"category": "REMOTE"}
         assert mappers["go"].extract_location_type(data) == "REMOTE"
 
-        # Test with isRemote field
-        data = {"isRemote": True}
+        data = {"isRemote": "True"}
         assert mappers["go"].extract_location_type(data) == "REMOTE"
 
-        # Test with both fields
-        data = {"category": "REMOTE", "isRemote": True}
+        data = {"category": "REMOTE", "isRemote": "True"}
         assert mappers["go"].extract_location_type(data) == "REMOTE"
 
-        # Test with conflicting values (should still return REMOTE)
-        data = {"category": "ON_SITE", "isRemote": True}
+        data = {"category": "ON_SITE", "isRemote": "True"}
         assert mappers["go"].extract_location_type(data) == "REMOTE"
 
     def test_extract_location_type_not_remote(self, mappers: Dict[str, LocationTypeMapper]) -> None:
-        # Neither field indicates remote
-        data = {"category": "ON_SITE", "isRemote": False}
+        data = {"category": "ON_SITE", "isRemote": "False"}
         assert mappers["go"].extract_location_type(data) is None
 
-        # Only category present, not remote
         data = {"category": "ON_SITE"}
         assert mappers["go"].extract_location_type(data) is None
 
-        # Only isRemote present, not remote
-        data = {"isRemote": False}
+        data = {"isRemote": "False"}
         assert mappers["go"].extract_location_type(data) is None
 
     def test_extract_location_type_invalid_data(self, mappers: Dict[str, LocationTypeMapper]) -> None:
@@ -145,17 +139,16 @@ class TestLocationTypeMapperFactory:
     "item,expected",
     [
         # Vostel tests
-        (MockItem(source="vostel.de", additionalData='{"location_type": "location_independent"}'), "REMOTE"),
-        (MockItem(source="vostel.de", additionalData='{"location_type": "on_site"}'), None),
-        (MockItem(source="vostel.de", additionalData="{}"), None),
+        (MockItem(source="vostel.de", additional_data='{"location_type": "location_independent"}'), "REMOTE"),
+        (MockItem(source="vostel.de", additional_data='{"location_type": "on_site"}'), None),
+        (MockItem(source="vostel.de", additional_data="{}"), None),
         # GoVolunteer tests
-        (MockItem(source="GoVolunteer", additionalData='{"category": "REMOTE"}'), "REMOTE"),
-        (MockItem(source="GoVolunteer", additionalData='{"category": "SOCIAL"}'), None),
-        (MockItem(source="GoVolunteer", additionalData="{}"), None),
+        (MockItem(source="GoVolunteer", additional_data='{"category": "REMOTE"}'), "REMOTE"),
+        (MockItem(source="GoVolunteer", additional_data='{"category": "SOCIAL"}'), None),
+        (MockItem(source="GoVolunteer", additional_data="{}"), None),
         # Aktion Mensch tests
         (MockItem(source="Aktion Mensch", verortung="ortsunabhaengig"), "REMOTE"),
         (MockItem(source="Aktion Mensch", verortung="lokal"), None),
-        # Missing or invalid data
         (MockItem(source=None), None),
         (MockItem(source="unknown_source"), None),
         (MockItem(source="vostel.de"), None),

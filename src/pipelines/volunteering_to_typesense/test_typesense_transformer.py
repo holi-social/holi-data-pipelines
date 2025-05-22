@@ -43,7 +43,7 @@ def _row() -> RowFixture:
             for i in range(fake.random_int(min=0, max=len(skill_v2_slugs) - 1))
         ],
         "similarity_embedding": [fake.pyfloat(min_value=-1, max_value=1) for i in range(SIMILARITY_EMBEDDING_LENGTH)],
-        "location_type": random.choice([None, "REMOTE"]),
+        "location_type": random.choice([None, "REMOTE"]),  # noqa: S311
     }
 
 
