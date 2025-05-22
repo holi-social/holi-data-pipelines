@@ -3,7 +3,7 @@ from datetime import datetime, date, timedelta, timezone
 from unittest.mock import patch
 from pytest import fixture
 
-from src.pipelines.volunteering_to_typesense.tasks import diff_ingest, TypesenseDocId
+from src.pipelines.volunteering_to_typesense.tasks import diff_ingest, TypesenseDocId, ChangedRecords
 from src.common.typesense_client import TypesenseClient
 from src.pipelines.volunteering_to_typesense.test_typesense_transformer import _row
 
@@ -40,7 +40,10 @@ def test_diff_ingest(
     changed_records = [({"change_type": "new_or_updated"} | _row()) for i in range(5)]
     deleted_records = [({"change_type": "deleted"} | _row()) for i in range(3)]
 
-    mock_extract_changed_records.return_value = changed_records + deleted_records
+    mock_extract_changed_records.return_value = ChangedRecords(
+        new_or_updated=changed_records,
+        deleted=deleted_records,
+    )
     mock_upsert_typesense_documents.return_value = True
 
     # WHEN calling diff_ingest with a timestamp from the previous day
@@ -90,7 +93,7 @@ def test_diff_ingest_no_changes(
     typesense_collection_name: str,
 ) -> None:
     # GIVEN no changed and no delete records
-    mock_extract_changed_records.return_value = []
+    mock_extract_changed_records.return_value = ChangedRecords(new_or_updated=[], deleted=[])
 
     # WHEN calling diff_ingest with a timestamp from the previous day
     last_complete_ingestion_timestamp: datetime = datetime.now(timezone.utc) - timedelta(days=1)
