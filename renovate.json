@@ -36,19 +36,6 @@
       "groupName": "python"
     },
     {
-      "matchManagers": [
-        "pip_requirements"
-      ],
-      "matchUpdateTypes": [
-        "minor",
-        "patch",
-        "pin",
-        "digest"
-      ],
-      "matchCurrentVersion": "!/^0/",
-      "automerge": true
-    },
-    {
       "matchDepTypes": [
         "devDependencies"
       ],
