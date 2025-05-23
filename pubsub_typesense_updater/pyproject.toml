@@ -5,7 +5,7 @@ description = "A Cloud Function consuming domain events received via Pub/Sub to 
 readme = "README.md"
 requires-python = ">=3.13.3"
 dependencies = [
-    "functions-framework==3.8.2",
+    "functions-framework==3.8.3",
     "google-cloud-logging==3.12.1",
     "shared",
     "pyfarmhash==0.4.0",
