@@ -17,6 +17,6 @@ dev = [
     "faker==37.1.0",
     "pre-commit==4.2.0",
     "pytest==8.3.5",
-    "ruff==0.11.9",
+    "ruff==0.11.11",
     "types-pyfarmhash==0.4.0.20240902",
 ]
