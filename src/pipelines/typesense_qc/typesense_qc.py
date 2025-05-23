@@ -33,6 +33,7 @@ def get_profile_ids_bq() -> list[str]:
           user.is_deleted=false
           AND profile IS NOT NULL
           AND user.identity IS NOT NULL
+          AND (profile.name IS NOT NULL OR profile.last_name IS NOT NULL) -- users without first or last name shall not be synced to Typesense 
     """)  # noqa: S608
     return cast(list[str], [row["username"] for row in result])
 
