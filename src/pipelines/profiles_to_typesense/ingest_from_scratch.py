@@ -39,6 +39,7 @@ def load_users() -> list[UserRow]:
           user.is_deleted=false
           AND profile IS NOT NULL
           AND user.identity IS NOT NULL
+          AND (profile.name IS NOT NULL OR profile.last_name IS NOT NULL) -- users without first or last name shall not be synced to Typesense
     """)  # noqa: S608
 
 
