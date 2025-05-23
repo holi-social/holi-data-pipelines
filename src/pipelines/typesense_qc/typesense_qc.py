@@ -1,4 +1,3 @@
-import math
 import pprint
 from typing import cast
 from urllib.parse import quote
@@ -119,33 +118,26 @@ def typesense_qc() -> State:
     volunteering_ids_bq = get_volunteering_ids_bq()
     volunteering_ids_ts = get_ids_ts(ts_client, ts_collection, "volunteering")
 
-    def count_deviates(ids_bq: list[str], ts_ids: list[str]) -> bool:
-        return not math.isclose(len(ids_bq), len(ts_ids), rel_tol=DEVIATION_TOLERANCE_FACTOR)
-
     results = {
         "profile": {
-            "deviates": count_deviates(profile_ids_bq, profile_ids_ts),
             "bq_count": len(profile_ids_bq),
             "ts_count": len(profile_ids_ts),
             "bq_ids_not_in_ts": set(profile_ids_bq) - set(profile_ids_ts),
             "ts_ids_not_in_bq": set(profile_ids_ts) - set(profile_ids_bq),
         },
         "space": {
-            "deviates": count_deviates(space_ids_bq, space_ids_ts),
             "bq_count": len(space_ids_bq),
             "ts_count": len(space_ids_ts),
             "bq_ids_not_in_ts": set(space_ids_bq) - set(space_ids_ts),
             "ts_ids_not_in_bq": set(space_ids_ts) - set(space_ids_bq),
         },
         "task": {
-            "deviates": count_deviates(task_ids_bq, task_ids_bq),
             "bq_count": len(task_ids_bq),
             "ts_count": len(task_ids_bq),
             "bq_ids_not_in_ts": set(task_ids_bq) - set(task_ids_ts),
             "ts_ids_not_in_bq": set(task_ids_ts) - set(task_ids_bq),
         },
         "volunteering": {
-            "deviates": count_deviates(volunteering_ids_bq, volunteering_ids_ts),
             "bq_count": len(volunteering_ids_bq),
             "ts_count": len(volunteering_ids_ts),
             "bq_ids_not_in_ts": set(volunteering_ids_bq) - set(volunteering_ids_ts),
@@ -154,16 +146,16 @@ def typesense_qc() -> State:
     }
 
     all_types = ["profile", "space", "task", "volunteering"]
+    errors = []
 
     for typ in all_types:
-        if results[typ]["deviates"]:
-            logger.error(
-                f"{typ} counts deviate by more than {DEVIATION_TOLERANCE_IN_PERCENT}%: {pprint.pformat(results[typ])}"
-            )
+        if results[typ]["bq_ids_not_in_ts"] or results[typ]["ts_ids_not_in_bq"]:
+            msg = f"BigQuery and Typesense are inconsistent for document type {typ}%: {pprint.pformat(results[typ])}"
+            logger.error(msg)
+            errors.append(msg)
 
-    for typ in all_types:
-        if results[typ]["deviates"]:
-            return Failed(message="See error logs for details")
+    if errors:
+        return Failed(message="\n".join(errors))
 
     logger.info(f"Counts are within tolerance range of {DEVIATION_TOLERANCE_IN_PERCENT}% deviation: {results}")
 
