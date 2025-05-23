@@ -36,6 +36,19 @@
       "groupName": "python"
     },
     {
+      "matchManagers": [
+        "pep621"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "pin",
+        "digest"
+      ],
+      "matchCurrentVersion": "!/^0/",
+      "automerge": true
+    },
+    {
       "matchDepTypes": [
         "devDependencies"
       ],
