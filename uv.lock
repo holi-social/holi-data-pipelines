@@ -448,14 +448,14 @@ wheels = [
 
 [[package]]
 name = "faker"
-version = "37.1.1"
+version = "37.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "tzdata" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/56/67/098348a5f68f8f0d1154c4c4ce6b266a621cc20f78d1385ff8e382c1891e/faker-37.1.1.tar.gz", hash = "sha256:51b967c5962c9a37dccd8fb0d40cc58ee58590bd0f338b3d85e7671c8fa8f9c2", size = 1880384, upload-time = "2025-05-14T15:09:06.656Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/97/4b/5354912eaff922876323f2d07e21408b10867f3295d5f917748341cb6f53/faker-37.3.0.tar.gz", hash = "sha256:77b79e7a2228d57175133af0bbcdd26dc623df81db390ee52f5104d46c010f2f", size = 1901376, upload-time = "2025-05-14T15:24:18.039Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/19/90/ae1bc39626ecec0472df19e2788b762f6eb10c0ab2e65a8f22252b9bcabd/faker-37.1.1-py3-none-any.whl", hash = "sha256:088648a757477ffb5c4eec31f0f1b1a5c73a649719a7df5c2f62af8a3cf6d6fd", size = 1924980, upload-time = "2025-05-14T15:09:03.993Z" },
+    { url = "https://files.pythonhosted.org/packages/ce/99/045b2dae19a01b9fbb23b9971bc04f4ef808e7f3a213d08c81067304a210/faker-37.3.0-py3-none-any.whl", hash = "sha256:48c94daa16a432f2d2bc803c7ff602509699fca228d13e97e379cd860a7e216e", size = 1942203, upload-time = "2025-05-14T15:24:16.159Z" },
 ]
 
 [[package]]
@@ -1744,7 +1744,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "faker", specifier = "==37.1.1" },
+    { name = "faker", specifier = "==37.3.0" },
     { name = "pre-commit", specifier = "==4.2.0" },
     { name = "pytest", specifier = "==8.3.5" },
     { name = "ruff", specifier = "==0.11.11" },
@@ -2391,7 +2391,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "faker", specifier = "==37.1.1" },
+    { name = "faker", specifier = "==37.3.0" },
     { name = "mypy", specifier = "==1.15.0" },
     { name = "pre-commit", specifier = "==4.2.0" },
     { name = "pytest", specifier = "==8.3.5" },
