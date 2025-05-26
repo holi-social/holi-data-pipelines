@@ -2356,7 +2356,6 @@ dependencies = [
     { name = "shared" },
     { name = "trycast" },
     { name = "typing-extensions" },
-    { name = "urllib3" },
     { name = "whenever" },
 ]
 
@@ -2387,7 +2386,6 @@ requires-dist = [
     { name = "shared", virtual = "shared" },
     { name = "trycast", specifier = "==1.2.1" },
     { name = "typing-extensions", specifier = "==4.13.2" },
-    { name = "urllib3", specifier = "==2.4.0" },
     { name = "whenever", specifier = "==0.8.3" },
 ]
 
