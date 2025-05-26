@@ -27,5 +27,5 @@ dev = [
     "ruff==0.11.11",
     "types-python-dateutil==2.9.0.20250516",
     "types-pyyaml==6.0.12.20250402",
-    "types-requests==2.32.0.20250328",
+    "types-requests==2.32.0.20250515",
 ]
