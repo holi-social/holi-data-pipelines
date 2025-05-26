@@ -26,11 +26,7 @@ from src.pipelines.crawlers.crawler_common_code import (
     update_last_run_day,
 )
 from src.pipelines.crawlers.crawler_config import CrawlerConfig
-from src.pipelines.crawlers.aktion_mensch.proxy_request import (
-    proxy_request,
-    setup_ssh_tunnel,
-    cleanup_ssh_tunnel,
-)
+from src.pipelines.crawlers.aktion_mensch.curl_request import curl_request
 
 logger = prefect.logging.get_logger()
 _CONFIG: Optional[CrawlerConfig] = None
@@ -74,18 +70,18 @@ def get_auth_headers() -> Dict[str, str]:
     }
 
 
-class ProxyRestCrawler(RestCrawler):
-    """RestCrawler that routes requests through SSH tunnel."""
+class CurlRestCrawler(RestCrawler):
+    """RestCrawler that makes direct HTTP requests using curl."""
 
     async def _fetch_documents(self, retry_client: Any, paging_info: PagingInfo) -> Any:
-        """Override to use proxy for document fetching."""
-        return await proxy_request(url=self.url, headers=self.headers, params=self.get_params(paging_info))
+        """Override to use curl_request for document fetching."""
+        return await curl_request(url=self.url, headers=self.headers, params=self.get_params(paging_info))
 
     async def _fetch_total_entries(self, retry_client: Any) -> int:
-        """Override to use proxy for fetching total entry count."""
+        """Override to use curl_request for fetching total entry count."""
         if isinstance(self.get_full_count, int):
             return self.get_full_count
-        data = await proxy_request(url=self.url, headers=self.headers, params=self.get_params(PagingInfo(0, 1)))
+        data = await curl_request(url=self.url, headers=self.headers, params=self.get_params(PagingInfo(0, 1)))
         return self.get_full_count(data)
 
 
@@ -125,7 +121,7 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
                     queue.put_nowait(processed_document)
                     document_count += 1
 
-        await ProxyRestCrawler(
+        await CurlRestCrawler(
             url=config().api_url,
             get_params=paging_params,
             get_full_count=lambda page: page.get("meta", {}).get("pagination", {}).get("total", 0),
@@ -163,22 +159,11 @@ def crawl_aktion_mensch(force_run: bool = False, wait_for_bq: bool = True) -> No
                 logger.warning("Streaming buffer not empty. Aborting flow.")
                 return
 
-        # Set up SSH tunnel with service account if available
-        try:
-            service_account_key = secret_value("aktion-mensch-ssh-service-account")
-            setup_ssh_tunnel(service_account_key=service_account_key)
-        except Exception as e:
-            logger.warning(f"Failed to set up SSH tunnel with service account: {e}")
-            setup_ssh_tunnel()
-
-        try:
-            update_last_run_day(config())
-            processed_count = asyncio.run(source_to_sink(crawl(), bigquery_sink(config(), _STOP_DOC)))
-            update_last_successful_day(config())
-            report_number_of_processed_entities(processed_count)
-            logger.info(f"Successfully processed {processed_count} Aktion Mensch opportunities")
-        finally:
-            cleanup_ssh_tunnel()
+        update_last_run_day(config())
+        processed_count = asyncio.run(source_to_sink(crawl(), bigquery_sink(config(), _STOP_DOC)))
+        update_last_successful_day(config())
+        report_number_of_processed_entities(processed_count)
+        logger.info(f"Successfully processed {processed_count} Aktion Mensch opportunities")
 
         if wait_for_bq:
             wait_for_bigquery_data_to_be_accessible(table_name)
