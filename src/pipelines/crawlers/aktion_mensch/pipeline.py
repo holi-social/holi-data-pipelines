@@ -68,6 +68,7 @@ def get_auth_headers() -> Dict[str, str]:
     return {
         "x-client_id": credentials.get("client_id"),
         "x-client_secret": credentials.get("client_secret"),
+        "user-agent": "curl/7.88.1",
     }
 
 
