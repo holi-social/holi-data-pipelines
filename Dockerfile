@@ -2,6 +2,8 @@ FROM europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefec
 COPY --from=europe-north1-docker.pkg.dev/holi-shared/ghcr-io-remote/astral-sh/uv:latest /uv /uvx /bin/
 
 FROM builder AS app
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /opt/prefect/holi-data-pipelines/
 COPY uv.lock pyproject.toml /opt/prefect/holi-data-pipelines/
 COPY shared /opt/prefect/holi-data-pipelines/shared
