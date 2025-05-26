@@ -153,7 +153,7 @@ resource "prefect_variable" "prefect_environment" {
 }
 
 resource "prefect_variable" "bigquery_okuna_dataset" {
-  name  = "bigquery_okuna_dataset"
+  name = "bigquery_okuna_dataset"
   value = {
     project = local.default_project
     dataset = local.environment == "production" ? "okuna_production_public" : "okuna_staging_public"
@@ -271,7 +271,7 @@ resource "google_cloud_run_v2_service" "work_pool_cloud_run_worker" {
       }
     }
     vpc_access {
-      egress = "PRIVATE_RANGES_ONLY"
+      egress = "ALL_TRAFFIC"
       network_interfaces {
         network = data.terraform_remote_state.holi_infra_state.outputs.google_compute_network_default_name
       }
