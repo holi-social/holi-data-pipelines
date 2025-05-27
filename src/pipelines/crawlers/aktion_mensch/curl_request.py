@@ -25,9 +25,4 @@ async def curl_request(
         except Exception as e:
             logger.debug(f"Debug echo call failed: {e}")  # Log but don't fail the main request
 
-        response = await client.get(url, headers=headers, params=params)
-        logger.info(f"Response status: {response.status_code}")
-        logger.info(f"Response headers: {dict(response.headers)}")
-
-        response.raise_for_status()
-        return response.json()
+        return {}
