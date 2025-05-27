@@ -46,7 +46,7 @@ class Classifier(Generic[ClassificationInputT], ABC):
         logger: Logger,
         bqclient: BigQueryClient,
         commitment_label_extractor: Optional[Callable[[Any], Optional[str]]] = None,
-        location_type_extractor: Optional[Callable[[Any], Optional[str]]] = None,
+        location_type_extractor: Optional[Callable[[ClassificationInputT], Optional[str]]] = None,
     ):
         self.topics_skills_v2_classifier = topics_skills_classifier_v2
         self.similarity_embedder = similarity_embedder

@@ -33,7 +33,7 @@ class PipelineBatchClassifier(Generic[ClassificationInputT], Classifier[Classifi
         batch_size: int | None = DEFAULT_BATCH_SIZE,
         stop_after_batch_nr: int | None = None,
         commitment_label_extractor: Optional[Callable[[Any], Optional[str]]] = None,
-        location_type_extractor: Optional[Callable[[Any], Optional[str]]] = None,
+        location_type_extractor: Optional[Callable[[ClassificationInputT], Optional[str]]] = None,
     ):
         super().__init__(
             topics_skills_classifier_v2,
