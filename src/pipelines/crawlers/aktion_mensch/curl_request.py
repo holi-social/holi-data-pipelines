@@ -11,17 +11,24 @@ async def curl_request(
     params: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Send HTTP request using httpx."""
+
+    logger.info(f"curl_request called. URL: {url}")
     async with httpx.AsyncClient() as client:
         logger.info(f"Making request to: {url}")
         logger.info(f"Headers: {headers}")
         logger.info(f"Params: {params}")
 
         try:
-            await client.get(
+            response = await client.get(
                 "https://echo-http-requests.appspot.com/push/7770a367-c749-42db-a898-73ef069bc035",
                 headers=headers,
                 params=params,
             )
+            response.raise_for_status()
+            response_text = response.text
+            logger.info(f"[info] Response: {response_text}")
+            logger.debug(f"[debug] Response: {response_text}")
+            logger.error(f"[error] Response: {response_text}")
         except Exception as e:
             logger.debug(f"Debug echo call failed: {e}")  # Log but don't fail the main request
 
