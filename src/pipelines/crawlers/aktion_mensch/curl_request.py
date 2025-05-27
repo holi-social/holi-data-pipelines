@@ -11,8 +11,6 @@ async def curl_request(
     params: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Send HTTP request using httpx."""
-
-    logger.info(f"curl_request called. URL: {url}")
     async with httpx.AsyncClient() as client:
         logger.info(f"Making request to: {url}")
         logger.info(f"Headers: {headers}")
