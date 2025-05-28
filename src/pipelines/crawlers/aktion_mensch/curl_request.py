@@ -1,8 +1,8 @@
 from typing import Any, Dict, Optional
 import httpx
-import prefect
+from src.common.logging.PipelineLogger import PipelineLogger
 
-logger = prefect.logging.get_logger()
+logger = PipelineLogger(__name__)
 
 
 async def curl_request(
