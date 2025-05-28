@@ -26,12 +26,13 @@ from src.pipelines.crawlers.crawler_common_code import (
     update_last_run_day,
 )
 from src.pipelines.crawlers.crawler_config import CrawlerConfig
-from src.pipelines.crawlers.aktion_mensch.curl_request import curl_request
 
 logger = prefect.logging.get_logger()
 _CONFIG: Optional[CrawlerConfig] = None
 _STOP_DOC = object()  # Signal object for stopping async processes
 
+# Columns needing conversion to JSON strings before BQ insert
+# (Handles complex objects/lists for STRING cols & required for non-repeated JSON cols like 'attribute')
 AM_COLUMNS_TO_JSON_STRING = [
     "durchfuehrendeOrganisation",
     "bild",
@@ -71,21 +72,6 @@ def get_auth_headers() -> Dict[str, str]:
     }
 
 
-class CurlRestCrawler(RestCrawler):
-    """RestCrawler that makes direct HTTP requests using curl."""
-
-    async def _fetch_documents(self, retry_client: Any, paging_info: PagingInfo) -> Any:
-        """Override to use curl_request for document fetching."""
-        return await curl_request(url=self.url, headers=self.headers, params=self.get_params(paging_info))
-
-    async def _fetch_total_entries(self, retry_client: Any) -> int:
-        """Override to use curl_request for fetching total entry count."""
-        if isinstance(self.get_full_count, int):
-            return self.get_full_count
-        data = await curl_request(url=self.url, headers=self.headers, params=self.get_params(PagingInfo(0, 1)))
-        return self.get_full_count(data)
-
-
 @task
 def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
     """Returns an async function that crawls the API and puts processed items onto a queue."""
@@ -109,7 +95,7 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
                 return
 
             if not isinstance(page, dict) or "data" not in page or not isinstance(page["data"], list):
-                logger.warning(f"Unexpected page structure: {type(page)}")
+                logger.warning(f"Received unexpected page structure: {type(page)}")
                 return
 
             for document in page["data"]:
@@ -119,11 +105,17 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
                     for col in AM_COLUMNS_TO_JSON_STRING:
                         if col in processed_document and processed_document[col] is not None:
                             processed_document[col] = json.dumps(processed_document[col])
+
                     queue.put_nowait(processed_document)
                     document_count += 1
+                else:
+                    logger.warning(f"Skipping non-dict item in page data: {type(document)}")
 
-        await CurlRestCrawler(
-            url=config().api_url,
+        crawler_api_url = config().api_url
+        logger.info(f"Crawler starting request to: {crawler_api_url}")
+
+        await RestCrawler(
+            url=crawler_api_url,
             get_params=paging_params,
             get_full_count=lambda page: page.get("meta", {}).get("pagination", {}).get("total", 0),
             process_page=add_page_to_queue,
@@ -141,9 +133,7 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
 def crawl_aktion_mensch(force_run: bool = False, wait_for_bq: bool = True) -> None:
     """
     Main flow: crawl Aktion Mensch API and store results in BigQuery.
-
     Checks if run already completed for the day unless `force_run` is True.
-
     Args:
         force_run: Run even if already completed today.
         wait_for_bq: Wait for data to be queryable after load.
@@ -172,5 +162,6 @@ def crawl_aktion_mensch(force_run: bool = False, wait_for_bq: bool = True) -> No
         logger.info("Skipping crawler - already ran successfully today")
 
 
+# Allows running the flow directly for testing/debugging (requires Prefect connection)
 if __name__ == "__main__":
     crawl_aktion_mensch(force_run=True, wait_for_bq=False)  # type: ignore
