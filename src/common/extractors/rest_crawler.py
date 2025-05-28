@@ -94,7 +94,7 @@ class RestCrawler:
             await self.process_page(page)
 
     async def crawl(self) -> None:
-        async with ClientSession(timeout=self.timeout) as session:
+        async with ClientSession(timeout=self.timeout, skip_auto_headers=["content-type"]) as session:
             retry_client = RetryClient(client_session=session, retry_options=self.retry_options)
             number_of_total_entries = await self._fetch_total_entries(retry_client)
             if number_of_total_entries > self.page_size:  # keep quiet if only 1 page will be fetched
