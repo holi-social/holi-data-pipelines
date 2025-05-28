@@ -9,6 +9,7 @@ from prefect.events import DeploymentTriggerTypes, TriggerTypes
 
 from src.common.variables import variable_value_as
 from src.pipelines.all_to_typesense.ingest_from_scratch import all_to_typesense_ingest_from_scratch_flow
+from src.pipelines.am_test import am_test
 from src.pipelines.crawlers.aktion_mensch.pipeline import crawl_aktion_mensch
 from src.pipelines.crawlers.betterplace.pipeline import crawl_betterplace
 from src.pipelines.crawlers.voltastics.pipeline import crawl_voltastics
@@ -170,6 +171,10 @@ def get_deployments() -> List[RunnerDeployment]:
         deployment_for_flow(
             failing_flow,
             description="Failing flow, used to test e.g. monitoring/alerting",
+        ),
+        deployment_for_flow(
+            am_test,
+            description="Flow to test Aktion Mensch API access",
         ),
     ]
 
