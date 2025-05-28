@@ -52,7 +52,10 @@ def config() -> CrawlerConfig:
         _CONFIG = CrawlerConfig(
             state_variable_name="aktion_mensch_crawler_state",
             api_url=cast(str, variable_value_as(str, "aktion_mensch_api_url")),
-            bigquery_table=cast(Dict[str, str], variable_value_as(Dict[str, str], "aktion_mensch_crawler_table")),
+            bigquery_table=cast(
+                Dict[str, str],
+                variable_value_as(Dict[str, str], "aktion_mensch_crawler_table"),
+            ),
         )
     return _CONFIG
 
