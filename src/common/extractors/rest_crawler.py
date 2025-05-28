@@ -1,6 +1,6 @@
 import asyncio
 from dataclasses import dataclass
-from typing import Any, Callable, Optional, Awaitable
+from typing import Any, Callable, Optional, Awaitable, Iterable
 from urllib.parse import urlencode
 
 import prefect
@@ -36,6 +36,7 @@ class RestCrawler:
         url: str,
         get_params: Callable[[PagingInfo], dict[str, Any]],
         get_full_count: Callable[[Any], int] | int,
+        skip_auto_headers: Optional[Iterable[str]],
         process_page: Callable[[Any], Awaitable[None]],
         page_size: int = 50,
         headers: Optional[dict[str, str]] = None,
@@ -48,6 +49,7 @@ class RestCrawler:
         self.url = url
         self.get_params = get_params
         self.get_full_count = get_full_count
+        self.skip_auto_headers = skip_auto_headers
         self.page_size = page_size
         self.headers = headers
         self.process_page = process_page
@@ -94,7 +96,7 @@ class RestCrawler:
             await self.process_page(page)
 
     async def crawl(self) -> None:
-        async with ClientSession(timeout=self.timeout, skip_auto_headers=["content-type"]) as session:
+        async with ClientSession(timeout=self.timeout, skip_auto_headers=self.skip_auto_headers) as session:
             retry_client = RetryClient(client_session=session, retry_options=self.retry_options)
             number_of_total_entries = await self._fetch_total_entries(retry_client)
             if number_of_total_entries > self.page_size:  # keep quiet if only 1 page will be fetched

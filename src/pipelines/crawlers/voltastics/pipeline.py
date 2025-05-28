@@ -72,6 +72,7 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
             url=str(config().api_url),
             get_params=paging_params,
             get_full_count=lambda page: page.get("totalEntries", 0),
+            skip_auto_headers=None,
             process_page=add_page_to_queue,
             headers={"x-voltastics-token": cast(str, secret_value("voltastics-api-key"))},
             stop_page=_STOP_DOC,

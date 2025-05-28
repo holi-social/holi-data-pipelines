@@ -122,6 +122,7 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
             url=crawler_api_url,
             get_params=paging_params,
             get_full_count=lambda page: page.get("meta", {}).get("pagination", {}).get("total", 0),
+            skip_auto_headers=["content-type", "accept-encoding"],
             process_page=add_page_to_queue,
             headers=get_auth_headers(),
             page_size=100,
