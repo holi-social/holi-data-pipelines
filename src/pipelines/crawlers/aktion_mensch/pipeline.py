@@ -5,7 +5,6 @@ import json
 from asyncio import Queue
 from typing import Any, Dict, cast, Callable, Coroutine, Optional
 
-import prefect
 from prefect import task
 
 from src.common.extractors.rest_crawler import RestCrawler, PagingInfo
@@ -14,6 +13,7 @@ from src.common.loaders.bq_loader import (
     delete_partition,
     wait_for_bigquery_data_to_be_accessible,
 )
+from src.common.logging.PipelineLogger import PipelineLogger
 from src.common.monitoring.flow import monitored_flow
 from src.common.monitoring.metrics import report_number_of_processed_entities
 from src.common.variables import variable_value_as, secret_value
@@ -27,7 +27,8 @@ from src.pipelines.crawlers.crawler_common_code import (
 )
 from src.pipelines.crawlers.crawler_config import CrawlerConfig
 
-logger = prefect.logging.get_logger()
+logger = PipelineLogger(__name__)
+
 _CONFIG: Optional[CrawlerConfig] = None
 _STOP_DOC = object()  # Signal object for stopping async processes
 
