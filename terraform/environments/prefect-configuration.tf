@@ -272,9 +272,7 @@ resource "google_cloud_run_v2_service" "work_pool_cloud_run_worker" {
     }
     vpc_access {
       egress = "ALL_TRAFFIC"
-      network_interfaces {
-        network = data.terraform_remote_state.holi_infra_state.outputs.google_compute_network_default_name
-      }
+      connector = data.terraform_remote_state.holi_infra_state.outputs.vpc_access_connector_id
     }
     max_instance_request_concurrency = 100 # 0 means thread safe, no restriction on max concurrency
     labels = {
