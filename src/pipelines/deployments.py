@@ -13,10 +13,12 @@ from src.pipelines.aktion_mensch_to_typesense.ingest_from_scratch import (
 )
 from src.pipelines.aktion_mensch_to_typesense.ingest_updates import aktion_mensch_to_typesense_ingest_updates_flow
 from src.pipelines.all_to_typesense.ingest_from_scratch import all_to_typesense_ingest_from_scratch_flow
+from src.pipelines.am_test import am_test
 from src.pipelines.crawlers.aktion_mensch.pipeline import crawl_aktion_mensch
 from src.pipelines.crawlers.betterplace.pipeline import crawl_betterplace
 from src.pipelines.crawlers.voltastics.pipeline import crawl_voltastics
 from src.pipelines.example.pipeline import hello_universe
+from src.pipelines.failing_flow import failing_flow
 from src.pipelines.profiles_to_typesense.ingest_from_scratch import profiles_to_typesense_ingest_from_scratch_flow
 from src.pipelines.spaces_to_typesense.ingest_from_scratch import spaces_to_typesense_ingest_from_scratch_flow
 from src.pipelines.task_classification.task_classification import task_classification_flow
@@ -179,6 +181,14 @@ def get_deployments() -> List[RunnerDeployment]:
             aktion_mensch_to_typesense_ingest_updates_flow,
             description="Orchestrates the ETL pipeline to move Aktion Mensch volunteering updates from BigQuery to Typesense",
             job_variables_overrides={"memory": "4096Mi"},
+        ),
+        deployment_for_flow(
+            failing_flow,
+            description="Failing flow, used to test e.g. monitoring/alerting",
+        ),
+        deployment_for_flow(
+            am_test,
+            description="Flow to test Aktion Mensch API access",
         ),
     ]
 

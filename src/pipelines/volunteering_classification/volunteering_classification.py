@@ -39,10 +39,23 @@ class VolunteeringBatchClassifier(PipelineBatchClassifier[VolunteeringClassifica
         )
 
     def _to_classification_input(self, item: Any) -> VolunteeringClassificationInput:
-        for field in ["id", "hash", "title"]:
-            if field not in item:
+        for field in ["id", "hash", "title", "description"]:
+            if not hasattr(item, field):
                 raise ValueError(f"Dictionary missing required field {field}")
-        return VolunteeringClassificationInput(**item)
+        return VolunteeringClassificationInput(
+            id=item.id,
+            hash=item.hash,
+            title=item.title,
+            description=item.description,
+            topics_skills_embedding_v2=item.topics_skills_embedding_v2
+            if hasattr(item, "topics_skills_embedding_v2")
+            else None,
+            topics_v2=item.topics_v2 if hasattr(item, "topics_v2") else None,
+            skills_v2=item.skills_v2 if hasattr(item, "skills_v2") else None,
+            similarity_embedding=item.similarity_embedding if hasattr(item, "similarity_embedding") else None,
+            hashTags=item.hashTags if hasattr(item, "hashTags") else None,
+            uses=item.uses if hasattr(item, "uses") else None,
+        )
 
 
 @monitored_flow

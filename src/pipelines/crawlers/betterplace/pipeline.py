@@ -76,6 +76,7 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
                     url=categories_url(project_id),
                     get_params=lambda _: {},
                     get_full_count=default_page_size,  # instead of fetching, we just tell the crawler 1 page is enough
+                    skip_auto_headers=None,
                     process_page=process_page,
                     page_size=default_page_size,
                     headers=_HEADERS,
@@ -107,6 +108,7 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
             url=projects_url(),
             get_params=projects_paging_params,
             get_full_count=lambda page: page.get("total_entries", 0),
+            skip_auto_headers=[],
             process_page=add_page_to_queue,
             headers=_HEADERS,
             parallelism=20,

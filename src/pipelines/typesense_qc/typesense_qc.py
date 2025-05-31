@@ -1,5 +1,4 @@
-import json
-import math
+import pprint
 from typing import cast
 from urllib.parse import quote
 
@@ -18,14 +17,14 @@ from src.pipelines.bigquery import (
 
 logger = PipelineLogger(__name__)
 
-DEVIATION_TOLERANCE_FACTOR = 0.01
-DEVIATION_TOLERANCE_IN_PERCENT = 1
+DEVIATION_TOLERANCE_FACTOR = 0
+DEVIATION_TOLERANCE_IN_PERCENT = 0
 
 
 @task
-def get_profile_count_bq() -> int:
+def get_profile_ids_bq() -> list[str]:
     result = extract_data_from_bigquery(f"""
-        SELECT count(*) as user_count
+        SELECT username
         FROM `{bigquery_okuna_dataset()}.openbook_auth_user` user
         LEFT OUTER JOIN `{bigquery_okuna_dataset()}.openbook_auth_userprofile` profile
         ON user.id=profile.user_id
@@ -33,51 +32,73 @@ def get_profile_count_bq() -> int:
           user.is_deleted=false
           AND profile IS NOT NULL
           AND user.identity IS NOT NULL
+          AND (profile.name IS NOT NULL OR profile.last_name IS NOT NULL) -- users without first or last name shall not be synced to Typesense 
     """)  # noqa: S608
-    return cast(int, result[0]["user_count"])
+    return cast(list[str], [row["username"] for row in result])
 
 
 @task
-def get_space_count_bq() -> int:
+def get_space_ids_bq() -> list[str]:
     result = extract_data_from_bigquery(f"""
-        SELECT count(*) as space_count
+        SELECT id
         FROM `{bigquery_okuna_dataset()}.openbook_communities_community`
         WHERE is_deleted=false
     """)  # noqa: S608
-    return cast(int, result[0]["space_count"])
+    return cast(list[str], [row["id"] for row in result])
 
 
 @task
-def get_task_count_bq() -> int:
+def get_task_ids_bq() -> list[str]:
     result = extract_data_from_bigquery(f"""
-        SELECT count(*) AS task_count
+        SELECT id
         FROM `{tasks_with_classifications()}`
     """)  # noqa: S608
-    return cast(int, result[0]["task_count"])
+    return cast(list[str], [row["id"] for row in result])
 
 
 @task
-def get_volunteering_count_bq() -> int:
+def get_volunteering_ids_bq() -> list[str]:
     result = extract_data_from_bigquery(f"""
-        SELECT count(*) as volunteering_count
+        SELECT id
         FROM `{volunteering_voltastics_classified_enriched_partitioned()}`
         WHERE TIMESTAMP_TRUNC(partitiontime, DAY) = TIMESTAMP_TRUNC(CURRENT_TIMESTAMP(), DAY)
     """)  # noqa: S608
-    return cast(int, result[0]["volunteering_count"])
+    return cast(list[str], [row["id"] for row in result])
 
 
 @task
-def get_count_ts(ts_client: TypesenseClient, ts_collection: str, document_type: str) -> int:
+def get_ids_ts(ts_client: TypesenseClient, ts_collection: str, document_type: str) -> list[str]:
+    def strip_prefix(id: str) -> str:
+        return id.split(f"{document_type}_")[1]
+
     url_encoded_ts_collection = quote(ts_collection)
-    result = ts_client.client.collections[url_encoded_ts_collection].documents.search(
-        {
-            "q": "*",
-            "filter_by": f"type:={document_type}",
-            "page": 1,
-            "per_page": 1,
-        }
-    )
-    return result["found"]
+
+    all_results = []
+    page = 1
+    per_page = 250
+    has_more = True
+
+    while has_more:
+        result = ts_client.client.collections[url_encoded_ts_collection].documents.search(
+            {
+                "q": "*",
+                "filter_by": f"type:={document_type}",
+                "page": page,
+                "per_page": per_page,
+                "include_fields": "id",
+            }
+        )
+
+        page_results = [strip_prefix(cast(str, row["document"]["id"])) for row in result["hits"]]
+        all_results.extend(page_results)
+
+        # Check if there are more results to fetch
+        if len(page_results) < per_page:
+            has_more = False
+        else:
+            page += 1
+
+    return all_results
 
 
 @flow
@@ -85,43 +106,58 @@ def typesense_qc() -> State:
     ts_client = TypesenseClient(TypesenseClientConfig.from_env())
     ts_collection = cast(str, variable_value("typesense_collection"))
 
-    profile_count_bq = get_profile_count_bq()
-    profile_count_ts = get_count_ts(ts_client, ts_collection, "profile")
-    profile_count_deviates = not math.isclose(profile_count_bq, profile_count_ts, rel_tol=DEVIATION_TOLERANCE_FACTOR)
+    profile_ids_bq = get_profile_ids_bq()
+    profile_ids_ts = get_ids_ts(ts_client, ts_collection, "profile")
 
-    space_count_bq = get_space_count_bq()
-    space_count_ts = get_count_ts(ts_client, ts_collection, "space")
-    space_count_deviates = not math.isclose(space_count_bq, space_count_ts, rel_tol=DEVIATION_TOLERANCE_FACTOR)
+    space_ids_bq = get_space_ids_bq()
+    space_ids_ts = get_ids_ts(ts_client, ts_collection, "space")
 
-    task_count_bq = get_task_count_bq()
-    task_count_ts = get_count_ts(ts_client, ts_collection, "task")
-    task_count_deviates = not math.isclose(task_count_bq, task_count_ts, rel_tol=DEVIATION_TOLERANCE_FACTOR)
+    task_ids_bq = get_task_ids_bq()
+    task_ids_ts = get_ids_ts(ts_client, ts_collection, "task")
 
-    volunteering_count_bq = get_volunteering_count_bq()
-    volunteering_count_ts = get_count_ts(ts_client, ts_collection, "volunteering")
-    volunteering_count_deviates = not math.isclose(
-        volunteering_count_bq, volunteering_count_ts, rel_tol=DEVIATION_TOLERANCE_FACTOR
-    )
+    volunteering_ids_bq = get_volunteering_ids_bq()
+    volunteering_ids_ts = get_ids_ts(ts_client, ts_collection, "volunteering")
 
-    counts = {
-        "profile_count_bq": profile_count_bq,
-        "profile_count_ts": profile_count_ts,
-        "space_count_bq": space_count_bq,
-        "space_count_ts": space_count_ts,
-        "task_count_bq": task_count_bq,
-        "task_count_ts": task_count_ts,
-        "volunteering_count_bq": volunteering_count_bq,
-        "volunteering_count_ts": volunteering_count_ts,
+    results = {
+        "profile": {
+            "bq_count": len(profile_ids_bq),
+            "ts_count": len(profile_ids_ts),
+            "bq_ids_not_in_ts": set(profile_ids_bq) - set(profile_ids_ts),
+            "ts_ids_not_in_bq": set(profile_ids_ts) - set(profile_ids_bq),
+        },
+        "space": {
+            "bq_count": len(space_ids_bq),
+            "ts_count": len(space_ids_ts),
+            "bq_ids_not_in_ts": set(space_ids_bq) - set(space_ids_ts),
+            "ts_ids_not_in_bq": set(space_ids_ts) - set(space_ids_bq),
+        },
+        "task": {
+            "bq_count": len(task_ids_bq),
+            "ts_count": len(task_ids_bq),
+            "bq_ids_not_in_ts": set(task_ids_bq) - set(task_ids_ts),
+            "ts_ids_not_in_bq": set(task_ids_ts) - set(task_ids_bq),
+        },
+        "volunteering": {
+            "bq_count": len(volunteering_ids_bq),
+            "ts_count": len(volunteering_ids_ts),
+            "bq_ids_not_in_ts": set(volunteering_ids_bq) - set(volunteering_ids_ts),
+            "ts_ids_not_in_bq": set(volunteering_ids_ts) - set(volunteering_ids_bq),
+        },
     }
 
-    if profile_count_deviates or space_count_deviates or task_count_deviates or volunteering_count_deviates:
-        message = f"Some counts deviate by more than {DEVIATION_TOLERANCE_IN_PERCENT}%: {json.dumps(counts, indent=4)}"
-        logger.error(message)
-        return Failed(message=message)
+    all_types = ["profile", "space", "task", "volunteering"]
+    errors = []
 
-    logger.info(
-        f"Counts are within tolerance range of {DEVIATION_TOLERANCE_IN_PERCENT}% deviation: {json.dumps(counts, indent=4)}"
-    )
+    for typ in all_types:
+        if results[typ]["bq_ids_not_in_ts"] or results[typ]["ts_ids_not_in_bq"]:
+            msg = f"BigQuery and Typesense are inconsistent for document type {typ}%: {pprint.pformat(results[typ])}"
+            logger.error(msg)
+            errors.append(msg)
+
+    if errors:
+        return Failed(message="\n".join(errors))
+
+    logger.info(f"Counts are within tolerance range of {DEVIATION_TOLERANCE_IN_PERCENT}% deviation: {results}")
 
     return Completed()
 

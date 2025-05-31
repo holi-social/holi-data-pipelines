@@ -5,7 +5,6 @@ import json
 from asyncio import Queue
 from typing import Any, Dict, cast, Callable, Coroutine, Optional
 
-import prefect
 from prefect import task
 
 from src.common.extractors.rest_crawler import RestCrawler, PagingInfo
@@ -14,6 +13,7 @@ from src.common.loaders.bq_loader import (
     delete_partition,
     wait_for_bigquery_data_to_be_accessible,
 )
+from src.common.logging.PipelineLogger import PipelineLogger
 from src.common.monitoring.flow import monitored_flow
 from src.common.monitoring.metrics import report_number_of_processed_entities
 from src.common.variables import variable_value_as, secret_value
@@ -27,7 +27,8 @@ from src.pipelines.crawlers.crawler_common_code import (
 )
 from src.pipelines.crawlers.crawler_config import CrawlerConfig
 
-logger = prefect.logging.get_logger()
+logger = PipelineLogger(__name__)
+
 _CONFIG: Optional[CrawlerConfig] = None
 _STOP_DOC = object()  # Signal object for stopping async processes
 
@@ -52,7 +53,10 @@ def config() -> CrawlerConfig:
         _CONFIG = CrawlerConfig(
             state_variable_name="aktion_mensch_crawler_state",
             api_url=cast(str, variable_value_as(str, "aktion_mensch_api_url")),
-            bigquery_table=cast(Dict[str, str], variable_value_as(Dict[str, str], "aktion_mensch_crawler_table")),
+            bigquery_table=cast(
+                Dict[str, str],
+                variable_value_as(Dict[str, str], "aktion_mensch_crawler_table"),
+            ),
         )
     return _CONFIG
 
@@ -68,6 +72,7 @@ def get_auth_headers() -> Dict[str, str]:
     return {
         "x-client_id": credentials.get("client_id"),
         "x-client_secret": credentials.get("client_secret"),
+        "user-agent": "curl/7.88.1",
     }
 
 
@@ -117,6 +122,7 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
             url=crawler_api_url,
             get_params=paging_params,
             get_full_count=lambda page: page.get("meta", {}).get("pagination", {}).get("total", 0),
+            skip_auto_headers=["content-type", "accept-encoding"],
             process_page=add_page_to_queue,
             headers=get_auth_headers(),
             page_size=100,
