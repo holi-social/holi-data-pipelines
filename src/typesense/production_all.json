@@ -99,6 +99,7 @@
         {"name": "organizer_image_url", "type": "string", "optional": true, "index":  false},
         {"name": "external_url", "type": "string", "optional": true, "index":  false},
         {"name": "source", "type": "string", "optional": true, "index":  false},
+        {"name": "commitment_label", "type": "string", "optional": true, "facet": true},
         {"name": "space_id", "type": "string", "optional": true}
     ]
 }

@@ -18,6 +18,7 @@ from src.pipelines.tasks_to_typesense.ingest_from_scratch import (
 from src.pipelines.typesense import schema_path
 from src.pipelines.volunteering_to_typesense.ingest_updates import volunteering_to_typesense_ingest_updates
 from src.pipelines.volunteering_to_typesense.tasks import store_last_complete_ingestion_timestamp
+from src.pipelines.aktion_mensch_to_typesense.ingest_from_scratch import aktion_mensch_to_typesense_ingest_from_scratch
 
 logger = PipelineLogger(__name__)
 
@@ -68,6 +69,14 @@ def all_to_typesense_ingest_from_scratch_flow() -> State:
     if isinstance(volunteering_result, State) and volunteering_result.is_failed():
         return Failed(message=volunteering_result.message)
 
+    logger.info("Ingesting Aktion Mensch volunteering from scratch")
+    aktion_mensch_result = aktion_mensch_to_typesense_ingest_from_scratch(
+        typesense_client=typesense_client,
+        typesense_collection_name=next_collection,
+    )
+    if isinstance(aktion_mensch_result, State) and aktion_mensch_result.is_failed():
+        return Failed(message=aktion_mensch_result.message)
+
     logger.info(f'Swapping alias {alias_name} to point to newly ingested collection "{next_collection}"')
     typesense_client.set_active_collection(alias_name, next_collection)
     logger.info(f'Alias {alias_name} is now pointing to "{next_collection}".')
@@ -79,7 +88,10 @@ def all_to_typesense_ingest_from_scratch_flow() -> State:
     store_last_complete_ingestion_timestamp(datetime.now(timezone.utc))
 
     report_number_of_processed_entities(
-        cast(int, profiles_result) + cast(int, spaces_result) + cast(int, volunteering_result)
+        cast(int, profiles_result)
+        + cast(int, spaces_result)
+        + cast(int, volunteering_result)
+        + cast(int, aktion_mensch_result)
     )
 
     return Completed()

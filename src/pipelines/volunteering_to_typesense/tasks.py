@@ -12,6 +12,7 @@ from src.common.loaders.typesense_loader import upsert_typesense_documents
 from src.common.logging.PipelineLogger import PipelineLogger
 from src.common.typesense_client import TypesenseClient
 from src.common.variables import variable_value
+from src.pipelines.constants import LAST_INGESTION_TIMESTAMP_KEY, VOLUNTEERING_STATE_VARIABLE
 from src.pipelines.volunteering_to_typesense.typesense_transformer import transform_row
 
 logger = PipelineLogger(__name__)
@@ -125,8 +126,8 @@ def validate_collection(typesense_client: TypesenseClient, collection_name: str)
 
 
 def load_last_complete_ingestion_timestamp() -> datetime | None:
-    state = cast(dict[str, Any], variable_value("volunteering_to_typesense_state"))
-    timestamp_str = state.get("last_complete_ingestion_timestamp")
+    state = cast(dict[str, Any], variable_value(VOLUNTEERING_STATE_VARIABLE))
+    timestamp_str = state.get(LAST_INGESTION_TIMESTAMP_KEY)
     if not timestamp_str:
         return None
     else:
@@ -137,9 +138,9 @@ def store_last_complete_ingestion_timestamp(timestamp: datetime) -> None:
     """
     Store the last successful ingestion time in Prefect as a ISO 8601 string.
     """
-    state = cast(dict[str, Any], variable_value("volunteering_to_typesense_state"))
-    state["last_complete_ingestion_timestamp"] = timestamp.isoformat()
-    Variable.set("volunteering_to_typesense_state", state, overwrite=True)
+    state = cast(dict[str, Any], variable_value(VOLUNTEERING_STATE_VARIABLE))
+    state[LAST_INGESTION_TIMESTAMP_KEY] = timestamp.isoformat()
+    Variable.set(VOLUNTEERING_STATE_VARIABLE, state, overwrite=True)
 
 
 @task

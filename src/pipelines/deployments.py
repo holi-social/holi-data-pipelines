@@ -8,6 +8,10 @@ from prefect.deployments.schedules import FlexibleScheduleList
 from prefect.events import DeploymentTriggerTypes, TriggerTypes
 
 from src.common.variables import variable_value_as
+from src.pipelines.aktion_mensch_to_typesense.ingest_from_scratch import (
+    aktion_mensch_to_typesense_ingest_from_scratch_flow,
+)
+from src.pipelines.aktion_mensch_to_typesense.ingest_updates import aktion_mensch_to_typesense_ingest_updates_flow
 from src.pipelines.all_to_typesense.ingest_from_scratch import all_to_typesense_ingest_from_scratch_flow
 from src.pipelines.am_test import am_test
 from src.pipelines.crawlers.aktion_mensch.pipeline import crawl_aktion_mensch
@@ -166,6 +170,16 @@ def get_deployments() -> List[RunnerDeployment]:
         deployment_for_flow(
             volunteering_to_typesense_ingest_updates_flow,
             description="Orchestrates the ETL pipeline to move volunteering updates from BigQuery to Typesense",
+            job_variables_overrides={"memory": "4096Mi"},
+        ),
+        deployment_for_flow(
+            aktion_mensch_to_typesense_ingest_from_scratch_flow,
+            description="Ingests Aktion Mensch volunteering opportunities from BigQuery into Typesense from scratch",
+            job_variables_overrides={"memory": "4096Mi"},
+        ),
+        deployment_for_flow(
+            aktion_mensch_to_typesense_ingest_updates_flow,
+            description="Orchestrates the ETL pipeline to move Aktion Mensch volunteering updates from BigQuery to Typesense",
             job_variables_overrides={"memory": "4096Mi"},
         ),
         deployment_for_flow(
