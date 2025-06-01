@@ -8,6 +8,69 @@ locals {
   okuna_dataset = "${local.default_project}.okuna_${local.environment_name}_public"
 }
 
+// UDF for Aktion Mensch hash calculation
+resource "google_bigquery_routine" "calculate_aktion_mensch_hash" {
+  project         = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
+  dataset_id      = local.dataset_id_datalake
+  routine_id      = "calculate_aktion_mensch_hash"
+  routine_type    = "SCALAR_FUNCTION"
+  language        = "SQL"
+  definition_body = <<-SQL
+    CAST(FARM_FINGERPRINT(CONCAT(
+      IFNULL(titel, ''), '|', 
+      IFNULL(beschreibung, ''), '|', 
+      IFNULL(kurzbeschreibung, ''), '|',
+      IFNULL(JSON_EXTRACT_SCALAR(durchfuehrendeOrganisation, "$.name"), ''), '|',
+      IFNULL(TO_JSON_STRING(verortung), ''), '|',
+      IFNULL(JSON_EXTRACT_SCALAR(einsatzort, "$.plz"), ''), '|',
+      IFNULL(JSON_EXTRACT_SCALAR(einsatzort, "$.ort"), ''), '|',
+      IFNULL(TO_JSON_STRING(attribute), ''), '|',
+      IFNULL(JSON_EXTRACT_SCALAR(kontaktDurchfuehrendeOrganisation, "$.email"), ''), '|',
+      IFNULL(JSON_EXTRACT_SCALAR(kontaktDurchfuehrendeOrganisation, "$.telefon"), ''), '|',
+      IFNULL(TO_JSON_STRING(kontaktVermittelndeStelle), '')
+    )) AS STRING)
+  SQL
+
+  arguments {
+    name      = "titel"
+    data_type = "{\"typeKind\": \"STRING\"}"
+  }
+  arguments {
+    name      = "beschreibung"
+    data_type = "{\"typeKind\": \"STRING\"}"
+  }
+  arguments {
+    name      = "kurzbeschreibung"
+    data_type = "{\"typeKind\": \"STRING\"}"
+  }
+  arguments {
+    name      = "durchfuehrendeOrganisation"
+    data_type = "{\"typeKind\": \"JSON\"}"
+  }
+  arguments {
+    name      = "verortung"
+    data_type = "{\"typeKind\": \"JSON\"}"
+  }
+  arguments {
+    name      = "einsatzort"
+    data_type = "{\"typeKind\": \"JSON\"}"
+  }
+  arguments {
+    name      = "attribute"
+    data_type = "{\"typeKind\": \"JSON\"}"
+  }
+  arguments {
+    name      = "kontaktDurchfuehrendeOrganisation"
+    data_type = "{\"typeKind\": \"JSON\"}"
+  }
+  arguments {
+    name      = "kontaktVermittelndeStelle"
+    data_type = "{\"typeKind\": \"JSON\"}"
+  }
+
+  return_type = "{\"typeKind\": \"STRING\"}"
+}
+
 resource "google_bigquery_table" "volunteering_voltastics_raw" {
   project    = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
   dataset_id = local.dataset_id_datalake
@@ -166,6 +229,10 @@ resource "google_bigquery_table" "volunteering_voltastics_without_classification
           classifications.topics_skills_embedding_v2 IS NULL OR
           classifications.similarity_embedding IS NULL
       )
+      # Aktion Mensch is excluded because it is being sourced directly from Aktion Mensch.
+      # Excluding it in this view implicates that rows from Aktion Mensch are not classified,
+      # thereby saving money and runtime.
+      AND raw_deduped.source != 'Aktion Mensch'
     SQL
   }
 }
@@ -203,6 +270,10 @@ resource "google_bigquery_table" "volunteering_voltastics_classified_enriched_pa
       LEFT OUTER JOIN `${local.datalake}.classifications` AS classifications
         ON CAST(raw_deduped.id AS STRING) = classifications.id
         AND raw_deduped.hash = classifications.hash
+      # Aktion Mensch is excluded because it is being sourced directly from Aktion Mensch.
+      # Excluding it in this view implicates that rows from Aktion Mensch are not classified,
+      # thereby saving money and runtime.
+      WHERE raw_deduped.source != 'Aktion Mensch'
     SQL
   }
 }
@@ -254,36 +325,32 @@ resource "google_bigquery_table" "volunteering_aktion_mensch_without_classificat
         raw.*,
         classifications.topics_skills_embedding_v2,
         classifications.similarity_embedding,
-        CAST(FARM_FINGERPRINT(CONCAT(
-          IFNULL(raw.titel, ''), '|', 
-          IFNULL(raw.beschreibung, ''), '|', 
-          IFNULL(raw.kurzbeschreibung, ''), '|',
-          IFNULL(JSON_EXTRACT_SCALAR(raw.durchfuehrendeOrganisation, "$.name"), ''), '|',
-          IFNULL(TO_JSON_STRING(raw.verortung), ''), '|',
-          IFNULL(JSON_EXTRACT_SCALAR(raw.einsatzort, "$.plz"), ''), '|',
-          IFNULL(JSON_EXTRACT_SCALAR(raw.einsatzort, "$.ort"), ''), '|',
-          IFNULL(TO_JSON_STRING(raw.attribute), ''), '|',
-          IFNULL(JSON_EXTRACT_SCALAR(raw.kontaktDurchfuehrendeOrganisation, "$.email"), ''), '|',
-          IFNULL(JSON_EXTRACT_SCALAR(raw.kontaktDurchfuehrendeOrganisation, "$.telefon"), ''), '|',
-          IFNULL(TO_JSON_STRING(raw.kontaktVermittelndeStelle), '')
-        )) AS STRING) AS `hash`
+        `${local.datalake}.calculate_aktion_mensch_hash`(
+          raw.titel,
+          raw.beschreibung,
+          raw.kurzbeschreibung,
+          raw.durchfuehrendeOrganisation,
+          raw.verortung,
+          raw.einsatzort,
+          raw.attribute,
+          raw.kontaktDurchfuehrendeOrganisation,
+          raw.kontaktVermittelndeStelle
+        ) AS `hash`
       FROM `${local.datalake}.volunteering_aktion_mensch_raw` raw
       LEFT OUTER JOIN `${google_bigquery_table.classifications.dataset_id}.${google_bigquery_table.classifications.table_id}` classifications
       ON
         raw.id = classifications.id AND
-        CAST(FARM_FINGERPRINT(CONCAT(
-          IFNULL(raw.titel, ''), '|', 
-          IFNULL(raw.beschreibung, ''), '|', 
-          IFNULL(raw.kurzbeschreibung, ''), '|',
-          IFNULL(JSON_EXTRACT_SCALAR(raw.durchfuehrendeOrganisation, "$.name"), ''), '|',
-          IFNULL(TO_JSON_STRING(raw.verortung), ''), '|',
-          IFNULL(JSON_EXTRACT_SCALAR(raw.einsatzort, "$.plz"), ''), '|',
-          IFNULL(JSON_EXTRACT_SCALAR(raw.einsatzort, "$.ort"), ''), '|',
-          IFNULL(TO_JSON_STRING(raw.attribute), ''), '|',
-          IFNULL(JSON_EXTRACT_SCALAR(raw.kontaktDurchfuehrendeOrganisation, "$.email"), ''), '|',
-          IFNULL(JSON_EXTRACT_SCALAR(raw.kontaktDurchfuehrendeOrganisation, "$.telefon"), ''), '|',
-          IFNULL(TO_JSON_STRING(raw.kontaktVermittelndeStelle), '')
-        )) AS STRING) = classifications.hash AND
+        `${local.datalake}.calculate_aktion_mensch_hash`(
+          raw.titel,
+          raw.beschreibung,
+          raw.kurzbeschreibung,
+          raw.durchfuehrendeOrganisation,
+          raw.verortung,
+          raw.einsatzort,
+          raw.attribute,
+          raw.kontaktDurchfuehrendeOrganisation,
+          raw.kontaktVermittelndeStelle
+        ) = classifications.hash AND
         classifications.type = 'aktion_mensch_volunteering'
       WHERE DATE(raw._PARTITIONDATE) = (
           SELECT MAX(DATE(_PARTITIONDATE))
@@ -295,6 +362,91 @@ resource "google_bigquery_table" "volunteering_aktion_mensch_without_classificat
           classifications.topics_skills_embedding_v2 IS NULL OR
           classifications.similarity_embedding IS NULL
       )
+    SQL
+  }
+}
+
+# IMPORTANT: The schema of this view must match the schema of volunteering_voltastics_classified_enriched_partitioned
+# so that both can be treated uniformly by downstream components (e.g., Typesense ingestion pipeline).
+# Any changes to the schema should be synchronized across both views.
+resource "google_bigquery_table" "volunteering_aktion_mensch_classified_enriched_partitioned" {
+  project     = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
+  dataset_id  = local.dataset_id_datalake
+  table_id    = "volunteering_aktion_mensch_classified_enriched_partitioned"
+  description = "View joining Aktion Mensch volunteering data with classifications, for ingestion to Typesense. Used by the aktion-mensch-to-typesense pipeline."
+
+  view {
+    use_legacy_sql = false
+    query          = <<SQL
+      SELECT
+        am.id,
+        `${local.datalake}.calculate_aktion_mensch_hash`(
+          am.titel,
+          am.beschreibung,
+          am.kurzbeschreibung,
+          am.durchfuehrendeOrganisation,
+          am.verortung,
+          am.einsatzort,
+          am.attribute,
+          am.kontaktDurchfuehrendeOrganisation,
+          am.kontaktVermittelndeStelle
+        ) AS `hash`,
+        
+        am.titel AS title,
+        am.beschreibung AS description,
+        
+        JSON_EXTRACT_SCALAR(am.einsatzort, "$.ort") AS location,
+        
+        SAFE_CAST(JSON_EXTRACT_SCALAR(am.geoposition, "$.longitude") AS FLOAT64) AS longitude,
+        SAFE_CAST(JSON_EXTRACT_SCALAR(am.geoposition, "$.latitude") AS FLOAT64) AS latitude,
+        
+        JSON_EXTRACT_SCALAR(am.durchfuehrendeOrganisation, "$.name") AS orga,
+        
+        CONCAT(
+          JSON_EXTRACT_SCALAR(am.bild, "$.basisUrl"), 
+          JSON_EXTRACT_SCALAR(am.bild, "$.jpg")
+        ) AS image,
+        NULL AS imageOrga,
+        
+        JSON_EXTRACT_SCALAR(am.durchfuehrendeOrganisation, "$.homepage") AS link,
+        
+        ARRAY(
+          SELECT JSON_EXTRACT_SCALAR(attr, "$.name") 
+          FROM UNNEST(JSON_EXTRACT_ARRAY(am.attribute)) attr 
+          WHERE JSON_EXTRACT_SCALAR(attr, "$.typ") = 'schlagwort'
+        ) AS hashTags,
+        
+        ARRAY(
+          SELECT JSON_EXTRACT_SCALAR(attr, "$.name") 
+          FROM UNNEST(JSON_EXTRACT_ARRAY(am.attribute)) attr
+        ) AS uses,
+        
+        classifications.topics_v2,
+        classifications.skills_v2, 
+        classifications.topics_skills_embedding_v2,
+        classifications.similarity_embedding,
+        classifications.commitment_label,
+        
+        'Aktion Mensch' AS source,
+        am._PARTITIONTIME AS partitiontime
+      FROM
+        `${local.datalake}.volunteering_aktion_mensch_raw` AS am
+      JOIN 
+        `${local.datalake}.classifications` AS classifications
+      ON 
+        am.id = classifications.id 
+        AND classifications.hash = `${local.datalake}.calculate_aktion_mensch_hash`(
+          am.titel,
+          am.beschreibung,
+          am.kurzbeschreibung,
+          am.durchfuehrendeOrganisation,
+          am.verortung,
+          am.einsatzort,
+          am.attribute,
+          am.kontaktDurchfuehrendeOrganisation,
+          am.kontaktVermittelndeStelle
+        )
+        AND classifications.type = 'aktion_mensch_volunteering'
     SQL
   }
 }

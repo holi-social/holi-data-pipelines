@@ -127,6 +127,11 @@ resource "prefect_variable" "volunteering_to_typesense_state" {
   value = {}
 }
 
+resource "prefect_variable" "aktion_mensch_to_typesense_state" {
+  name  = "aktion_mensch_to_typesense_state"
+  value = {}
+}
+
 resource "prefect_variable" "typesense_host" {
   name  = "typesense_host"
   value = "t9vemwkibxajcorqp-1.a1.typesense.net"
@@ -153,7 +158,7 @@ resource "prefect_variable" "prefect_environment" {
 }
 
 resource "prefect_variable" "bigquery_okuna_dataset" {
-  name  = "bigquery_okuna_dataset"
+  name = "bigquery_okuna_dataset"
   value = {
     project = local.default_project
     dataset = local.environment == "production" ? "okuna_production_public" : "okuna_staging_public"
@@ -197,24 +202,6 @@ resource "prefect_block" "bigquery_warehouse" {
   data = jsonencode({
     "gcp_credentials" = {
       "project" = "holi-shared"
-    }
-  })
-  depends_on = [null_resource.prefect_server_available]
-}
-
-# FIXME delete this once the slack alerter is working
-resource "prefect_block" "rocketchat_alert" {
-  name      = "rocketchat-alert"
-  type_slug = "custom-webhook"
-
-  data = jsonencode({
-    "name" : "Prefect Alert", # Shows up as sender of the alert in Rocket.Chat
-    "method" : "POST",
-    "url" : "https://projectholi.rocket.chat/hooks/6751e64714a4b1e7ecdb0eb8/KDnELf9iki8Emm8Gvwh46TcTfSTXxiWaZ2zuxtmChYRdnGs4?channel=${local.environment == "production" ? "66fd2e1cfd9d814af0fb30d0" : "66fd2e46fd9d814af0fb30d3"}",
-    "json_data" : {
-      "subject" : "{{subject}}", "name" : "{{name}}", "body" : "{{body}}",
-      }, "headers" : {
-      "Content-Type" : "application/json"
     }
   })
   depends_on = [null_resource.prefect_server_available]
@@ -289,7 +276,7 @@ resource "google_cloud_run_v2_service" "work_pool_cloud_run_worker" {
       }
     }
     vpc_access {
-      egress = "PRIVATE_RANGES_ONLY"
+      egress = "ALL_TRAFFIC"
       network_interfaces {
         network = data.terraform_remote_state.holi_infra_state.outputs.google_compute_network_default_name
       }

@@ -110,6 +110,10 @@ def extract_changes_in_partitions(
             SELECT `hash`
             FROM new_partition
         )
+        AND `id` NOT IN (
+            SELECT `id`
+            FROM new_partition
+        )
     )
     SELECT
         'new_or_updated' AS change_type
