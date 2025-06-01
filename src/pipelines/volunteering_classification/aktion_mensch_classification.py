@@ -16,6 +16,7 @@ from src.pipelines.volunteering_classification.aktion_mensch_topics_skills_class
     AktionMenschTopicsSkillsClassifierV2,
 )
 from src.pipelines.volunteering_classification.commitment_labels_mapping import extract_commitment_label_from_item
+from src.pipelines.volunteering_classification.location_type_mapping import extract_location_type_from_item
 from src.pipelines.volunteering_classification.aktion_mensch_utils import (
     extract_values_from_attributes,
     safe_get_attribute,
@@ -45,6 +46,7 @@ class AktionMenschBatchClassifier(PipelineBatchClassifier[AktionMenschClassifica
             batch_size=batch_size,
             stop_after_batch_nr=stop_after_batch_nr,
             commitment_label_extractor=extract_commitment_label_from_item,
+            location_type_extractor=extract_location_type_from_item,
         )
 
     def _to_classification_input(self, item: Any) -> AktionMenschClassificationInput:
@@ -59,6 +61,8 @@ class AktionMenschBatchClassifier(PipelineBatchClassifier[AktionMenschClassifica
         kurzbeschreibung: str = str(safe_get_attribute(item, "kurzbeschreibung", ""))
         beschreibung: str = str(safe_get_attribute(item, "beschreibung", ""))
         description: str = " ".join(filter(None, [kurzbeschreibung, beschreibung]))
+
+        verortung: str = str(safe_get_attribute(item, "verortung", ""))
 
         attribute: Any = safe_get_attribute(item, "attribute", [])
         if isinstance(attribute, str):
@@ -84,6 +88,7 @@ class AktionMenschBatchClassifier(PipelineBatchClassifier[AktionMenschClassifica
             beschreibung=beschreibung,
             description=description,
             attribute=attribute,
+            verortung=verortung,
             uses=uses,
         )
 

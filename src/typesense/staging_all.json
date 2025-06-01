@@ -37,6 +37,7 @@
             "locale": "en"
         },
         {"name": "location", "type": "string", "optional": true},
+        {"name": "location_type", "type": "string", "optional": true, "facet": true},
         {"name": "location_lat_lng", "type": "geopoint", "optional": true},
         {"name": "image_url", "type": "string", "optional": true, "index": false},
         {
