@@ -288,6 +288,8 @@ class TaskEvent(DomainEvent):
             if self.task.geolocation_geojson and self.task.geolocation_geojson.get("coordinates")
             else None,
             "image_url": self.task.thumbnail,
+            "organizer_name": self.space.name,
+            "organizer_image_url": self.space.avatar,
             "link_locators": {"space": self.space.slug, "task": self.task.id},
             "topics_v2": self.space.topics_v2,
             "skills_v2": self.task.skills_v2,

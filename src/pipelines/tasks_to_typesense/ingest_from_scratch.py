@@ -42,6 +42,8 @@ def task_to_doc(row: TaskRow) -> TaskDoc:
         "location": row.get("location"),
         "location_lat_lng": to_location_lat_lng(geojson) if geojson else None,
         "image_url": row.get("thumbnail"),
+        "organizer_name": row.get("community_name"),
+        "organizer_image_url": row.get("community_avatar"),
         "link_locators": {"space": row.get("community_slug"), "task": row.get("id")},
         "topics_v2": row.get("topics_v2"),
         "skills_v2": row.get("skills_v2"),

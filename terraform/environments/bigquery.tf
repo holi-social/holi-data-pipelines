@@ -141,7 +141,8 @@ resource "google_bigquery_table" "tasks_without_classifications" {
     use_legacy_sql = false
     # ATTENTION: if you change the hash calculation function, make sure to also change it in
     #  * the JOIN clause AND
-    #  * the "tasks_with_classifications" view
+    #  * the "tasks_with_classifications" view AND
+    #  * the "farm_fingerprint" function in pubsub_typesense_updater/events.py
     query = <<SQL
       SELECT
         task.* EXCEPT(skills_v2),
@@ -150,6 +151,8 @@ resource "google_bigquery_table" "tasks_without_classifications" {
         JSON_VALUE_ARRAY(task.skills_v2) AS skills_v2,
         JSON_VALUE_ARRAY(community.topics_v2) AS topics_v2,
         community.name AS community_slug,
+        community.title AS community_name,
+        community.avatar AS community_avatar,
         CAST(FARM_FINGERPRINT(CONCAT(IFNULL(task.name, ''), '|', IFNULL(task.description, ''), '|', IFNULL(task.location, ''), '|', IFNULL(ARRAY_TO_STRING(JSON_VALUE_ARRAY(community.topics_v2), ' '), ''), '|', IFNULL(ARRAY_TO_STRING(JSON_VALUE_ARRAY(task.skills_v2), ' '), ''))) AS STRING) AS `hash`
       FROM `${local.okuna_dataset}.openbook_communities_task` AS task
       JOIN `${local.okuna_dataset}.openbook_communities_community` AS community
@@ -178,12 +181,15 @@ resource "google_bigquery_table" "tasks_with_classifications" {
     use_legacy_sql = false
     # ATTENTION: if you change the hash calculation function, make sure to also change it in
     #  * the JOIN clause AND
-    #  * the "tasks_without_classifications" view
+    #  * the "tasks_without_classifications" view AND
+    #  * the "farm_fingerprint" function in pubsub_typesense_updater/events.py
     query = <<SQL
       SELECT
         task.* EXCEPT(skills_v2),
         classification.* EXCEPT(id, type, `hash`),
         community.name AS community_slug,
+        community.title AS community_name,
+        community.avatar AS community_avatar,
         CAST(FARM_FINGERPRINT(CONCAT(IFNULL(task.name, ''), '|', IFNULL(task.description, ''), '|', IFNULL(task.location, ''), '|', IFNULL(ARRAY_TO_STRING(JSON_VALUE_ARRAY(community.topics_v2), ' '), ''), '|', IFNULL(ARRAY_TO_STRING(JSON_VALUE_ARRAY(task.skills_v2), ' '), ''))) AS STRING) AS `hash`
       FROM `${local.okuna_dataset}.openbook_communities_task` AS task
       JOIN `${local.okuna_dataset}.openbook_communities_community` AS community
