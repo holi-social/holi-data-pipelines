@@ -182,7 +182,7 @@ resource "google_bigquery_table" "tasks_with_classifications" {
     query = <<SQL
       SELECT
         task.* EXCEPT(skills_v2),
-        classification.* EXCEPT(id, type, `hash`),
+        classification.* EXCEPT(id, type, `hash`, location_type),
         community.name AS community_slug,
         CAST(FARM_FINGERPRINT(CONCAT(IFNULL(task.name, ''), '|', IFNULL(task.description, ''), '|', IFNULL(task.location, ''), '|', IFNULL(ARRAY_TO_STRING(JSON_VALUE_ARRAY(community.topics_v2), ' '), ''), '|', IFNULL(ARRAY_TO_STRING(JSON_VALUE_ARRAY(task.skills_v2), ' '), ''))) AS STRING) AS `hash`
       FROM `${local.okuna_dataset}.openbook_communities_task` AS task
