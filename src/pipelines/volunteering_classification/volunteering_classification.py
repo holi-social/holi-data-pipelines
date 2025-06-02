@@ -59,6 +59,8 @@ class VolunteeringBatchClassifier(PipelineBatchClassifier[VolunteeringClassifica
             similarity_embedding=item.similarity_embedding if hasattr(item, "similarity_embedding") else None,
             hashTags=item.hashTags if hasattr(item, "hashTags") else None,
             uses=item.uses if hasattr(item, "uses") else None,
+            source=item.source if hasattr(item, "source") else None,
+            additional_data=item.additionalData if hasattr(item, "additionalData") else None,
         )
 
 
