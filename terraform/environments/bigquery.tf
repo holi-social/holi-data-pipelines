@@ -199,6 +199,9 @@ resource "google_bigquery_table" "tasks_with_classifications" {
         AND classification.similarity_embedding IS NOT NULL
     SQL
   }
+
+  depends_on = [google_bigquery_table.classifications]
+
 }
 
 resource "google_bigquery_table" "volunteering_voltastics_without_classifications" {
