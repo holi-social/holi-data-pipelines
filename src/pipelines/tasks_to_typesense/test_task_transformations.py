@@ -46,8 +46,8 @@ class TestTaskToDoc(unittest.TestCase):
         self.assertEqual(result["image_url"], "https://example.com/image.jpg")
         self.assertEqual(result["organizer_name"], "My Community")
         self.assertEqual(result["organizer_image_url"], "https://example.com/avatar.jpg")
-        self.assertEqual(result["location_type"], "ONSITE")
-        self.assertEqual(result["commitment_label"], "ONCE_WEEK")
+        self.assertEqual(result["location_type"], "onsite")
+        self.assertEqual(result["commitment_label"], "recurring")
         self.assertEqual(result["commitment_duration"], "MINUTES_15to30")
 
         # Check link locators

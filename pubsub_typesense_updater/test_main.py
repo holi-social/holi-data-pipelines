@@ -69,6 +69,9 @@ task_payload: Any = {
     "contactPhone": "+49123456789",
 }
 
+location_type = "onsite"
+commitment_label = "one-time"
+
 
 def message_data(event_type: Any, event_version: Any, data: Any) -> Any:
     return {
@@ -142,8 +145,8 @@ def _expected_task_ts_doc(
             task_event_payload["geolocationGeoJson"]["coordinates"][0],
             task_event_payload["geolocationGeoJson"]["coordinates"][1],
         ],
-        "location_type": task_event_payload["locationType"],
-        "commitment_label": task_event_payload["regularity"],
+        "location_type": location_type,
+        "commitment_label": commitment_label,
         "commitment_duration": task_event_payload["duration"],
         "image_url": task_event_payload["thumbnail"],
         "organizer_name": space_event_payload.get("name"),
@@ -628,8 +631,8 @@ def test_task_updated_with_broken_geojson(mock_client: MagicMock) -> None:
             "description_en": task["description"],
             "location": task["location"],
             "location_lat_lng": None,
-            "location_type": task["locationType"],
-            "commitment_label": task["regularity"],
+            "location_type": location_type,
+            "commitment_label": commitment_label,
             "commitment_duration": task["duration"],
             "image_url": task_payload["thumbnail"],
             "organizer_name": space_payload["name"],
