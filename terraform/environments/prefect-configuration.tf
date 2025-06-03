@@ -32,6 +32,49 @@ resource "null_resource" "prefect_server_available" {
   }
 }
 
+resource "prefect_variable" "okuna_db_hostname" {
+  name = "okuna_db_hostname"
+  value = local.environment_name == "production" ? data.terraform_remote_state.holi_infra_state.outputs.database_ip_address_production : data.terraform_remote_state.holi_infra_state.outputs.database_ip_address_development
+}
+
+resource "prefect_variable" "okuna_db_port" {
+  name = "okuna_db_port"
+  value = local.environment_name == "production" ? data.terraform_remote_state.holi_infra_state.outputs.database_ip_address_production : data.terraform_remote_state.holi_infra_state.outputs.database_ip_address_development
+}
+
+resource "prefect_variable" "okuna_db_name" {
+  name = "okuna_db_name"
+  value = data.terraform_remote_state.okuna_state.outputs.database_name
+}
+
+resource "prefect_block" "okuna_db_username" {
+  name      = "okuna-db-username"
+  type_slug = "gcpsecret"
+
+  data = jsonencode({
+    "gcp_credentials" = {
+      "project" = "holi-shared"
+    }
+    "secret_name"    = local.environment == "production" ? "OKUNA_DB_DATA_PIPELINES_USERNAME_PRODUCTION" : "OKUNA_DB_DATA_PIPELINES_USERNAME_DEVELOPMENT"
+    "secret_version" = "latest"
+  })
+  depends_on = [null_resource.prefect_server_available]
+}
+
+resource "prefect_block" "okuna_db_password" {
+  name      = "okuna-db-password"
+  type_slug = "gcpsecret"
+
+  data = jsonencode({
+    "gcp_credentials" = {
+      "project" = "holi-shared"
+    }
+    "secret_name"    = local.environment == "production" ? "OKUNA_DB_DATA_PIPELINES_PASSWORD_PRODUCTION" : "OKUNA_DB_DATA_PIPELINES_PASSWORD_DEVELOPMENT"
+    "secret_version" = "latest"
+  })
+  depends_on = [null_resource.prefect_server_available]
+}
+
 # crawler / voltastics
 resource "prefect_variable" "voltastics_crawler_table" {
   name = "voltastics_crawler_table"

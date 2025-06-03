@@ -1,10 +1,15 @@
 import pprint
+import psycopg
+from psycopg import Connection
+
+
 from typing import cast
 from urllib.parse import quote
 
 from prefect import flow, task
 from prefect.states import Completed, Failed, State
 
+from src.common.variables import secret_value, variable_value_as
 from src.common.extractors.bq_extractor import extract_data_from_bigquery
 from src.common.logging.PipelineLogger import PipelineLogger
 from src.common.typesense_client import TypesenseClient, TypesenseClientConfig
@@ -19,6 +24,36 @@ logger = PipelineLogger(__name__)
 
 DEVIATION_TOLERANCE_FACTOR = 0
 DEVIATION_TOLERANCE_IN_PERCENT = 0
+
+
+def get_pg_connection() -> Connection:
+    host = variable_value_as(str, "okuna_db_hostname")
+    port = variable_value_as(int, "okuna_db_port")
+    database = variable_value_as(str, "okuna_db_name")
+    username = secret_value("okuna-db-username")
+    password = secret_value("okuna-db-password")
+    logger.debug(f"Trying to connect to postgres://{host}:{port}/{database}")
+    return psycopg.connect(f"host={host} port={port} dbname={database} user={username} password={password}")
+
+
+@task
+def get_profile_ids_pg() -> list[str]:
+    with get_pg_connection() as conn:
+        with conn.cursor() as cursor:
+            query = """
+                SELECT au.username
+                FROM openbook_auth_user au
+                LEFT OUTER JOIN openbook_auth_userprofile p
+                ON au.id = p.user_id
+                WHERE
+                    au.is_deleted = false
+                    AND au.identity IS NOT NULL
+                    AND (p.name IS NOT NULL OR p.last_name IS NOT NULL)
+            """
+            cursor.execute(query)
+            results = cursor.fetchall()
+            usernames = [row[0] for row in results]
+            return usernames
 
 
 @task
@@ -38,6 +73,21 @@ def get_profile_ids_bq() -> list[str]:
 
 
 @task
+def get_space_ids_pg() -> list[str]:
+    with get_pg_connection() as conn:
+        with conn.cursor() as cursor:
+            query = """
+                SELECT id
+                FROM openbook_communities_community
+                WHERE is_deleted = false
+            """
+            cursor.execute(query)
+            results = cursor.fetchall()
+            space_ids = [str(row[0]) for row in results]
+            return space_ids
+
+
+@task
 def get_space_ids_bq() -> list[str]:
     result = extract_data_from_bigquery(f"""
         SELECT id
@@ -45,6 +95,25 @@ def get_space_ids_bq() -> list[str]:
         WHERE is_deleted=false
     """)  # noqa: S608
     return cast(list[str], [row["id"] for row in result])
+
+
+@task
+def get_task_ids_pg() -> list[str]:
+    with get_pg_connection() as conn:
+        with conn.cursor() as cursor:
+            query = """
+                SELECT task.id
+                FROM openbook_communities_task AS task
+                JOIN openbook_communities_community AS community ON task.community_id = community.id
+                WHERE
+                    community.is_deleted IS FALSE
+                    AND task.visibility = 'PUBLIC'
+                    AND task.deleted_at IS NULL
+            """
+            cursor.execute(query)
+            results = cursor.fetchall()
+            task_ids = [str(row[0]) for row in results]
+            return task_ids
 
 
 @task
@@ -106,12 +175,15 @@ def typesense_qc() -> State:
     ts_client = TypesenseClient(TypesenseClientConfig.from_env())
     ts_collection = cast(str, variable_value("typesense_collection"))
 
+    profile_ids_pg = get_profile_ids_pg()
     profile_ids_bq = get_profile_ids_bq()
     profile_ids_ts = get_ids_ts(ts_client, ts_collection, "profile")
 
+    space_ids_pg = get_space_ids_pg()
     space_ids_bq = get_space_ids_bq()
     space_ids_ts = get_ids_ts(ts_client, ts_collection, "space")
 
+    task_ids_pg = get_task_ids_pg()
     task_ids_bq = get_task_ids_bq()
     task_ids_ts = get_ids_ts(ts_client, ts_collection, "task")
 
@@ -122,18 +194,24 @@ def typesense_qc() -> State:
         "profile": {
             "bq_count": len(profile_ids_bq),
             "ts_count": len(profile_ids_ts),
+            "pg_ids_not_in_bq": set(profile_ids_pg) - set(profile_ids_bq),
+            "bq_ids_not_in_pg": set(profile_ids_bq) - set(profile_ids_pg),
             "bq_ids_not_in_ts": set(profile_ids_bq) - set(profile_ids_ts),
             "ts_ids_not_in_bq": set(profile_ids_ts) - set(profile_ids_bq),
         },
         "space": {
             "bq_count": len(space_ids_bq),
             "ts_count": len(space_ids_ts),
+            "pg_ids_not_in_bq": set(space_ids_pg) - set(space_ids_bq),
+            "bq_ids_not_in_pg": set(space_ids_bq) - set(space_ids_pg),
             "bq_ids_not_in_ts": set(space_ids_bq) - set(space_ids_ts),
             "ts_ids_not_in_bq": set(space_ids_ts) - set(space_ids_bq),
         },
         "task": {
             "bq_count": len(task_ids_bq),
             "ts_count": len(task_ids_bq),
+            "pg_ids_not_in_bq": set(task_ids_pg) - set(task_ids_bq),
+            "bq_ids_not_in_pg": set(task_ids_bq) - set(task_ids_pg),
             "bq_ids_not_in_ts": set(task_ids_bq) - set(task_ids_ts),
             "ts_ids_not_in_bq": set(task_ids_ts) - set(task_ids_bq),
         },
@@ -149,7 +227,12 @@ def typesense_qc() -> State:
     errors = []
 
     for typ in all_types:
-        if results[typ]["bq_ids_not_in_ts"] or results[typ]["ts_ids_not_in_bq"]:
+        if (
+            results[typ]["bq_ids_not_in_ts"]
+            or results[typ]["ts_ids_not_in_bq"]
+            or results[typ]["pg_ids_not_in_bq"]
+            or results[typ]["bq_ids_not_in_pg"]
+        ):
             msg = f"BigQuery and Typesense are inconsistent for document type {typ}%: {pprint.pformat(results[typ])}"
             logger.error(msg)
             errors.append(msg)
