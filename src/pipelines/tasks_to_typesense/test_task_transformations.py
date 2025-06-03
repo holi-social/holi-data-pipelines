@@ -11,6 +11,8 @@ class TestTaskToDoc(unittest.TestCase):
             "id": 123,
             "name": "Test Task",
             "community_slug": "my-community",
+            "community_name": "My Community",
+            "community_avatar": "https://example.com/avatar.jpg",
             "description": "This is a test task",
             "location": "Berlin, Germany",
             "thumbnail": "https://example.com/image.jpg",
@@ -39,6 +41,8 @@ class TestTaskToDoc(unittest.TestCase):
         self.assertEqual(result["description_en"], "This is a test task")
         self.assertEqual(result["location"], "Berlin, Germany")
         self.assertEqual(result["image_url"], "https://example.com/image.jpg")
+        self.assertEqual(result["organizer_name"], "My Community")
+        self.assertEqual(result["organizer_image_url"], "https://example.com/avatar.jpg")
 
         # Check link locators
         assert result["link_locators"] is not None
