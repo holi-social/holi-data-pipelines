@@ -11,7 +11,7 @@ class TestTaskMappings:
     @pytest.mark.parametrize(
         "actual,expected",
         [
-            ("HYBRID", "hybrid"),
+            ("HYBRID", "remote"),
             ("REMOTE", "remote"),
             ("ONSITE", "onsite"),
             (None, None),

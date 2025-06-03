@@ -25,7 +25,7 @@ def map_task_location_type_to_typesense_location_type(location_type: Optional[st
         return None
     match location_type:
         case "HYBRID":
-            return "hybrid"
+            return "remote"
         case "REMOTE":
             return "remote"
         case "ONSITE":
