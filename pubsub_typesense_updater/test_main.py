@@ -142,6 +142,9 @@ def _expected_task_ts_doc(
             task_event_payload["geolocationGeoJson"]["coordinates"][0],
             task_event_payload["geolocationGeoJson"]["coordinates"][1],
         ],
+        "location_type": task_event_payload["locationType"],
+        "commitment_label": task_event_payload["regularity"],
+        "commitment_duration": task_event_payload["duration"],
         "image_url": task_event_payload["thumbnail"],
         "organizer_name": space_event_payload.get("name"),
         "organizer_image_url": space_event_payload.get("avatar"),
@@ -566,6 +569,9 @@ def test_task_updated_with_missing_optional_fields(mock_client: MagicMock) -> No
     del task["location"]
     del task["geolocationGeoJson"]
     del task["skillsV2"]
+    del task["locationType"]
+    del task["regularity"]
+    del task["duration"]
 
     process_event(
         mock_client,
@@ -584,6 +590,9 @@ def test_task_updated_with_missing_optional_fields(mock_client: MagicMock) -> No
             "description_en": task["description"],
             "location": None,
             "location_lat_lng": None,
+            "location_type": None,
+            "commitment_label": None,
+            "commitment_duration": None,
             "image_url": None,
             "organizer_name": space_payload["name"],
             "organizer_image_url": space_payload["avatar"],
@@ -619,6 +628,9 @@ def test_task_updated_with_broken_geojson(mock_client: MagicMock) -> None:
             "description_en": task["description"],
             "location": task["location"],
             "location_lat_lng": None,
+            "location_type": task["locationType"],
+            "commitment_label": task["regularity"],
+            "commitment_duration": task["duration"],
             "image_url": task_payload["thumbnail"],
             "organizer_name": space_payload["name"],
             "organizer_image_url": space_payload["avatar"],

@@ -15,6 +15,9 @@ class TestTaskToDoc(unittest.TestCase):
             "community_avatar": "https://example.com/avatar.jpg",
             "description": "This is a test task",
             "location": "Berlin, Germany",
+            "location_type": "ONSITE",
+            "regularity": "ONCE_WEEK",
+            "duration": "MINUTES_15to30",
             "thumbnail": "https://example.com/image.jpg",
             "community_id": 456,
             "geolocation_geojson": {
@@ -43,6 +46,9 @@ class TestTaskToDoc(unittest.TestCase):
         self.assertEqual(result["image_url"], "https://example.com/image.jpg")
         self.assertEqual(result["organizer_name"], "My Community")
         self.assertEqual(result["organizer_image_url"], "https://example.com/avatar.jpg")
+        self.assertEqual(result["location_type"], "ONSITE")
+        self.assertEqual(result["commitment_label"], "ONCE_WEEK")
+        self.assertEqual(result["commitment_duration"], "MINUTES_15to30")
 
         # Check link locators
         assert result["link_locators"] is not None
