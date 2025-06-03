@@ -28,7 +28,7 @@ DEVIATION_TOLERANCE_IN_PERCENT = 0
 
 def get_pg_connection() -> Connection:
     host = variable_value_as(str, "okuna_db_hostname")
-    port = variable_value_as(int, "okuna_db_port")
+    port = int(variable_value_as(str, "okuna_db_port"))
     database = variable_value_as(str, "okuna_db_name")
     username = secret_value("okuna-db-username")
     password = secret_value("okuna-db-password")

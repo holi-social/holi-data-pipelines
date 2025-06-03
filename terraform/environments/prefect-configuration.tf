@@ -39,7 +39,7 @@ resource "prefect_variable" "okuna_db_hostname" {
 
 resource "prefect_variable" "okuna_db_port" {
   name = "okuna_db_port"
-  value = local.environment_name == "production" ? data.terraform_remote_state.holi_infra_state.outputs.database_ip_address_production : data.terraform_remote_state.holi_infra_state.outputs.database_ip_address_development
+  value = "5432"
 }
 
 resource "prefect_variable" "okuna_db_name" {
