@@ -192,6 +192,7 @@ def typesense_qc() -> State:
 
     results = {
         "profile": {
+            "pg_count": len(profile_ids_pg),
             "bq_count": len(profile_ids_bq),
             "ts_count": len(profile_ids_ts),
             "pg_ids_not_in_bq": set(profile_ids_pg) - set(profile_ids_bq),
@@ -200,6 +201,7 @@ def typesense_qc() -> State:
             "ts_ids_not_in_bq": set(profile_ids_ts) - set(profile_ids_bq),
         },
         "space": {
+            "pg_count": len(space_ids_pg),
             "bq_count": len(space_ids_bq),
             "ts_count": len(space_ids_ts),
             "pg_ids_not_in_bq": set(space_ids_pg) - set(space_ids_bq),
@@ -208,8 +210,9 @@ def typesense_qc() -> State:
             "ts_ids_not_in_bq": set(space_ids_ts) - set(space_ids_bq),
         },
         "task": {
+            "pg_count": len(task_ids_pg),
             "bq_count": len(task_ids_bq),
-            "ts_count": len(task_ids_bq),
+            "ts_count": len(task_ids_ts),
             "pg_ids_not_in_bq": set(task_ids_pg) - set(task_ids_bq),
             "bq_ids_not_in_pg": set(task_ids_bq) - set(task_ids_pg),
             "bq_ids_not_in_ts": set(task_ids_bq) - set(task_ids_ts),
