@@ -10,6 +10,10 @@ from cloudevents.http.event import CloudEvent
 
 from farm_fingerprint import farm_fingerprint
 from shared.classifiers.classifier import ClassificationResult
+from shared.mappings.task_mappings import (
+    map_task_location_type_to_typesense_location_type,
+    map_task_regularity_to_commitment_label,
+)
 
 
 class GeoJSONPoint(TypedDict):
@@ -287,6 +291,9 @@ class TaskEvent(DomainEvent):
             ]
             if self.task.geolocation_geojson and self.task.geolocation_geojson.get("coordinates")
             else None,
+            "location_type": map_task_location_type_to_typesense_location_type(self.task.location_type),
+            "commitment_label": map_task_regularity_to_commitment_label(self.task.regularity),
+            "commitment_duration": self.task.duration,
             "image_url": self.task.thumbnail,
             "organizer_name": self.space.name,
             "organizer_image_url": self.space.avatar,
