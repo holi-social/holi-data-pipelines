@@ -303,7 +303,7 @@ resource "google_cloud_run_v2_service" "work_pool_cloud_run_worker" {
         startup_cpu_boost = true
         limits = {
           cpu    = "1"
-          memory = "1024Mi"
+          memory = "2048Mi"
         }
       }
       startup_probe {
