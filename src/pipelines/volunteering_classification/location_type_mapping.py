@@ -2,7 +2,9 @@
 Location type mapping for volunteering opportunities.
 
 Maps provider-specific location fields to standardized Holi values:
-- REMOTE: For remote/virtual opportunities
+- remote: For remote/virtual opportunities
+- onsite: For in-person opportunities at specific locations
+- unknown: When location type cannot be determined
 """
 
 import json
@@ -32,15 +34,18 @@ class VostelLocationTypeMapper(LocationTypeMapper):
 
     def extract_location_type(self, data: Any) -> Optional[str]:
         if not isinstance(data, dict):
-            return None
+            return "unknown"
 
         location_type = data.get("location_type")
         if not isinstance(location_type, str):
-            return None
+            return "unknown"
 
         if location_type == "location_independent":
-            return "REMOTE"
-        return None
+            return "remote"
+        elif location_type in ("location_dependent", "location_bound"):
+            return "onsite"
+
+        return "unknown"
 
 
 class GoLocationTypeMapper(LocationTypeMapper):
@@ -51,19 +56,24 @@ class GoLocationTypeMapper(LocationTypeMapper):
 
     def extract_location_type(self, data: Any) -> Optional[str]:
         if not isinstance(data, dict):
-            return None
+            return "unknown"
 
         category = data.get("category")
         if isinstance(category, str) and category == "REMOTE":
-            return "REMOTE"
+            return "remote"
+        elif isinstance(category, str) and category in ("ON_SITE", "ONSITE", "LOCAL"):
+            return "onsite"
 
         is_remote = data.get("isRemote")
-        if isinstance(is_remote, bool) and is_remote:
-            return "REMOTE"
-        elif isinstance(is_remote, str) and is_remote.lower() == "true":
-            return "REMOTE"
+        if isinstance(is_remote, bool):
+            return "remote" if is_remote else "onsite"
+        elif isinstance(is_remote, str):
+            if is_remote.lower() == "true":
+                return "remote"
+            elif is_remote.lower() == "false":
+                return "onsite"
 
-        return None
+        return "unknown"
 
 
 class AktionMenschLocationTypeMapper(LocationTypeMapper):
@@ -74,7 +84,7 @@ class AktionMenschLocationTypeMapper(LocationTypeMapper):
 
     def extract_location_type(self, data: Any) -> Optional[str]:
         if not data:
-            return None
+            return "unknown"
 
         verortung = None
         if hasattr(data, "verortung"):
@@ -83,11 +93,16 @@ class AktionMenschLocationTypeMapper(LocationTypeMapper):
             verortung = data["verortung"]
 
         if not isinstance(verortung, str):
-            return None
+            return "unknown"
 
-        if verortung == "ortsunabhaengig":
-            return "REMOTE"
-        return None
+        verortung_lower = verortung.lower()
+
+        if verortung_lower == "ortsunabhaengig":
+            return "remote"
+        elif verortung_lower in ("durchfuehrende_organisation", "einsatzort"):
+            return "onsite"
+
+        return "unknown"
 
 
 class LocationTypeMapperFactory:
