@@ -8,7 +8,7 @@ terraform {
     }
     google-beta = {
       source  = "hashicorp/google-beta"
-      version = "6.36.1"
+      version = "6.38.0"
     }
     prefect = {
       source  = "prefecthq/prefect"
