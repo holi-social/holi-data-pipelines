@@ -132,7 +132,7 @@ def get_volunteering_ids_bq() -> list[str]:
         FROM `{volunteering_voltastics_classified_enriched_partitioned()}`
         WHERE TIMESTAMP_TRUNC(partitiontime, DAY) = TIMESTAMP_TRUNC(CURRENT_TIMESTAMP(), DAY)
     """)  # noqa: S608
-    return cast(list[str], [row["id"] for row in result])
+    return cast(list[str], [str(row["id"]) for row in result])
 
 
 @task
