@@ -301,6 +301,11 @@ output "volunteering_voltastics_raw_table" {
   value = google_bigquery_table.volunteering_voltastics_raw.table_id
 }
 
+output "volunteering_voltastics_raw_table_full" {
+  value = "${google_bigquery_table.volunteering_voltastics_raw.project}.${google_bigquery_table.volunteering_voltastics_raw.dataset_id}.${google_bigquery_table.volunteering_voltastics_raw.table_id}"
+}
+
+
 
 resource "google_bigquery_table" "donations_betterplace_raw" {
   project    = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
