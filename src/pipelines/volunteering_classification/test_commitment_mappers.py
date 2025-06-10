@@ -32,7 +32,7 @@ def mappers() -> Dict[str, CommitmentMapper]:
 class MockItem:
     def __init__(self, source: Optional[str], additional_data: Any = None, attribute: Any = None) -> None:
         self.source = source
-        self.additionalData = additional_data
+        self.additional_data = additional_data
         if attribute is not None:
             self.attribute = attribute
 
