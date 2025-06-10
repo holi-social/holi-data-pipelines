@@ -146,7 +146,7 @@ resource "prefect_variable" "betterplace_api_url" {
 
 resource "prefect_variable" "aktion_mensch_api_url" {
   name  = "aktion_mensch_api_url"
-  value = "https://service.test-am.de/api/holi-social/v1/freiwilligendatenbank/export/angebote"
+  value = "https://service.aktion-mensch.de:443/api/holi-social/v1/freiwilligendatenbank/export/angebote"
 }
 
 resource "prefect_variable" "bigquery_datalake" {
