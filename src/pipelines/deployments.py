@@ -26,6 +26,7 @@ from src.pipelines.volunteering_to_typesense.ingest_from_scratch import (
     volunteering_to_typesense_ingest_from_scratch_flow,
 )
 from src.pipelines.volunteering_to_typesense.ingest_updates import volunteering_to_typesense_ingest_updates_flow
+from src.pipelines.volunteering_to_typesense.ingest_vos_by_ids import volunteering_ingest_vos_by_ids
 from src.pipelines.volunteering_updates.pipeline import volunteering_updates
 
 
@@ -165,6 +166,11 @@ def get_deployments() -> List[RunnerDeployment]:
         deployment_for_flow(
             volunteering_to_typesense_ingest_updates_flow,
             description="Orchestrates the ETL pipeline to move volunteering updates from BigQuery to Typesense",
+            job_variables_overrides={"memory": "4096Mi"},
+        ),
+        deployment_for_flow(
+            volunteering_ingest_vos_by_ids,
+            description="Ingest VOs by IDs into Typesense (good for debugging / fixing missing data)",
             job_variables_overrides={"memory": "4096Mi"},
         ),
         deployment_for_flow(
