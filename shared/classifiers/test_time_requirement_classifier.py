@@ -13,20 +13,18 @@ class TestTimeRequirementClassification(unittest.TestCase):
     def test_time_requirement_classification_creation(self) -> None:
         """Test that TimeRequirementClassification can be created with required fields."""
         classification = TimeRequirementClassification(
-            time_required="1-2 hours",
-            time_reasoning="Based on the description of a 2-hour event."
+            time_required="1-2 hours", time_reasoning="Based on the description of a 2-hour event."
         )
-        
+
         self.assertEqual(classification.time_required, "1-2 hours")
         self.assertEqual(classification.time_reasoning, "Based on the description of a 2-hour event.")
 
     def test_time_requirement_classification_with_unable_to_determine(self) -> None:
         """Test classification with 'Unable to determine' category."""
         classification = TimeRequirementClassification(
-            time_required="Unable to determine",
-            time_reasoning="Insufficient information in the description."
+            time_required="Unable to determine", time_reasoning="Insufficient information in the description."
         )
-        
+
         self.assertEqual(classification.time_required, "Unable to determine")
         self.assertEqual(classification.time_reasoning, "Insufficient information in the description.")
 
@@ -41,13 +39,10 @@ class TestTimeRequirementClassification(unittest.TestCase):
             ("1 day", "Full day event stated"),
             ("> 1 day", "Multi-day workshop described"),
         ]
-        
+
         for time_req, reasoning in test_cases:
             with self.subTest(time_required=time_req):
-                classification = TimeRequirementClassification(
-                    time_required=time_req,
-                    time_reasoning=reasoning
-                )
+                classification = TimeRequirementClassification(time_required=time_req, time_reasoning=reasoning)
                 self.assertEqual(classification.time_required, time_req)
                 self.assertEqual(classification.time_reasoning, reasoning)
 
@@ -66,36 +61,34 @@ class TestTimeRequirementClassifierBase(unittest.TestCase):
 
     def test_time_requirement_classifier_logger_assignment(self) -> None:
         """Test that the logger is properly assigned in the base class."""
+
         class ConcreteTimeRequirementClassifier(TimeRequirementClassifier):
             def get_classification(self, item):
-                return TimeRequirementClassification(
-                    time_required="1-2 hours",
-                    time_reasoning="Test reasoning"
-                )
-        
+                return TimeRequirementClassification(time_required="1-2 hours", time_reasoning="Test reasoning")
+
         classifier = ConcreteTimeRequirementClassifier(self.mock_logger)
         self.assertEqual(classifier.logger, self.mock_logger)
 
     def test_concrete_classifier_implements_get_classification(self) -> None:
         """Test that concrete classifiers must implement get_classification."""
+
         class ConcreteTimeRequirementClassifier(TimeRequirementClassifier):
             def get_classification(self, item):
                 return TimeRequirementClassification(
-                    time_required="2-4 hours",
-                    time_reasoning="Concrete implementation test"
+                    time_required="2-4 hours", time_reasoning="Concrete implementation test"
                 )
-        
+
         classifier = ConcreteTimeRequirementClassifier(self.mock_logger)
-        
+
         mock_item = Mock()
         mock_item.id = "test_id"
-        
+
         result = classifier.get_classification(mock_item)
-        
+
         self.assertIsInstance(result, TimeRequirementClassification)
         self.assertEqual(result.time_required, "2-4 hours")
         self.assertEqual(result.time_reasoning, "Concrete implementation test")
 
 
-if __name__ == '__main__':
-    unittest.main() 
+if __name__ == "__main__":
+    unittest.main()
