@@ -8,6 +8,7 @@ from tenacity import RetryError
 
 from shared.classifiers.classification_input import ClassificationInputT
 from shared.classifiers.topics_skills_classifier_v2 import TopicsSkillsClassificationV2, TopicsSkillsClassifierV2
+from shared.classifiers.time_requirement_classifier import TimeRequirementClassifier
 from shared.embedders.similarity_embedder import SimilarityEmbedder
 from typing import Optional, Callable
 
@@ -23,6 +24,8 @@ class ClassificationResult:
     similarity_embedding: List[float]
     commitment_label: Optional[str] = None
     location_type: Optional[str] = None
+    time_required: Optional[str] = None
+    time_reasoning: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         # noinspection PyTypeChecker
@@ -32,6 +35,7 @@ class ClassificationResult:
 class Classifier(Generic[ClassificationInputT], ABC):
     topics_skills_v2_classifier: TopicsSkillsClassifierV2[ClassificationInputT]
     similarity_embedder: SimilarityEmbedder[ClassificationInputT]
+    time_requirement_classifier: Optional[TimeRequirementClassifier[ClassificationInputT]]
     bqclient: BigQueryClient
     item_type: str
     table_name_classifications: str
@@ -47,9 +51,11 @@ class Classifier(Generic[ClassificationInputT], ABC):
         bqclient: BigQueryClient,
         commitment_label_extractor: Optional[Callable[[Any], Optional[str]]] = None,
         location_type_extractor: Optional[Callable[[ClassificationInputT], Optional[str]]] = None,
+        time_requirement_classifier: Optional[TimeRequirementClassifier[ClassificationInputT]] = None,
     ):
         self.topics_skills_v2_classifier = topics_skills_classifier_v2
         self.similarity_embedder = similarity_embedder
+        self.time_requirement_classifier = time_requirement_classifier
         self.bqclient = bqclient
         self.item_type = item_type
         self.table_name_classifications = table_name_classifications
@@ -87,6 +93,13 @@ class Classifier(Generic[ClassificationInputT], ABC):
             if self.location_type_extractor:
                 location_type = self.location_type_extractor(item)
 
+            time_required = None
+            time_reasoning = None
+            if self.time_requirement_classifier:
+                time_classification = self.time_requirement_classifier.get_classification(item)
+                time_required = time_classification.time_required
+                time_reasoning = time_classification.time_reasoning
+
             return ClassificationResult(
                 type=self.item_type,
                 id=item.id,
@@ -97,6 +110,8 @@ class Classifier(Generic[ClassificationInputT], ABC):
                 similarity_embedding=similarity_embedding,
                 commitment_label=commitment_label,
                 location_type=location_type,
+                time_required=time_required,
+                time_reasoning=time_reasoning,
             )
 
         except RetryError as e:

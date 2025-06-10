@@ -10,6 +10,7 @@ from shared.classifiers.classification_input import ClassificationInputT
 
 import vertexai
 from shared.classifiers.topics_skills_classifier_v2 import TopicsSkillsClassifierV2
+from shared.classifiers.time_requirement_classifier import TimeRequirementClassifier
 from shared.embedders.similarity_embedder import SimilarityEmbedder
 
 DEFAULT_BATCH_SIZE = 100
@@ -34,6 +35,7 @@ class PipelineBatchClassifier(Generic[ClassificationInputT], Classifier[Classifi
         stop_after_batch_nr: int | None = None,
         commitment_label_extractor: Optional[Callable[[Any], Optional[str]]] = None,
         location_type_extractor: Optional[Callable[[ClassificationInputT], Optional[str]]] = None,
+        time_requirement_classifier: Optional[TimeRequirementClassifier[ClassificationInputT]] = None,
     ):
         super().__init__(
             topics_skills_classifier_v2,
@@ -46,6 +48,7 @@ class PipelineBatchClassifier(Generic[ClassificationInputT], Classifier[Classifi
             ),
             commitment_label_extractor=commitment_label_extractor,
             location_type_extractor=location_type_extractor,
+            time_requirement_classifier=time_requirement_classifier,
         )
         vertexai.init(project=GCLOUD_PROJECT_ID, location=GCLOUD_LOCATION)
         self.batch_size = batch_size if batch_size else DEFAULT_BATCH_SIZE

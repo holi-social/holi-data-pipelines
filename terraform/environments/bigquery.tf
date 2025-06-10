@@ -123,7 +123,9 @@ resource "google_bigquery_table" "classifications" {
     { "name": "skills_v2", "type": "STRING", "mode": "REPEATED"},
     { "name": "similarity_embedding", "type": "FLOAT", "mode": "REPEATED"},
     { "name": "commitment_label", "type": "STRING", "mode": "NULLABLE" },
-    { "name": "location_type", "type": "STRING", "mode": "NULLABLE" }
+    { "name": "location_type", "type": "STRING", "mode": "NULLABLE" },
+    { "name": "time_required", "type": "STRING", "mode": "NULLABLE" },
+    { "name": "time_reasoning", "type": "STRING", "mode": "NULLABLE" }
   ]
   EOF
 
@@ -270,7 +272,9 @@ resource "google_bigquery_table" "volunteering_voltastics_classified_enriched_pa
         classifications.skills_v2 AS skills_v2,
         classifications.similarity_embedding AS similarity_embedding,
         classifications.commitment_label AS commitment_label,
-        classifications.location_type AS location_type
+        classifications.location_type AS location_type,
+        classifications.time_required AS time_required,
+        classifications.time_reasoning AS time_reasoning
       FROM
         `${local.datalake}.volunteering_voltastics_raw_deduped` AS raw_deduped
       LEFT OUTER JOIN
@@ -435,6 +439,9 @@ resource "google_bigquery_table" "volunteering_aktion_mensch_classified_enriched
         classifications.topics_skills_embedding_v2,
         classifications.similarity_embedding,
         classifications.commitment_label,
+        classifications.location_type,
+        classifications.time_required,
+        classifications.time_reasoning,
         
         'Aktion Mensch' AS source,
         am._PARTITIONTIME AS partitiontime
