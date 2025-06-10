@@ -8,6 +8,9 @@ default:
 
 variables:
   PREFECT_SERVER_URL_PATH: "$CI_PROJECT_DIR/prefect_server_url"
+  UV_INDEX_URL: "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/"
+  PIP_INDEX_URL: "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/"
+  PIP_TRUSTED_HOST: "europe-north1-python.pkg.dev"
 
 .uv_cache_rw_pipelines:
   policy: pull-push
