@@ -233,8 +233,8 @@ def typesense_qc() -> State:
         if (
             results[typ]["bq_ids_not_in_ts"]
             or results[typ]["ts_ids_not_in_bq"]
-            or results[typ]["pg_ids_not_in_bq"]
-            or results[typ]["bq_ids_not_in_pg"]
+            or ("pg_ids_not_in_bq" in results[typ] and results[typ]["pg_ids_not_in_bq"])  # only exists for PG data
+            or ("bq_ids_not_in_pg" in results[typ] and results[typ]["bq_ids_not_in_pg"])  # only exists for PG data
         ):
             msg = f"BigQuery and Typesense are inconsistent for document type {typ}%: {pprint.pformat(results[typ])}"
             logger.error(msg)
