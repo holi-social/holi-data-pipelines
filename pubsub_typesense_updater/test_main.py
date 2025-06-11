@@ -376,6 +376,31 @@ def test_task_created(mock_client: MagicMock, mock_task_classifier: MagicMock) -
 
 
 @patch("typesense.client.Client")
+def test_private_task_created(mock_client: MagicMock, mock_task_classifier: MagicMock) -> None:
+    private_task_payload = {
+        **task_payload,
+        "visibility": "PRIVATE",
+    }
+
+    # WHEN receiving a TaskCreated event for a private task
+    process_event(
+        mock_client,
+        CloudEvent(
+            attributes,
+            message_data(
+                "TaskCreated", "1.0.0", {"user": user_payload, "space": space_payload, "task": private_task_payload}
+            ),
+        ),
+    )
+
+    # THEN the event should be ignored
+    mock_task_classifier.get_cached_classification.assert_not_called()
+    mock_task_classifier.classify_item_and_cache_classification.assert_not_called()
+    mock_client.upsert.assert_not_called()
+    mock_client.delete.assert_not_called()
+
+
+@patch("typesense.client.Client")
 def test_task_created_cached_classification(mock_client: MagicMock, mock_task_classifier: MagicMock) -> None:
     # GIVEN a cached classification result
     mock_task_classifier.get_cached_classification.return_value = mock_classification_result
@@ -422,6 +447,27 @@ def test_task_updated(mock_client: MagicMock, mock_task_classifier: MagicMock) -
     mock_client.upsert.assert_called_with(
         _expected_task_ts_doc(space_payload, task_payload, mock_topics_skills_embedding_v2, mock_similarity_embedding)
     )
+
+
+@patch("typesense.client.Client")
+def test_task_updated_from_public_to_private(mock_client: MagicMock, mock_task_classifier: MagicMock) -> None:
+    # WHEN receiving a TaskUpdated event for a private task
+    private_task_payload = {
+        **task_payload,
+        "visibility": "PRIVATE",
+    }
+    process_event(
+        mock_client,
+        CloudEvent(
+            attributes,
+            message_data(
+                "TaskUpdated", "1.0.0", {"user": user_payload, "space": space_payload, "task": private_task_payload}
+            ),
+        ),
+    )
+
+    # THEN the task shall be removed from Typesense index
+    mock_client.delete.assert_called_with(f"task_{private_task_payload['id']}")
 
 
 @patch("typesense.client.Client")
