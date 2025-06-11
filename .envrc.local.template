@@ -70,7 +70,6 @@ export TYPESENSE_ADMIN_API_KEY=
 export TYPESENSE_HOST=
 export TYPESENSE_PORT=
 export TYPESENSE_PROTOCOL=
-export GOOGLE_APPLICATION_CREDENTIALS=../.holi-terraform.key
 
 export PREFECT_API_URL=http://prefect-server-staging.holi.internal:8421/api
 #export PREFECT_API_URL=http://prefect-server-production.holi.internal:8420/api

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional, List
+from typing import Optional, List, Any
 
 from shared.classifiers.classification_input import ClassificationInput
 
@@ -16,4 +16,5 @@ class VolunteeringClassificationInput(ClassificationInput):
     similarity_embedding: Optional[List[float]] = None
     hashTags: Optional[List[str]] = None  # noqa: N815
     uses: Optional[List[str]] = None
-    source: Optional[str] = None  # Source identifier (e.g., "Aktion Mensch", "vostel.de")
+    source: Optional[str] = None
+    additional_data: Optional[Any] = None

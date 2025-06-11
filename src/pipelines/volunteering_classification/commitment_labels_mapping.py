@@ -176,8 +176,8 @@ def extract_commitment_label_from_item(item: Any) -> Optional[str]:
     source = getattr(item, "source", None)
     data = None
 
-    if hasattr(item, "additionalData") and item.additionalData:
-        data = _parse_additional_data(item.additionalData)
+    if hasattr(item, "additional_data") and item.additional_data:
+        data = _parse_additional_data(item.additional_data)
 
     elif source == "Aktion Mensch" and hasattr(item, "attribute"):
         attribute = item.attribute

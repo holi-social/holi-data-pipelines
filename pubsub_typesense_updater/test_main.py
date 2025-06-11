@@ -69,6 +69,9 @@ task_payload: Any = {
     "contactPhone": "+49123456789",
 }
 
+location_type = "onsite"
+commitment_label = "one-time"
+
 
 def message_data(event_type: Any, event_version: Any, data: Any) -> Any:
     return {
@@ -142,7 +145,12 @@ def _expected_task_ts_doc(
             task_event_payload["geolocationGeoJson"]["coordinates"][0],
             task_event_payload["geolocationGeoJson"]["coordinates"][1],
         ],
+        "location_type": location_type,
+        "commitment_label": commitment_label,
+        "commitment_duration": task_event_payload["duration"],
         "image_url": task_event_payload["thumbnail"],
+        "organizer_name": space_event_payload.get("name"),
+        "organizer_image_url": space_event_payload.get("avatar"),
         "link_locators": {"space": space_event_payload["slug"], "task": task_event_payload["id"]},
         "topics_v2": space_event_payload["topicsV2"],
         "skills_v2": task_event_payload["skillsV2"],
@@ -564,6 +572,9 @@ def test_task_updated_with_missing_optional_fields(mock_client: MagicMock) -> No
     del task["location"]
     del task["geolocationGeoJson"]
     del task["skillsV2"]
+    del task["locationType"]
+    del task["regularity"]
+    del task["duration"]
 
     process_event(
         mock_client,
@@ -582,7 +593,12 @@ def test_task_updated_with_missing_optional_fields(mock_client: MagicMock) -> No
             "description_en": task["description"],
             "location": None,
             "location_lat_lng": None,
+            "location_type": None,
+            "commitment_label": None,
+            "commitment_duration": None,
             "image_url": None,
+            "organizer_name": space_payload["name"],
+            "organizer_image_url": space_payload["avatar"],
             "link_locators": {"space": space_payload["slug"], "task": task_payload["id"]},
             "topics_v2": ["animal-welfare", "arts-culture"],
             "skills_v2": [],
@@ -615,7 +631,12 @@ def test_task_updated_with_broken_geojson(mock_client: MagicMock) -> None:
             "description_en": task["description"],
             "location": task["location"],
             "location_lat_lng": None,
+            "location_type": location_type,
+            "commitment_label": commitment_label,
+            "commitment_duration": task["duration"],
             "image_url": task_payload["thumbnail"],
+            "organizer_name": space_payload["name"],
+            "organizer_image_url": space_payload["avatar"],
             "link_locators": {"space": space_payload["slug"], "task": task_payload["id"]},
             "topics_v2": space_payload["topicsV2"],
             "skills_v2": task_payload["skillsV2"],

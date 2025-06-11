@@ -37,7 +37,7 @@
     },
     {
       "matchManagers": [
-        "pip_requirements"
+        "pep621"
       ],
       "matchUpdateTypes": [
         "minor",

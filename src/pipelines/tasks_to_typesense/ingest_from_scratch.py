@@ -13,6 +13,11 @@ from src.common.typesense_client import TypesenseClient, TypesenseClientConfig
 from src.common.variables import variable_value
 from src.pipelines.bigquery import tasks_with_classifications
 
+from shared.mappings.task_mappings import (
+    map_task_location_type_to_typesense_location_type,
+    map_task_regularity_to_commitment_label,
+)
+
 logger = PipelineLogger(__name__)
 
 TaskRow = dict[str, Any | None]
@@ -41,7 +46,12 @@ def task_to_doc(row: TaskRow) -> TaskDoc:
         "description_en": row.get("description"),
         "location": row.get("location"),
         "location_lat_lng": to_location_lat_lng(geojson) if geojson else None,
+        "location_type": map_task_location_type_to_typesense_location_type(row.get("location_type")),
+        "commitment_label": map_task_regularity_to_commitment_label(row.get("regularity")),
+        "commitment_duration": row.get("duration"),
         "image_url": row.get("thumbnail"),
+        "organizer_name": row.get("community_name"),
+        "organizer_image_url": row.get("community_avatar"),
         "link_locators": {"space": row.get("community_slug"), "task": row.get("id")},
         "topics_v2": row.get("topics_v2"),
         "skills_v2": row.get("skills_v2"),

@@ -146,7 +146,7 @@ resource "prefect_variable" "betterplace_api_url" {
 
 resource "prefect_variable" "aktion_mensch_api_url" {
   name  = "aktion_mensch_api_url"
-  value = "https://service.test-am.de/api/holi-social/v1/freiwilligendatenbank/export/angebote"
+  value = "https://service.aktion-mensch.de:443/api/holi-social/v1/freiwilligendatenbank/export/angebote"
 }
 
 resource "prefect_variable" "bigquery_datalake" {
@@ -167,6 +167,11 @@ resource "prefect_variable" "bigquery_datapool" {
 
 resource "prefect_variable" "volunteering_to_typesense_state" {
   name  = "volunteering_to_typesense_state"
+  value = {}
+}
+
+resource "prefect_variable" "aktion_mensch_to_typesense_state" {
+  name  = "aktion_mensch_to_typesense_state"
   value = {}
 }
 
@@ -196,7 +201,7 @@ resource "prefect_variable" "prefect_environment" {
 }
 
 resource "prefect_variable" "bigquery_okuna_dataset" {
-  name  = "bigquery_okuna_dataset"
+  name = "bigquery_okuna_dataset"
   value = {
     project = local.default_project
     dataset = local.environment == "production" ? "okuna_production_public" : "okuna_staging_public"
@@ -298,7 +303,7 @@ resource "google_cloud_run_v2_service" "work_pool_cloud_run_worker" {
         startup_cpu_boost = true
         limits = {
           cpu    = "1"
-          memory = "1024Mi"
+          memory = "2048Mi"
         }
       }
       startup_probe {
@@ -314,7 +319,7 @@ resource "google_cloud_run_v2_service" "work_pool_cloud_run_worker" {
       }
     }
     vpc_access {
-      egress = "PRIVATE_RANGES_ONLY"
+      egress = "ALL_TRAFFIC"
       network_interfaces {
         network = data.terraform_remote_state.holi_infra_state.outputs.google_compute_network_default_name
       }
