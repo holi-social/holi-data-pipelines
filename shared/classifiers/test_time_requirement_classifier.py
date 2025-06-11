@@ -1,4 +1,5 @@
 import unittest
+from typing import Any
 from unittest.mock import Mock
 
 from shared.classifiers.time_requirement_classifier import (
@@ -57,13 +58,13 @@ class TestTimeRequirementClassifierBase(unittest.TestCase):
     def test_time_requirement_classifier_is_abstract(self) -> None:
         """Test that TimeRequirementClassifier cannot be instantiated directly."""
         with self.assertRaises(TypeError):
-            TimeRequirementClassifier(self.mock_logger)
+            TimeRequirementClassifier[Any](self.mock_logger)  # type: ignore[abstract]
 
     def test_time_requirement_classifier_logger_assignment(self) -> None:
         """Test that the logger is properly assigned in the base class."""
 
-        class ConcreteTimeRequirementClassifier(TimeRequirementClassifier):
-            def get_classification(self, item):
+        class ConcreteTimeRequirementClassifier(TimeRequirementClassifier[Any]):
+            def get_classification(self, item: Any) -> TimeRequirementClassification:
                 return TimeRequirementClassification(time_required="1-2 hours", time_reasoning="Test reasoning")
 
         classifier = ConcreteTimeRequirementClassifier(self.mock_logger)
@@ -72,8 +73,8 @@ class TestTimeRequirementClassifierBase(unittest.TestCase):
     def test_concrete_classifier_implements_get_classification(self) -> None:
         """Test that concrete classifiers must implement get_classification."""
 
-        class ConcreteTimeRequirementClassifier(TimeRequirementClassifier):
-            def get_classification(self, item):
+        class ConcreteTimeRequirementClassifier(TimeRequirementClassifier[Any]):
+            def get_classification(self, item: Any) -> TimeRequirementClassification:
                 return TimeRequirementClassification(
                     time_required="2-4 hours", time_reasoning="Concrete implementation test"
                 )
