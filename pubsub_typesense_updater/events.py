@@ -252,6 +252,9 @@ class TaskPayload:
         self.contact_email = task_data.get("contactEmail")
         self.contact_phone = task_data.get("contactPhone")
 
+    def is_private(self) -> bool:
+        return self.visibility.casefold() != "public"
+
 
 @dataclass
 class TaskEvent(DomainEvent):
