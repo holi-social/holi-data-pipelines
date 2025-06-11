@@ -120,7 +120,7 @@ def process_task_created_event(ts_client: TypesenseClient, event: TaskCreatedEve
 
 def process_task_updated_event(ts_client: TypesenseClient, event: TaskUpdatedEvent) -> None:
     logger.debug(f"[id={event.task.id}] Processing TaskUpdated event")
-    if event.task.visibility == "PRIVATE":
+    if event.task.is_private():
         return _delete_task(ts_client, event.task.id)
     else:
         return _upsert_task(ts_client, event)
@@ -183,10 +183,7 @@ def process_event(ts_client: TypesenseClient, cloud_event: CloudEvent) -> None:
     elif event_type == "TaskUpdated":
         task_updated_event = TaskUpdatedEvent(cloud_event)
         add_logging_context(task_updated_event)
-        if task_updated_event.task.visibility == "PUBLIC":
-            return process_task_updated_event(ts_client, task_updated_event)
-        else:
-            return process_task_deleted_event(ts_client, task_updated_event.task.id)
+        return process_task_updated_event(ts_client, task_updated_event)
     elif event_type == "TaskDeleted":
         task_deleted_event = TaskDeletedEvent(cloud_event)
         add_logging_context(task_deleted_event)

@@ -467,6 +467,7 @@ def test_task_updated_from_public_to_private(mock_client: MagicMock, mock_task_c
     )
 
     # THEN the task shall be removed from Typesense index
+    mock_client.upsert.assert_not_called()
     mock_client.delete.assert_called_with(f"task_{private_task_payload['id']}")
 
 
