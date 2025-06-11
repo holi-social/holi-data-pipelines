@@ -88,8 +88,7 @@ def process_space_deleted_event(ts_client: TypesenseClient, event: SpaceDeletedE
     logger.info(f"[id={event.space.id}] Deleted space {event.space.id} in Typesense")
 
 
-def process_task_upserting_event(ts_client: TypesenseClient, event: Union[TaskCreatedEvent, TaskUpdatedEvent]) -> None:
-    logger.debug(f"[id={event.task.id}] Processing event")
+def _upsert_task(ts_client: TypesenseClient, event: Union[TaskCreatedEvent, TaskUpdatedEvent]) -> None:
     vertexai.init(project=gcloud_project_id(), location=gcloud_location())
     bq_client = bigquery.Client(project=gcloud_project_id(), location=gcloud_location())
     classifier = TaskClassifier(bigquery_table_name_classifications(), logger, bq_client)
@@ -111,13 +110,33 @@ def process_task_upserting_event(ts_client: TypesenseClient, event: Union[TaskCr
     logger.info(f"[id={event.task.id}] Upserted task in Typesense")
 
 
-def process_task_deleted_event(ts_client: TypesenseClient, event: TaskDeletedEvent) -> None:
-    logger.debug(f"[id={event.task.id}] Processing event")
+def process_task_created_event(ts_client: TypesenseClient, event: TaskCreatedEvent) -> None:
+    logger.debug(f"[id={event.task.id}] Processing TaskCreated event")
+    if event.task.is_private():
+        return None
+    else:
+        return _upsert_task(ts_client, event)
+
+
+def process_task_updated_event(ts_client: TypesenseClient, event: TaskUpdatedEvent) -> None:
+    logger.debug(f"[id={event.task.id}] Processing TaskUpdated event")
+    if event.task.is_private():
+        return _delete_task(ts_client, event.task.id)
+    else:
+        return _upsert_task(ts_client, event)
+
+
+def _delete_task(ts_client: TypesenseClient, id: str) -> None:
     try:
-        ts_client.delete(f"task_{event.task.id}")
+        ts_client.delete(f"task_{id}")
     except ObjectNotFound:
         pass
-    logger.info(f"[id={event.task.id}] Deleted task in Typesense")
+    logger.info(f"[id={id}] Deleted task in Typesense")
+
+
+def process_task_deleted_event(ts_client: TypesenseClient, id: str) -> None:
+    logger.debug(f"[id={id}] Processing event")
+    _delete_task(ts_client, id)
 
 
 def process_event(ts_client: TypesenseClient, cloud_event: CloudEvent) -> None:
@@ -160,15 +179,15 @@ def process_event(ts_client: TypesenseClient, cloud_event: CloudEvent) -> None:
     elif event_type == "TaskCreated":
         task_created_event = TaskCreatedEvent(cloud_event)
         add_logging_context(task_created_event)
-        return process_task_upserting_event(ts_client, task_created_event)
+        return process_task_created_event(ts_client, task_created_event)
     elif event_type == "TaskUpdated":
         task_updated_event = TaskUpdatedEvent(cloud_event)
         add_logging_context(task_updated_event)
-        return process_task_upserting_event(ts_client, task_updated_event)
+        return process_task_updated_event(ts_client, task_updated_event)
     elif event_type == "TaskDeleted":
         task_deleted_event = TaskDeletedEvent(cloud_event)
         add_logging_context(task_deleted_event)
-        return process_task_deleted_event(ts_client, task_deleted_event)
+        return process_task_deleted_event(ts_client, task_deleted_event.task.id)
     else:
         # other events than handled above are assumed to (currently) not be of interest in search
         logger.debug(f"Ignoring {event_type} (v{event_version}) event.")
