@@ -14,31 +14,31 @@ class TestTimeRequirementClassification(unittest.TestCase):
     def test_time_requirement_classification_creation(self) -> None:
         """Test that TimeRequirementClassification can be created with required fields."""
         classification = TimeRequirementClassification(
-            time_required="1-2 hours", time_reasoning="Based on the description of a 2-hour event."
+            time_required="1–2 hours", time_reasoning="Based on the description of a 2-hour event."
         )
 
-        self.assertEqual(classification.time_required, "1-2 hours")
+        self.assertEqual(classification.time_required, "1–2 hours")
         self.assertEqual(classification.time_reasoning, "Based on the description of a 2-hour event.")
 
-    def test_time_requirement_classification_with_unable_to_determine(self) -> None:
-        """Test classification with 'Unable to determine' category."""
+    def test_time_requirement_classification_with_unclear_category(self) -> None:
+        """Test classification with 'Unclear / Not enough info' category."""
         classification = TimeRequirementClassification(
-            time_required="Unable to determine", time_reasoning="Insufficient information in the description."
+            time_required="Unclear / Not enough info", time_reasoning="Insufficient information in the description."
         )
 
-        self.assertEqual(classification.time_required, "Unable to determine")
+        self.assertEqual(classification.time_required, "Unclear / Not enough info")
         self.assertEqual(classification.time_reasoning, "Insufficient information in the description.")
 
     def test_time_requirement_classification_with_various_categories(self) -> None:
         """Test classification with different time categories."""
         test_cases = [
-            ("<30 mins", "Quick task mentioned in description"),
-            ("30 mins - 1 hour", "Estimated based on activity type"),
-            ("1-2 hours", "Explicit time range given"),
-            ("2-4 hours", "Full morning session described"),
-            ("4-6 hours", "Half-day commitment mentioned"),
+            ("Less than 30 minutes", "Quick task mentioned in description"),
+            ("30 minutes – 1 hour", "Estimated based on activity type"),
+            ("1–2 hours", "Explicit time range given"),
+            ("2–4 hours", "Full morning session described"),
+            ("4–6 hours", "Half-day commitment mentioned"),
             ("1 day", "Full day event stated"),
-            ("> 1 day", "Multi-day workshop described"),
+            ("More than 1 day", "Multi-day workshop described"),
         ]
 
         for time_req, reasoning in test_cases:
@@ -65,7 +65,7 @@ class TestTimeRequirementClassifierBase(unittest.TestCase):
 
         class ConcreteTimeRequirementClassifier(TimeRequirementClassifier[Any]):
             def get_classification(self, item: Any) -> TimeRequirementClassification:
-                return TimeRequirementClassification(time_required="1-2 hours", time_reasoning="Test reasoning")
+                return TimeRequirementClassification(time_required="1–2 hours", time_reasoning="Test reasoning")
 
         classifier = ConcreteTimeRequirementClassifier(self.mock_logger)
         self.assertEqual(classifier.logger, self.mock_logger)
@@ -76,7 +76,7 @@ class TestTimeRequirementClassifierBase(unittest.TestCase):
         class ConcreteTimeRequirementClassifier(TimeRequirementClassifier[Any]):
             def get_classification(self, item: Any) -> TimeRequirementClassification:
                 return TimeRequirementClassification(
-                    time_required="2-4 hours", time_reasoning="Concrete implementation test"
+                    time_required="2–4 hours", time_reasoning="Concrete implementation test"
                 )
 
         classifier = ConcreteTimeRequirementClassifier(self.mock_logger)
@@ -87,7 +87,7 @@ class TestTimeRequirementClassifierBase(unittest.TestCase):
         result = classifier.get_classification(mock_item)
 
         self.assertIsInstance(result, TimeRequirementClassification)
-        self.assertEqual(result.time_required, "2-4 hours")
+        self.assertEqual(result.time_required, "2–4 hours")
         self.assertEqual(result.time_reasoning, "Concrete implementation test")
 
 

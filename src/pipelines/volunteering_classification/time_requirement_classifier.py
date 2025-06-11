@@ -15,14 +15,14 @@ MODEL_RATE_LIMIT_PER_MINUTE = 2000
 MODEL_INVOCATION_RETRY_ATTEMPTS = 3
 
 TIME_REQUIREMENT_CATEGORIES = [
-    "<30 mins",
-    "30 mins - 1 hour",
-    "1-2 hours",
-    "2-4 hours",
-    "4-6 hours",
+    "Less than 30 minutes",
+    "30 minutes – 1 hour",
+    "1–2 hours",
+    "2–4 hours",
+    "4–6 hours",
     "1 day",
-    "> 1 day",
-    "Unable to determine",
+    "More than 1 day",
+    "Unclear / Not enough info",
 ]
 
 HTML_RE = re.compile(r"<[^>]+>")
@@ -62,7 +62,7 @@ class VolunteeringTimeRequirementClassifier(TimeRequirementClassifier[Volunteeri
         # noqa: S608 - This is an AI prompt template, not SQL code
         prompt = f"""Role: AI Text Analyzer skilled in interpreting and estimating volunteer time commitments.
 
-        Goal: Analyze a volunteering opportunity based on its Title and Description. Estimate the most likely `Time required` for a typical session, even if not explicitly stated. Prioritize estimation over selecting 'Unable to determine'.
+        Goal: Analyze a volunteering opportunity based on its Title and Description. Estimate the most likely `Time required` for a typical session, even if not explicitly stated. Prioritize estimation over selecting 'Unclear / Not enough info'.
 
         Input: Opportunity data (id, title, description).
 
@@ -71,12 +71,12 @@ class VolunteeringTimeRequirementClassifier(TimeRequirementClassifier[Volunteeri
         1.  **Analyze:** Read the Title and Description carefully. Ignore HTML, focus on textual content describing the activity.
         2.  **Identify Explicit Time Clues:** First, search for specific durations, time ranges, shift lengths (e.g., "2 hours", "10am-12pm", "weekend", "monthly meeting").
         3.  **Classify Time (Estimate if Needed):**
-            *   **If explicit time clues exist:** Use them to select the best-fitting `Time required` category. If a range is given (e.g., "2-4 hours"), choose the category covering the lower or most typical part of the range based on context.
+            *   **If explicit time clues exist:** Use them to select the best-fitting `Time required` category. If a range is given (e.g., "2–4 hours"), choose the category covering the lower or most typical part of the range based on context.
             *   **If NO explicit time clues exist:**
                 *   Examine the *nature of the task described* in the Title and Description (e.g., "attend a meeting", "write letters", "staff an event table", "clean up a park").
                 *   Based *only* on the described task, make a **reasonable estimate** of a typical single session's duration. Consider common sense durations for such activities.
                 *   Select the `Time required` category that best fits your estimate. Lean towards shorter, common durations unless the description implies significant effort (e.g., "deep clean", "full event support").
-            *   **Use `Unable to determine` ONLY as a last resort** if the description is too vague to even make a reasonable estimate about the task's duration (e.g., "flexible help needed", "various tasks").
+            *   **Use `Unclear / Not enough info` ONLY as a last resort** if the description is too vague to even make a reasonable estimate about the task's duration (e.g., "flexible help needed", "various tasks").
         4.  **Format Output:** Create a JSON object containing the `id`, `reasoning` field explaining the time requirement selection, and the chosen category.
 
         Categories - `Time required`:
@@ -86,7 +86,7 @@ class VolunteeringTimeRequirementClassifier(TimeRequirementClassifier[Volunteeri
         ```json
         {{
         "id": "id",
-        "reasoning": "Explain the Time requirement selection. State if based on explicit text OR estimation from the described task. E.g., Explicit: 'Text states '10am-12pm', fitting '1-2 hours'.' Estimated: 'No duration given. Estimated '2-4 hours' based on typical time for 'staffing an event table' described.'",
+        "reasoning": "Explain the Time requirement selection. State if based on explicit text OR estimation from the described task. E.g., Explicit: 'Text states '10am-12pm', fitting '1–2 hours'.' Estimated: 'No duration given. Estimated '2–4 hours' based on typical time for 'staffing an event table' described.'",
         "Time required": "[Selected Time Category]"
         }}
 
