@@ -435,6 +435,7 @@ resource "google_bigquery_table" "volunteering_aktion_mensch_classified_enriched
         classifications.topics_skills_embedding_v2,
         classifications.similarity_embedding,
         classifications.commitment_label,
+        classifications.location_type,
         
         'Aktion Mensch' AS source,
         am._PARTITIONTIME AS partitiontime
