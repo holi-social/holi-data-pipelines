@@ -74,6 +74,9 @@ def transform_row(row: Dict[str, Optional[str]]) -> Dict[str, Optional[Any]]:
         "similarity_embedding": row.get("similarity_embedding"),
         "location_type": row.get("location_type"),
         "commitment_label": row.get("commitment_label"),
+        "commitment_duration": row.get("commitment_duration"),
+        "commitment_duration_ai_derived": True,
+        "commitment_duration_ai_reasoning": row.get("commitment_duration_ai_reasoning"),
     }
 
     title_lang = _lang_for(row.get("title"), row.get("id"))
