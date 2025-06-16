@@ -8,6 +8,7 @@ from tenacity import retry, stop_after_attempt
 from vertexai.generative_models import GenerationConfig, GenerativeModel
 
 from shared.classifiers.time_requirement_classifier import TimeRequirementClassifier, TimeRequirementClassification
+from src.common.str_utils import shorten_str, remove_html
 from src.pipelines.volunteering_classification.volunteering_classification_input import VolunteeringClassificationInput
 
 MODEL_NAME = "gemini-2.5-flash-preview-05-20"
@@ -53,11 +54,10 @@ class VolunteeringTimeRequirementClassifier(TimeRequirementClassifier[Volunteeri
         response = self.model.generate_content(prompt)
         return response.text
 
-    @staticmethod
-    def _create_classification_prompt(item: VolunteeringClassificationInput) -> str:
+    def _create_classification_prompt(self, item: VolunteeringClassificationInput) -> str:
         """Create the classification prompt for time requirement classification."""
-        title = VolunteeringTimeRequirementClassifier._shorten_title(item.title)
-        description = VolunteeringTimeRequirementClassifier._shorten_description(item.description)
+        title = shorten_str(item.title, MAX_TITLE_LEN)
+        description = shorten_str(remove_html(item.description), MAX_DESC_LEN)
 
         # noqa: S608 - This is an AI prompt template, not SQL code
         prompt = f"""Role: AI Text Analyzer skilled in interpreting and estimating volunteer time commitments.
@@ -106,6 +106,8 @@ class VolunteeringTimeRequirementClassifier(TimeRequirementClassifier[Volunteeri
 
         Output:"""  # noqa: S608
 
+        self.logger.debug(f'[id={item.id}] created prompt for title="{title}" and description="{description}"')
+
         return prompt
 
     @staticmethod
@@ -147,22 +149,3 @@ class VolunteeringTimeRequirementClassifier(TimeRequirementClassifier[Volunteeri
     def _validate_time_category(time_required: str) -> None:
         if time_required not in TIME_REQUIREMENT_CATEGORIES:
             raise ValueError(f"Invalid time requirement category: {time_required}")
-
-    @staticmethod
-    def _shorten_title(title: str) -> str:
-        """Shorten title if too long."""
-        if len(title) <= MAX_TITLE_LEN:
-            return title.strip()
-        return title[: MAX_TITLE_LEN - 3].strip() + "..."
-
-    @staticmethod
-    def _shorten_description(description: str) -> str:
-        """Shorten description if too long, removing HTML."""
-        lines = HTML_RE.sub("", description).split("\n")
-        full_desc = " ".join(lines)
-        if len(full_desc) <= MAX_DESC_LEN:
-            return full_desc.strip()
-        first_line = lines[0]
-        if len(first_line) <= MAX_DESC_LEN:
-            return first_line.strip()
-        return first_line[: MAX_DESC_LEN - 3].strip() + "..."

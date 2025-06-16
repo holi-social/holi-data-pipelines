@@ -101,8 +101,27 @@
         {"name": "external_url", "type": "string", "optional": true, "index":  false},
         {"name": "source", "type": "string", "optional": true, "index":  false},
         {"name": "commitment_label", "type": "string", "optional": true, "facet": true},
-        {"name": "time_required", "type": "string", "optional": true, "facet": true},
+        {
+            "name": "time_required",
+            "type": "string",
+            "optional": true,
+            "facet": true
+        },
+        {
+            "name": "time_required_ai_derived",
+            "type": "boolean",
+            "optional": true,
+            "facet": false,
+            "index": false
+        },
+        {
+            "name": "time_required_ai_reasoning",
+            "type": "string",
+            "optional": true,
+            "facet": false,
+            "index": false
+        },
         {"name": "space_id", "type": "string", "optional": true},
-    		{"name": "commitment_duration", "type": "string", "optional": true}
+        {"name": "commitment_duration", "type": "string", "optional": true}
     ]
 }

@@ -11,6 +11,7 @@ from vertexai.generative_models import GenerationConfig
 from shared.classifiers.topics_skills_classifier_v2 import TopicsSkillsClassifierV2, TopicsSkillsClassificationV2
 from ratelimit import limits, sleep_and_retry
 
+from src.common.str_utils import remove_html, shorten_str
 from src.pipelines.topics_v2 import topic_v2_titles, topic_v2_slugs
 from src.pipelines.skills_v2 import skill_v2_titles, skill_v2_slugs
 
@@ -142,8 +143,8 @@ class VolunteeringTopicsSkillsClassifierV2(TopicsSkillsClassifierV2[Volunteering
 
     @staticmethod
     def _create_skills_prompt_volunteering(item: VolunteeringClassificationInput) -> str:
-        title = VolunteeringTopicsSkillsClassifierV2._shorten_title(item.title)
-        desc = VolunteeringTopicsSkillsClassifierV2._shorten_description(item.description)
+        title = shorten_str(item.title, MAX_TITLE_LEN)
+        desc = shorten_str(remove_html(item.description), MAX_DESC_LEN)
         # Description can be empty
         desc_part = f' und der Beschreibung "{desc}"' if desc else ""
         categories = VolunteeringTopicsSkillsClassifierV2._join_categories(item.uses or [])
@@ -159,9 +160,9 @@ class VolunteeringTopicsSkillsClassifierV2(TopicsSkillsClassifierV2[Volunteering
 
     @staticmethod
     def _create_topics_prompt_volunteering(item: VolunteeringClassificationInput) -> str:
-        title = VolunteeringTopicsSkillsClassifierV2._shorten_title(item.title)
-        titles_list = "\n".join(map(lambda topic_title: f"- {topic_title}", topic_v2_titles))
-        desc = VolunteeringTopicsSkillsClassifierV2._shorten_description(item.description)
+        title = shorten_str(item.title, MAX_TITLE_LEN)
+        topic_titles_list = "\n".join(map(lambda topic_title: f"- {topic_title}", topic_v2_titles))
+        desc = shorten_str(remove_html(item.description), MAX_DESC_LEN)
         # Description can be empty
         desc_part = f' und der Beschreibung "{desc}"' if desc else ""
         categories = VolunteeringTopicsSkillsClassifierV2._join_categories(item.uses or [])
@@ -170,26 +171,9 @@ class VolunteeringTopicsSkillsClassifierV2(TopicsSkillsClassifierV2[Volunteering
         return f"""
         Dies ist ein Freiwilligenprojekt mit dem Titel "{title}"{desc_part}.{categories_part}
         Deine Aufgabe ist es, für die folgenden Themen eine Gewichtung zu diesem Freiwilligenprojekt zwischen {CONFIDENCE_MIN_VALUE} und {CONFIDENCE_MAX_VALUE} ({CONFIDENCE_MIN_VALUE} für unpassend, {CONFIDENCE_MAX_VALUE} für passend) zu bestimmen:
-        {titles_list}
+        {topic_titles_list}
         Gib die Themen inklusive Gewichtung im {MODEL_RESPONSE_OUTPUT_FORMAT}-Format ohne Erklärung zurück.
         """
-
-    @staticmethod
-    def _shorten_title(title: str) -> str:
-        if len(title) <= MAX_TITLE_LEN:
-            return title.strip()
-        return title[: MAX_TITLE_LEN - 3].strip() + "..."
-
-    @staticmethod
-    def _shorten_description(description: str) -> str:
-        lines = HTML_RE.sub("", description).split("\n")
-        full_desc = " ".join(lines)
-        if len(full_desc) <= MAX_DESC_LEN:
-            return full_desc.strip()
-        first_line = lines[0]
-        if len(first_line) <= MAX_DESC_LEN:
-            return first_line.strip()
-        return first_line[: MAX_DESC_LEN - 3].strip() + "..."
 
     @staticmethod
     def _join_categories(categories: List[str]) -> str:

@@ -1,12 +1,13 @@
 import random
 import json
-from typing import Any
+from typing import Any, List
 
 import pytest
 from faker import Faker
 
 from src.pipelines.skills_v2 import skill_v2_slugs
 from src.pipelines.topics_v2 import topic_v2_slugs
+from src.pipelines.volunteering_classification.time_requirement_classifier import TIME_REQUIREMENT_CATEGORIES
 from src.pipelines.volunteering_to_typesense.typesense_transformer import transform_row
 
 fake = Faker()
@@ -15,6 +16,10 @@ RowFixture = dict[str, Any]
 
 TOPICS_SKILLS_EMBEDDING_V2_LENGTH = 53
 SIMILARITY_EMBEDDING_LENGTH = 256
+
+
+def _random(choices: List[Any]) -> Any:
+    return random.choice(choices)  # noqa: S311 Standard pseudo-random generators are not suitable for cryptographic purposes
 
 
 def _row() -> RowFixture:
@@ -43,7 +48,13 @@ def _row() -> RowFixture:
             for i in range(fake.random_int(min=0, max=len(skill_v2_slugs) - 1))
         ],
         "similarity_embedding": [fake.pyfloat(min_value=-1, max_value=1) for i in range(SIMILARITY_EMBEDDING_LENGTH)],
-        "location_type": random.choice([None, "REMOTE"]),  # noqa: S311
+        "location_type": _random([None, "REMOTE"]),
+        "commitment_label": _random(
+            [None, "ONE_TIME", "ONCE_WEEK", "ONCE_MONTH", "REGULARLY", "PROJECT_BASED", "NEGOTIABLE", "UNKNOWN"]
+        ),
+        "time_required": _random([None, *TIME_REQUIREMENT_CATEGORIES]),
+        "time_required_ai_derived": _random([True, False]),
+        "time_required_ai_reasoning": _random([None, "I hallucinate reasons"]),
     }
 
 
@@ -76,6 +87,10 @@ def test_german_all_fields(row: RowFixture) -> None:
     assert result["skills_v2"] == row["skills_v2"]
     assert result["similarity_embedding"] == row["similarity_embedding"]
     assert result["location_type"] == row["location_type"]
+    assert result["commitment_label"] == row["commitment_label"]
+    assert result["time_required"] == row["time_required"]
+    assert result["time_required_ai_derived"] is True
+    assert result["time_required_ai_reasoning"] == row["time_reasoning"]
 
 
 def test_english_title_and_description(row: RowFixture) -> None:
