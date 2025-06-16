@@ -7,7 +7,9 @@ from faker import Faker
 
 from src.pipelines.skills_v2 import skill_v2_slugs
 from src.pipelines.topics_v2 import topic_v2_slugs
-from src.pipelines.volunteering_classification.commitment_duration_classifier import TIME_REQUIREMENT_CATEGORIES
+from src.pipelines.volunteering_classification.commitment_duration_classifier import (
+    DURATIONS_CONSTANTS_TO_HUMAN_READABLE,
+)
 from src.pipelines.volunteering_to_typesense.typesense_transformer import transform_row
 
 fake = Faker()
@@ -52,7 +54,7 @@ def _row() -> RowFixture:
         "commitment_label": _random(
             [None, "ONE_TIME", "ONCE_WEEK", "ONCE_MONTH", "REGULARLY", "PROJECT_BASED", "NEGOTIABLE", "UNKNOWN"]
         ),
-        "commitment_duration": _random([None, *TIME_REQUIREMENT_CATEGORIES]),
+        "commitment_duration": _random([None, *DURATIONS_CONSTANTS_TO_HUMAN_READABLE]),
         "commitment_duration_ai_reasoning": _random([None, "I hallucinate reasons"]),
     }
 

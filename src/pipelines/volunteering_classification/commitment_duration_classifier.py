@@ -1,13 +1,14 @@
 import json
 import re
 from logging import Logger
-from typing import Any
+from typing import Any, cast, Dict
 
 from ratelimit import limits, sleep_and_retry
 from tenacity import retry, stop_after_attempt
 from vertexai.generative_models import GenerationConfig, GenerativeModel
 
 from shared.classifiers.commitment_duration_classifier import (
+    CommitmentDuration,
     CommitmentDurationClassifier,
     CommitmentDurationClassification,
 )
@@ -18,16 +19,20 @@ MODEL_NAME = "gemini-2.5-flash-preview-05-20"
 MODEL_RATE_LIMIT_PER_MINUTE = 2000
 MODEL_INVOCATION_RETRY_ATTEMPTS = 3
 
-TIME_REQUIREMENT_CATEGORIES = [
-    "Less than 30 minutes",
-    "30 minutes – 1 hour",
-    "1–2 hours",
-    "2–4 hours",
-    "4–6 hours",
-    "1 day",
-    "More than 1 day",
-    "Unclear / Not enough info",
-]
+DURATIONS_CONSTANTS_TO_HUMAN_READABLE = {
+    "MINUTES_10to15": "Less than 15 minutes",
+    "MINUTES_15to30": "15 to 30 minutes",
+    "MINUTES_30to60": "30 minutes – 1 hour",
+    "HOURS_1to2": "1–2 hours",
+    "HOURS_2to4": "2–4 hours",
+    "HOURS_4to6": "4–6 hours",
+    "DAYS_1": "1 day",
+    "DAYS_2": "2 days",
+    "DAYS_3_OR_MORE": "3 days or more",
+    "INDETERMINATE": "Unclear / Not enough info",
+}
+
+DURATIONS_HUMAN_READABLE_TO_CONSTANTS = {v: k for k, v in DURATIONS_CONSTANTS_TO_HUMAN_READABLE.items()}
 
 HTML_RE = re.compile(r"<[^>]+>")
 
@@ -54,7 +59,7 @@ class VolunteeringCommitmentDurationClassifier(CommitmentDurationClassifier[Volu
     def _invoke_and_parse_with_retry(self, prompt: str, item_id: str) -> CommitmentDurationClassification:
         response = self._invoke_model(prompt)
         self.logger.debug(f"[id={item_id}] raw time requirement response: {response}")
-        return self._parse_and_validate_response(response, item_id)
+        return self._parse_and_validate_response(response)
 
     @sleep_and_retry  # type: ignore[misc]
     @limits(calls=MODEL_RATE_LIMIT_PER_MINUTE, period=60)  # type: ignore[misc]
@@ -88,7 +93,7 @@ class VolunteeringCommitmentDurationClassifier(CommitmentDurationClassifier[Volu
         4.  **Format Output:** Create a JSON object containing the `id`, `reasoning` field explaining the time requirement selection, and the chosen category.
 
         Categories - `Time required`:
-        {"\n".join(f"*   `{cat}`" for cat in TIME_REQUIREMENT_CATEGORIES)}
+        {"\n".join(f"*   `{cat}`" for cat in DURATIONS_CONSTANTS_TO_HUMAN_READABLE.values())}
 
         Output JSON Format:
         ```json
@@ -119,19 +124,20 @@ class VolunteeringCommitmentDurationClassifier(CommitmentDurationClassifier[Volu
         return prompt
 
     @staticmethod
-    def _parse_and_validate_response(response: str, item_id: str) -> CommitmentDurationClassification:
+    def _parse_and_validate_response(response: str) -> CommitmentDurationClassification:
         clean_json = VolunteeringCommitmentDurationClassifier._clean_json_response(response)
         parsed_data = json.loads(clean_json)
 
         VolunteeringCommitmentDurationClassifier._validate_response_structure(parsed_data)
 
-        commitment_duration = parsed_data["Time required"]
-        reasoning = parsed_data["reasoning"]
+        commitment_duration = cast(str, parsed_data["Time required"])
+        reasoning = cast(str, parsed_data["reasoning"])
 
-        VolunteeringCommitmentDurationClassifier._validate_time_category(commitment_duration)
+        VolunteeringCommitmentDurationClassifier._validate_commitment_duration(commitment_duration)
 
         return CommitmentDurationClassification(
-            commitment_duration=commitment_duration, commitment_duration_ai_reasoning=reasoning
+            commitment_duration=cast(CommitmentDuration, DURATIONS_HUMAN_READABLE_TO_CONSTANTS[commitment_duration]),
+            commitment_duration_ai_reasoning=reasoning,
         )
 
     @staticmethod
@@ -146,16 +152,22 @@ class VolunteeringCommitmentDurationClassifier(CommitmentDurationClassifier[Volu
         return "\n".join(lines)
 
     @staticmethod
+    def _validate_str_field_exists(parsed_data: Dict[str, Any], field_name: str) -> None:
+        if not parsed_data.get(field_name):
+            raise ValueError(f'Missing field "{field_name}" in response')
+        if not isinstance(parsed_data.get(field_name), str):
+            raise ValueError(
+                f'Expected field "{field_name}" to be a `str`, found `{type(parsed_data.get(field_name))}`'
+            )
+
+    @staticmethod
     def _validate_response_structure(parsed_data: Any) -> None:
         if not isinstance(parsed_data, dict):
             raise ValueError("Response is not a JSON object")
-
-        if not parsed_data.get("Time required"):
-            raise ValueError("Missing 'Time required' field in response")
-        if not parsed_data.get("reasoning"):
-            raise ValueError("Missing 'reasoning' field in response")
+        VolunteeringCommitmentDurationClassifier._validate_str_field_exists(parsed_data, "Time required")
+        VolunteeringCommitmentDurationClassifier._validate_str_field_exists(parsed_data, "reasoning")
 
     @staticmethod
-    def _validate_time_category(commitment_duration: str) -> None:
-        if commitment_duration not in TIME_REQUIREMENT_CATEGORIES:
+    def _validate_commitment_duration(commitment_duration: str) -> None:
+        if commitment_duration not in DURATIONS_HUMAN_READABLE_TO_CONSTANTS:
             raise ValueError(f"Invalid time requirement category: {commitment_duration}")
