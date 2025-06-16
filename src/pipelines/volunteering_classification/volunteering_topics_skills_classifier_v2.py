@@ -23,9 +23,14 @@ MODEL_NAME = "gemini-2.0-flash-001"
 MODEL_RATE_LIMIT_PER_MINUTE = 2000
 MODEL_INVOCATION_RETRY_ATTEMPTS = 3
 
+# maximum title and description length were constrained once upon a time when the first prototype for classification VOs
+# was written. the main intention was to ensure we don't burn through too many credits. data inspection back then showed
+# that the few data items that had very long descriptions typically didn't contain valuable information for
+# classification anyway. also, the assumption is that users wouldn't read such long descriptions in the first place.
 MAX_TITLE_LEN = 500
 MAX_DESC_LEN = 10000
 MAX_CATEGORIES_LEN = 500
+
 MODEL_RESPONSE_OUTPUT_FORMAT = "YAML"
 CONFIDENCE_MIN_VALUE = -1
 CONFIDENCE_MAX_VALUE = 1

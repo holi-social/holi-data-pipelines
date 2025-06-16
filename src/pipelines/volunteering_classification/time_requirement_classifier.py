@@ -27,6 +27,11 @@ TIME_REQUIREMENT_CATEGORIES = [
 ]
 
 HTML_RE = re.compile(r"<[^>]+>")
+
+# maximum title and description length were constrained once upon a time when the first prototype for classification VOs
+# was written. the main intention was to ensure we don't burn through too many credits. data inspection back then showed
+# that the few data items that had very long descriptions typically didn't contain valuable information for
+# classification anyway. also, the assumption is that users wouldn't read such long descriptions in the first place.
 MAX_TITLE_LEN = 500
 MAX_DESC_LEN = 10000
 
