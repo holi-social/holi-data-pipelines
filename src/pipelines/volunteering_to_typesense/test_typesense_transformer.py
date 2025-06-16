@@ -53,8 +53,7 @@ def _row() -> RowFixture:
             [None, "ONE_TIME", "ONCE_WEEK", "ONCE_MONTH", "REGULARLY", "PROJECT_BASED", "NEGOTIABLE", "UNKNOWN"]
         ),
         "time_required": _random([None, *TIME_REQUIREMENT_CATEGORIES]),
-        "time_required_ai_derived": _random([True, False]),
-        "time_required_ai_reasoning": _random([None, "I hallucinate reasons"]),
+        "time_reasoning": _random([None, "I hallucinate reasons"]),
     }
 
 
