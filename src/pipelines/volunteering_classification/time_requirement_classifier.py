@@ -127,7 +127,7 @@ class VolunteeringTimeRequirementClassifier(TimeRequirementClassifier[Volunteeri
 
         VolunteeringTimeRequirementClassifier._validate_time_category(time_required)
 
-        return TimeRequirementClassification(time_required=time_required, time_reasoning=reasoning)
+        return TimeRequirementClassification(time_required=time_required, time_required_ai_reasoning=reasoning)
 
     @staticmethod
     def _clean_json_response(response: str) -> str:

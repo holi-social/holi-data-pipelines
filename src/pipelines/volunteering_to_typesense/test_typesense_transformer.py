@@ -53,7 +53,7 @@ def _row() -> RowFixture:
             [None, "ONE_TIME", "ONCE_WEEK", "ONCE_MONTH", "REGULARLY", "PROJECT_BASED", "NEGOTIABLE", "UNKNOWN"]
         ),
         "time_required": _random([None, *TIME_REQUIREMENT_CATEGORIES]),
-        "time_reasoning": _random([None, "I hallucinate reasons"]),
+        "time_required_ai_reasoning": _random([None, "I hallucinate reasons"]),
     }
 
 
@@ -89,7 +89,7 @@ def test_german_all_fields(row: RowFixture) -> None:
     assert result["commitment_label"] == row["commitment_label"]
     assert result["time_required"] == row["time_required"]
     assert result["time_required_ai_derived"] is True
-    assert result["time_required_ai_reasoning"] == row["time_reasoning"]
+    assert result["time_required_ai_reasoning"] == row["time_required_ai_reasoning"]
 
 
 def test_english_title_and_description(row: RowFixture) -> None:

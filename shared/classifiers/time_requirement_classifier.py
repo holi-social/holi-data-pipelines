@@ -9,7 +9,7 @@ from shared.classifiers.classification_input import ClassificationInputT
 @dataclass
 class TimeRequirementClassification:
     time_required: str
-    time_reasoning: str
+    time_required_ai_reasoning: str
 
 
 class TimeRequirementClassifier(Generic[ClassificationInputT], ABC):

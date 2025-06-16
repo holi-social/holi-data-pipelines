@@ -25,7 +25,7 @@ class ClassificationResult:
     commitment_label: Optional[str] = None
     location_type: Optional[str] = None
     time_required: Optional[str] = None
-    time_reasoning: Optional[str] = None
+    time_required_ai_reasoning: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         # noinspection PyTypeChecker
@@ -94,11 +94,11 @@ class Classifier(Generic[ClassificationInputT], ABC):
                 location_type = self.location_type_extractor(item)
 
             time_required = None
-            time_reasoning = None
+            time_required_ai_reasoning = None
             if self.time_requirement_classifier:
                 time_classification = self.time_requirement_classifier.get_classification(item)
                 time_required = time_classification.time_required
-                time_reasoning = time_classification.time_reasoning
+                time_required_ai_reasoning = time_classification.time_required_ai_reasoning
 
             return ClassificationResult(
                 type=self.item_type,
@@ -111,7 +111,7 @@ class Classifier(Generic[ClassificationInputT], ABC):
                 commitment_label=commitment_label,
                 location_type=location_type,
                 time_required=time_required,
-                time_reasoning=time_reasoning,
+                time_required_ai_reasoning=time_required_ai_reasoning,
             )
 
         except RetryError as e:
