@@ -7,17 +7,17 @@ from shared.classifiers.classification_input import ClassificationInputT
 
 
 @dataclass
-class TimeRequirementClassification:
-    time_required: str
-    time_required_ai_reasoning: str
+class CommitmentDurationClassification:
+    commitment_duration: str
+    commitment_duration_ai_reasoning: str
 
 
-class TimeRequirementClassifier(Generic[ClassificationInputT], ABC):
+class CommitmentDurationClassifier(Generic[ClassificationInputT], ABC):
     logger: Logger
 
     def __init__(self, logger: Logger):
         self.logger = logger
 
     @abstractmethod
-    def get_classification(self, item: ClassificationInputT) -> TimeRequirementClassification:
+    def get_classification(self, item: ClassificationInputT) -> CommitmentDurationClassification:
         pass

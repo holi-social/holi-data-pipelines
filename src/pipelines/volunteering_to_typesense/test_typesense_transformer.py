@@ -7,7 +7,7 @@ from faker import Faker
 
 from src.pipelines.skills_v2 import skill_v2_slugs
 from src.pipelines.topics_v2 import topic_v2_slugs
-from src.pipelines.volunteering_classification.time_requirement_classifier import TIME_REQUIREMENT_CATEGORIES
+from src.pipelines.volunteering_classification.commitment_duration_classifier import TIME_REQUIREMENT_CATEGORIES
 from src.pipelines.volunteering_to_typesense.typesense_transformer import transform_row
 
 fake = Faker()
@@ -52,8 +52,8 @@ def _row() -> RowFixture:
         "commitment_label": _random(
             [None, "ONE_TIME", "ONCE_WEEK", "ONCE_MONTH", "REGULARLY", "PROJECT_BASED", "NEGOTIABLE", "UNKNOWN"]
         ),
-        "time_required": _random([None, *TIME_REQUIREMENT_CATEGORIES]),
-        "time_required_ai_reasoning": _random([None, "I hallucinate reasons"]),
+        "commitment_duration": _random([None, *TIME_REQUIREMENT_CATEGORIES]),
+        "commitment_duration_ai_reasoning": _random([None, "I hallucinate reasons"]),
     }
 
 
@@ -87,9 +87,9 @@ def test_german_all_fields(row: RowFixture) -> None:
     assert result["similarity_embedding"] == row["similarity_embedding"]
     assert result["location_type"] == row["location_type"]
     assert result["commitment_label"] == row["commitment_label"]
-    assert result["time_required"] == row["time_required"]
-    assert result["time_required_ai_derived"] is True
-    assert result["time_required_ai_reasoning"] == row["time_required_ai_reasoning"]
+    assert result["commitment_duration"] == row["commitment_duration"]
+    assert result["commitment_duration_ai_derived"] is True
+    assert result["commitment_duration_ai_reasoning"] == row["commitment_duration_ai_reasoning"]
 
 
 def test_english_title_and_description(row: RowFixture) -> None:

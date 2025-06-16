@@ -7,7 +7,10 @@ from ratelimit import limits, sleep_and_retry
 from tenacity import retry, stop_after_attempt
 from vertexai.generative_models import GenerationConfig, GenerativeModel
 
-from shared.classifiers.time_requirement_classifier import TimeRequirementClassifier, TimeRequirementClassification
+from shared.classifiers.commitment_duration_classifier import (
+    CommitmentDurationClassifier,
+    CommitmentDurationClassification,
+)
 from src.common.str_utils import shorten_str, remove_html
 from src.pipelines.volunteering_classification.volunteering_classification_input import VolunteeringClassificationInput
 
@@ -36,19 +39,19 @@ MAX_TITLE_LEN = 500
 MAX_DESC_LEN = 10000
 
 
-class VolunteeringTimeRequirementClassifier(TimeRequirementClassifier[VolunteeringClassificationInput]):
+class VolunteeringCommitmentDurationClassifier(CommitmentDurationClassifier[VolunteeringClassificationInput]):
     model: GenerativeModel
 
     def __init__(self, logger: Logger) -> None:
         super().__init__(logger)
         self.model = GenerativeModel(MODEL_NAME, generation_config=GenerationConfig(temperature=0.5))
 
-    def get_classification(self, item: VolunteeringClassificationInput) -> TimeRequirementClassification:
+    def get_classification(self, item: VolunteeringClassificationInput) -> CommitmentDurationClassification:
         prompt = self._create_classification_prompt(item)
         return self._invoke_and_parse_with_retry(prompt, item.id)
 
     @retry(stop=stop_after_attempt(MODEL_INVOCATION_RETRY_ATTEMPTS))
-    def _invoke_and_parse_with_retry(self, prompt: str, item_id: str) -> TimeRequirementClassification:
+    def _invoke_and_parse_with_retry(self, prompt: str, item_id: str) -> CommitmentDurationClassification:
         response = self._invoke_model(prompt)
         self.logger.debug(f"[id={item_id}] raw time requirement response: {response}")
         return self._parse_and_validate_response(response, item_id)
@@ -116,18 +119,20 @@ class VolunteeringTimeRequirementClassifier(TimeRequirementClassifier[Volunteeri
         return prompt
 
     @staticmethod
-    def _parse_and_validate_response(response: str, item_id: str) -> TimeRequirementClassification:
-        clean_json = VolunteeringTimeRequirementClassifier._clean_json_response(response)
+    def _parse_and_validate_response(response: str, item_id: str) -> CommitmentDurationClassification:
+        clean_json = VolunteeringCommitmentDurationClassifier._clean_json_response(response)
         parsed_data = json.loads(clean_json)
 
-        VolunteeringTimeRequirementClassifier._validate_response_structure(parsed_data)
+        VolunteeringCommitmentDurationClassifier._validate_response_structure(parsed_data)
 
-        time_required = parsed_data["Time required"]
+        commitment_duration = parsed_data["Time required"]
         reasoning = parsed_data["reasoning"]
 
-        VolunteeringTimeRequirementClassifier._validate_time_category(time_required)
+        VolunteeringCommitmentDurationClassifier._validate_time_category(commitment_duration)
 
-        return TimeRequirementClassification(time_required=time_required, time_required_ai_reasoning=reasoning)
+        return CommitmentDurationClassification(
+            commitment_duration=commitment_duration, commitment_duration_ai_reasoning=reasoning
+        )
 
     @staticmethod
     def _clean_json_response(response: str) -> str:
@@ -151,6 +156,6 @@ class VolunteeringTimeRequirementClassifier(TimeRequirementClassifier[Volunteeri
             raise ValueError("Missing 'reasoning' field in response")
 
     @staticmethod
-    def _validate_time_category(time_required: str) -> None:
-        if time_required not in TIME_REQUIREMENT_CATEGORIES:
-            raise ValueError(f"Invalid time requirement category: {time_required}")
+    def _validate_time_category(commitment_duration: str) -> None:
+        if commitment_duration not in TIME_REQUIREMENT_CATEGORIES:
+            raise ValueError(f"Invalid time requirement category: {commitment_duration}")

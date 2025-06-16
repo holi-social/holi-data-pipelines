@@ -124,8 +124,8 @@ resource "google_bigquery_table" "classifications" {
     { "name": "similarity_embedding", "type": "FLOAT", "mode": "REPEATED"},
     { "name": "commitment_label", "type": "STRING", "mode": "NULLABLE" },
     { "name": "location_type", "type": "STRING", "mode": "NULLABLE" },
-    { "name": "time_required", "type": "STRING", "mode": "NULLABLE" },
-    { "name": "time_required_ai_reasoning", "type": "STRING", "mode": "NULLABLE" }
+    { "name": "commitment_duration", "type": "STRING", "mode": "NULLABLE" },
+    { "name": "commitment_duration_ai_reasoning", "type": "STRING", "mode": "NULLABLE" }
   ]
   EOF
 
@@ -273,8 +273,8 @@ resource "google_bigquery_table" "volunteering_voltastics_classified_enriched_pa
         classifications.similarity_embedding AS similarity_embedding,
         classifications.commitment_label AS commitment_label,
         classifications.location_type AS location_type,
-        classifications.time_required AS time_required,
-        classifications.time_required_ai_reasoning AS time_required_ai_reasoning,
+        classifications.commitment_duration AS commitment_duration,
+        classifications.commitment_duration_ai_reasoning AS commitment_duration_ai_reasoning,
       FROM
         `${local.datalake}.volunteering_voltastics_raw_deduped` AS raw_deduped
       LEFT OUTER JOIN
@@ -440,8 +440,8 @@ resource "google_bigquery_table" "volunteering_aktion_mensch_classified_enriched
         classifications.similarity_embedding,
         classifications.commitment_label,
         classifications.location_type,
-        classifications.time_required,
-        classifications.time_required_ai_reasoning,
+        classifications.commitment_duration,
+        classifications.commitment_duration_ai_reasoning,
         
         'Aktion Mensch' AS source,
         am._PARTITIONTIME AS partitiontime
