@@ -23,7 +23,6 @@ MODEL_NAME = "gemini-2.0-flash-001"
 MODEL_RATE_LIMIT_PER_MINUTE = 2000
 MODEL_INVOCATION_RETRY_ATTEMPTS = 3
 
-HTML_RE = re.compile(r"<[^>]+>")  # regex to remove HTML from descriptions
 MAX_TITLE_LEN = 500
 MAX_DESC_LEN = 10000
 MAX_CATEGORIES_LEN = 500

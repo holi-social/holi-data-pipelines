@@ -1,4 +1,6 @@
-from src.pipelines.volunteering_classification.volunteering_topics_skills_classifier_v2 import HTML_RE
+import re
+
+HTML_RE = re.compile(r"<[^>]+>")  # regex to remove HTML from descriptions
 
 
 def remove_html(input: str) -> str:
