@@ -102,6 +102,8 @@ def _upsert_task(ts_client: TypesenseClient, event: Union[TaskCreatedEvent, Task
         skills_v2=event.task.skills_v2,
         similarity_embedding=None,
         location=event.task.location,
+        regularity=event.task.regularity,
+        duration=event.task.duration,
     )
     classification = classifier.get_cached_classification(item)
     if not classification:

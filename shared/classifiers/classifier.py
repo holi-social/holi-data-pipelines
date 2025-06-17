@@ -35,7 +35,10 @@ class ClassificationResult:
 class Classifier(Generic[ClassificationInputT], ABC):
     topics_skills_v2_classifier: TopicsSkillsClassifierV2[ClassificationInputT]
     similarity_embedder: SimilarityEmbedder[ClassificationInputT]
+    commitment_label_extractor: Optional[Callable[[ClassificationInputT], Optional[str]]]
+    location_type_extractor: Optional[Callable[[ClassificationInputT], Optional[str]]]
     commitment_duration_classifier: Optional[CommitmentDurationClassifier[ClassificationInputT]]
+
     bqclient: BigQueryClient
     item_type: str
     table_name_classifications: str
@@ -45,22 +48,23 @@ class Classifier(Generic[ClassificationInputT], ABC):
         self,
         topics_skills_classifier_v2: TopicsSkillsClassifierV2[ClassificationInputT],
         similarity_embedder: SimilarityEmbedder[ClassificationInputT],
+        commitment_label_extractor: Optional[Callable[[ClassificationInputT], Optional[str]]],
+        location_type_extractor: Optional[Callable[[ClassificationInputT], Optional[str]]],
+        commitment_duration_classifier: Optional[CommitmentDurationClassifier[ClassificationInputT]],
         item_type: str,
         table_name_classifications: str,
         logger: Logger,
         bqclient: BigQueryClient,
-        commitment_label_extractor: Optional[Callable[[Any], Optional[str]]] = None,
-        location_type_extractor: Optional[Callable[[ClassificationInputT], Optional[str]]] = None,
-        commitment_duration_classifier: Optional[CommitmentDurationClassifier[ClassificationInputT]] = None,
     ):
         self.topics_skills_v2_classifier = topics_skills_classifier_v2
         self.similarity_embedder = similarity_embedder
+        self.commitment_label_extractor = commitment_label_extractor
+        self.location_type_extractor = location_type_extractor
         self.commitment_duration_classifier = commitment_duration_classifier
+
         self.bqclient = bqclient
         self.item_type = item_type
         self.table_name_classifications = table_name_classifications
-        self.commitment_label_extractor = commitment_label_extractor
-        self.location_type_extractor = location_type_extractor
         self.logger = logger
         # TODO implement context manager API to cleanly handle resource shutdown
 

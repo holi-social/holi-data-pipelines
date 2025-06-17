@@ -8,9 +8,9 @@ from tenacity import retry, stop_after_attempt
 from vertexai.generative_models import GenerationConfig, GenerativeModel
 
 from shared.classifiers.commitment_duration_classifier import (
-    CommitmentDuration,
     CommitmentDurationClassifier,
     CommitmentDurationClassification,
+    parse_commitment_duration,
 )
 from src.common.str_utils import shorten_str, remove_html
 from src.pipelines.volunteering_classification.volunteering_classification_input import VolunteeringClassificationInput
@@ -130,13 +130,16 @@ class VolunteeringCommitmentDurationClassifier(CommitmentDurationClassifier[Volu
 
         VolunteeringCommitmentDurationClassifier._validate_response_structure(parsed_data)
 
-        commitment_duration = cast(str, parsed_data["Time required"])
+        commitment_duration = parse_commitment_duration(
+            DURATIONS_HUMAN_READABLE_TO_CONSTANTS[cast(str, parsed_data["Time required"])]
+        )
         reasoning = cast(str, parsed_data["reasoning"])
 
         VolunteeringCommitmentDurationClassifier._validate_commitment_duration(commitment_duration)
 
         return CommitmentDurationClassification(
-            commitment_duration=cast(CommitmentDuration, DURATIONS_HUMAN_READABLE_TO_CONSTANTS[commitment_duration]),
+            commitment_duration=commitment_duration,
+            commitment_duration_ai_derived=True,
             commitment_duration_ai_reasoning=reasoning,
         )
 
