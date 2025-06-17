@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Generic, Literal
+from typing import Generic, Literal, get_args, cast, Optional
 from logging import Logger
 
 from shared.classifiers.classification_input import ClassificationInputT
@@ -20,10 +20,18 @@ CommitmentDuration = Literal[
 ]
 
 
+def parse_commitment_duration(input: str) -> CommitmentDuration:
+    if input in get_args(CommitmentDuration):
+        return cast(CommitmentDuration, input)
+    raise ValueError(
+        f"Unexpect value '{input}' for CommitmentDuration. Valid values are {get_args(CommitmentDuration)}"
+    )
+
+
 @dataclass
 class CommitmentDurationClassification:
     commitment_duration: CommitmentDuration
-    commitment_duration_ai_reasoning: str
+    commitment_duration_ai_reasoning: Optional[str]
 
 
 class CommitmentDurationClassifier(Generic[ClassificationInputT], ABC):

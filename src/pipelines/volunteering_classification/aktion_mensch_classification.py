@@ -36,19 +36,21 @@ class AktionMenschBatchClassifier(PipelineBatchClassifier[AktionMenschClassifica
     """Classifier for Aktion Mensch volunteering opportunities using PipelineBatchClassifier."""
 
     def __init__(self, batch_size: Optional[int] = 50, stop_after_batch_nr: Optional[int] = None) -> None:
+        # TODO this smells, cast is maybe only required because type parameter is not allowed to be extended
         topics_classifier = cast(
             TopicsSkillsClassifierV2[AktionMenschClassificationInput],
             AktionMenschTopicsSkillsClassifierV2(topics_skills_classifier_logger),
         )
-
+        # TODO this smells, cast is maybe only required because type parameter is not allowed to be extended
         commitment_duration_classifier = cast(
             CommitmentDurationClassifier[AktionMenschClassificationInput],
             VolunteeringCommitmentDurationClassifier(commitment_duration_classification_logger),
         )
-
         super().__init__(
             topics_skills_classifier_v2=topics_classifier,
             similarity_embedder=AktionMenschSimilarityEmbedder(similarity_embedder_logger),
+            commitment_label_extractor=extract_commitment_label_from_item,
+            location_type_extractor=extract_location_type_from_item,
             commitment_duration_classifier=commitment_duration_classifier,
             item_type="aktion_mensch_volunteering",
             table_name_classifications=table_classifications(),
@@ -56,8 +58,6 @@ class AktionMenschBatchClassifier(PipelineBatchClassifier[AktionMenschClassifica
             logger=logger,
             batch_size=batch_size,
             stop_after_batch_nr=stop_after_batch_nr,
-            commitment_label_extractor=extract_commitment_label_from_item,
-            location_type_extractor=extract_location_type_from_item,
         )
 
     def _to_classification_input(self, item: Any) -> AktionMenschClassificationInput:

@@ -16,6 +16,9 @@ class TaskClassifier(Classifier[TaskClassificationInput]):
         super().__init__(
             topics_skills_classifier_v2=TaskTopicsSkillsClassifierV2(logger),
             similarity_embedder=TaskSimilarityEmbedder(logger),
+            commitment_label_extractor=None,
+            location_type_extractor=None,
+            commitment_duration_classifier=None,
             item_type="task",
             table_name_classifications=table_name_classifications,
             logger=logger,

@@ -37,6 +37,8 @@ class VolunteeringBatchClassifier(PipelineBatchClassifier[VolunteeringClassifica
         super().__init__(
             topics_skills_classifier_v2=VolunteeringTopicsSkillsClassifierV2(topics_skills_classification_logger),
             similarity_embedder=VolunteeringSimilarityEmbedder(similarity_classification_logger),
+            commitment_label_extractor=extract_commitment_label_from_item,
+            location_type_extractor=extract_location_type_from_item,
             commitment_duration_classifier=VolunteeringCommitmentDurationClassifier(
                 commitment_duration_classification_logger
             ),
@@ -45,8 +47,6 @@ class VolunteeringBatchClassifier(PipelineBatchClassifier[VolunteeringClassifica
             view_name_without_classifications=volunteering_voltastics_without_classifications(),
             logger=logger,
             stop_after_batch_nr=stop_after_batch_nr,
-            commitment_label_extractor=extract_commitment_label_from_item,
-            location_type_extractor=extract_location_type_from_item,
         )
 
     def _to_classification_input(self, item: Any) -> VolunteeringClassificationInput:
