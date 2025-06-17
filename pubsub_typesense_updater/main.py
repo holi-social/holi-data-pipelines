@@ -102,6 +102,7 @@ def _upsert_task(ts_client: TypesenseClient, event: Union[TaskCreatedEvent, Task
         skills_v2=event.task.skills_v2,
         similarity_embedding=None,
         location=event.task.location,
+        location_type=event.task.location_type,
         regularity=event.task.regularity,
         duration=event.task.duration,
     )

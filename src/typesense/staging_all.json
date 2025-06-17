@@ -109,7 +109,7 @@
         },
         {
             "name": "commitment_duration_ai_derived",
-            "type": "boolean",
+            "type": "bool",
             "optional": true,
             "facet": false,
             "index": false
