@@ -139,7 +139,6 @@ class VolunteeringCommitmentDurationClassifier(CommitmentDurationClassifier[Volu
 
         return CommitmentDurationClassification(
             commitment_duration=commitment_duration,
-            commitment_duration_ai_derived=True,
             commitment_duration_ai_reasoning=reasoning,
         )
 

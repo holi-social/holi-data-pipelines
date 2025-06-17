@@ -31,7 +31,6 @@ def parse_commitment_duration(input: str) -> CommitmentDuration:
 @dataclass
 class CommitmentDurationClassification:
     commitment_duration: CommitmentDuration
-    commitment_duration_ai_derived: bool
     commitment_duration_ai_reasoning: Optional[str]
 
 

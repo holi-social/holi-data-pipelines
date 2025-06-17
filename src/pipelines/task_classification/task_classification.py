@@ -3,7 +3,6 @@ from typing import Any
 from prefect.states import Completed, State
 
 from shared.classifiers.task_classification_input import TaskClassificationInput
-from shared.classifiers.task_commitment_duration_classifier import TaskCommitmentDurationClassifier
 from src.common.classifiers.pipeline_batch_classifier import PipelineBatchClassifier
 from src.common.logging.PipelineLogger import PipelineLogger
 from src.common.monitoring.flow import monitored_flow
@@ -21,9 +20,9 @@ class TaskBatchClassifier(PipelineBatchClassifier[TaskClassificationInput]):
         super().__init__(
             topics_skills_classifier_v2=TaskTopicsSkillsClassifierV2(topics_skills_classifier_logger),
             similarity_embedder=TaskSimilarityEmbedder(similarity_embedder_logger),
-            commitment_label_extractor=lambda item: item.regularity,
-            location_type_extractor=lambda item: item.location_type,
-            commitment_duration_classifier=TaskCommitmentDurationClassifier(logger),
+            commitment_label_extractor=None,
+            location_type_extractor=None,
+            commitment_duration_classifier=None,
             item_type="task",
             table_name_classifications=table_classifications(),
             view_name_without_classifications=tasks_without_classifications(),
@@ -49,8 +48,6 @@ class TaskBatchClassifier(PipelineBatchClassifier[TaskClassificationInput]):
             skills_v2=item.skills_v2 if hasattr(item, "skills_v2") else None,
             similarity_embedding=item.similarity_embedding,
             location=item.location if hasattr(item, "location") else None,
-            regularity=item.regularity if hasattr(item, "regularity") else None,
-            duration=item.duration if hasattr(item, "duration") else None,
         )
 
 

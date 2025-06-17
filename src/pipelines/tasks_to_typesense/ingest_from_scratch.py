@@ -4,6 +4,7 @@ from prefect import task
 from prefect.cache_policies import NONE
 from prefect.states import Completed, Failed, State
 
+from shared.classifiers.commitment_duration_classifier import parse_commitment_duration
 from src.common.extractors.bq_extractor import extract_data_from_bigquery
 from src.common.loaders.typesense_loader import upsert_typesense_documents
 from src.common.logging.PipelineLogger import PipelineLogger
@@ -36,6 +37,7 @@ def to_location_lat_lng(geojson: Any) -> List[float]:
 
 def task_to_doc(row: TaskRow) -> TaskDoc:
     geojson = row.get("geolocation_geojson")
+    commitment_duration = parse_commitment_duration(cast(str, row.get("duration"))) if row.get("duration") else None
     return {
         "id": f"task_{str(row.get('id'))}",
         "space_id": str(row.get("community_id")),
@@ -56,9 +58,9 @@ def task_to_doc(row: TaskRow) -> TaskDoc:
         "similarity_embedding": row.get("similarity_embedding"),
         "location_type": map_task_location_type_to_typesense_location_type(row.get("location_type")),
         "commitment_label": map_task_regularity_to_commitment_label(row.get("regularity")),
-        "commitment_duration": row.get("commitment_duration"),
+        "commitment_duration": commitment_duration,
         "commitment_duration_ai_derived": False,
-        "commitment_duration_ai_reasoning": row.get("commitment_duration_ai_reasoning"),
+        "commitment_duration_ai_reasoning": None,
     }
 
 
