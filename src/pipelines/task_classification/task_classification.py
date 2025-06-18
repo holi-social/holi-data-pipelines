@@ -20,6 +20,9 @@ class TaskBatchClassifier(PipelineBatchClassifier[TaskClassificationInput]):
         super().__init__(
             topics_skills_classifier_v2=TaskTopicsSkillsClassifierV2(topics_skills_classifier_logger),
             similarity_embedder=TaskSimilarityEmbedder(similarity_embedder_logger),
+            commitment_label_extractor=None,
+            location_type_extractor=None,
+            commitment_duration_classifier=None,
             item_type="task",
             table_name_classifications=table_classifications(),
             view_name_without_classifications=tasks_without_classifications(),
@@ -44,7 +47,7 @@ class TaskBatchClassifier(PipelineBatchClassifier[TaskClassificationInput]):
             topics_v2=item.topics_v2 if hasattr(item, "topics_v2") else None,
             skills_v2=item.skills_v2 if hasattr(item, "skills_v2") else None,
             similarity_embedding=item.similarity_embedding,
-            location=item.location,
+            location=item.location if hasattr(item, "location") else None,
         )
 
 
@@ -60,4 +63,4 @@ if __name__ == "__main__":
     logging.getLogger(logger.name).setLevel(logging.DEBUG)
     logging.getLogger(topics_skills_classifier_logger.name).setLevel(logging.DEBUG)
     logging.getLogger(similarity_embedder_logger.name).setLevel(logging.DEBUG)
-    task_classification_flow(batch_size=2, stop_after_batch_nr=1)  # type: ignore
+    task_classification_flow()  # type: ignore

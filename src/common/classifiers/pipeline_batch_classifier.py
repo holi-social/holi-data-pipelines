@@ -10,6 +10,7 @@ from shared.classifiers.classification_input import ClassificationInputT
 
 import vertexai
 from shared.classifiers.topics_skills_classifier_v2 import TopicsSkillsClassifierV2
+from shared.classifiers.commitment_duration_classifier import CommitmentDurationClassifier
 from shared.embedders.similarity_embedder import SimilarityEmbedder
 
 DEFAULT_BATCH_SIZE = 100
@@ -26,26 +27,28 @@ class PipelineBatchClassifier(Generic[ClassificationInputT], Classifier[Classifi
         self,
         topics_skills_classifier_v2: TopicsSkillsClassifierV2[ClassificationInputT],
         similarity_embedder: SimilarityEmbedder[ClassificationInputT],
+        commitment_label_extractor: Optional[Callable[[ClassificationInputT], Optional[str]]],
+        location_type_extractor: Optional[Callable[[ClassificationInputT], Optional[str]]],
+        commitment_duration_classifier: Optional[CommitmentDurationClassifier[ClassificationInputT]],
         item_type: str,
         table_name_classifications: str,
         view_name_without_classifications: str,
         logger: Logger,
         batch_size: int | None = DEFAULT_BATCH_SIZE,
         stop_after_batch_nr: int | None = None,
-        commitment_label_extractor: Optional[Callable[[Any], Optional[str]]] = None,
-        location_type_extractor: Optional[Callable[[ClassificationInputT], Optional[str]]] = None,
     ):
         super().__init__(
-            topics_skills_classifier_v2,
-            similarity_embedder,
-            item_type,
-            table_name_classifications,
-            logger,
-            GcpCredentials(project=GCLOUD_PROJECT_ID).get_bigquery_client(
-                project=GCLOUD_PROJECT_ID, location=GCLOUD_LOCATION
-            ),
+            topics_skills_classifier_v2=topics_skills_classifier_v2,
+            similarity_embedder=similarity_embedder,
             commitment_label_extractor=commitment_label_extractor,
             location_type_extractor=location_type_extractor,
+            commitment_duration_classifier=commitment_duration_classifier,
+            item_type=item_type,
+            table_name_classifications=table_name_classifications,
+            logger=logger,
+            bqclient=GcpCredentials(project=GCLOUD_PROJECT_ID).get_bigquery_client(
+                project=GCLOUD_PROJECT_ID, location=GCLOUD_LOCATION
+            ),
         )
         vertexai.init(project=GCLOUD_PROJECT_ID, location=GCLOUD_LOCATION)
         self.batch_size = batch_size if batch_size else DEFAULT_BATCH_SIZE

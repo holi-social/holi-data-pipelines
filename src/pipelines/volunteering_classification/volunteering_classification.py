@@ -12,6 +12,9 @@ from src.pipelines.bigquery import volunteering_voltastics_without_classificatio
 from src.pipelines.volunteering_classification.volunteering_topics_skills_classifier_v2 import (
     VolunteeringTopicsSkillsClassifierV2,
 )
+from src.pipelines.volunteering_classification.commitment_duration_classifier import (
+    VolunteeringCommitmentDurationClassifier,
+)
 
 from src.pipelines.volunteering_classification.commitment_labels_mapping import (
     extract_commitment_label_from_item,
@@ -26,6 +29,7 @@ from src.pipelines.volunteering_classification.volunteering_similarity_embedder 
 logger = PipelineLogger("volunteering_classification")
 topics_skills_classification_logger = PipelineLogger("volunteering_topics_skills_classification_v2")
 similarity_classification_logger = PipelineLogger("volunteering_similarity_classification")
+commitment_duration_classification_logger = PipelineLogger("volunteering_commitment_duration_classification")
 
 
 class VolunteeringBatchClassifier(PipelineBatchClassifier[VolunteeringClassificationInput]):
@@ -33,13 +37,16 @@ class VolunteeringBatchClassifier(PipelineBatchClassifier[VolunteeringClassifica
         super().__init__(
             topics_skills_classifier_v2=VolunteeringTopicsSkillsClassifierV2(topics_skills_classification_logger),
             similarity_embedder=VolunteeringSimilarityEmbedder(similarity_classification_logger),
+            commitment_label_extractor=extract_commitment_label_from_item,
+            location_type_extractor=extract_location_type_from_item,
+            commitment_duration_classifier=VolunteeringCommitmentDurationClassifier(
+                commitment_duration_classification_logger
+            ),
             item_type="volunteering",
             table_name_classifications=table_classifications(),
             view_name_without_classifications=volunteering_voltastics_without_classifications(),
             logger=logger,
             stop_after_batch_nr=stop_after_batch_nr,
-            commitment_label_extractor=extract_commitment_label_from_item,
-            location_type_extractor=extract_location_type_from_item,
         )
 
     def _to_classification_input(self, item: Any) -> VolunteeringClassificationInput:
@@ -76,4 +83,5 @@ if __name__ == "__main__":
     logging.getLogger(logger.name).setLevel(logging.DEBUG)
     logging.getLogger(topics_skills_classification_logger.name).setLevel(logging.DEBUG)
     logging.getLogger(similarity_classification_logger.name).setLevel(logging.DEBUG)
+    logging.getLogger(commitment_duration_classification_logger.name).setLevel(logging.DEBUG)
     volunteering_classification(stop_after_batch_nr=0)  # type: ignore

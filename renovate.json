@@ -39,6 +39,10 @@
       "matchManagers": [
         "pep621"
       ],
+      "postUpgradeTasks": {
+        "commands": ["uv lock --upgrade-package {{{depName}}}"],
+        "fileFilters": ["uv.lock"]
+      },
       "matchUpdateTypes": [
         "minor",
         "patch",
