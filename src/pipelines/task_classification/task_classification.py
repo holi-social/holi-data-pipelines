@@ -63,4 +63,4 @@ if __name__ == "__main__":
     logging.getLogger(logger.name).setLevel(logging.DEBUG)
     logging.getLogger(topics_skills_classifier_logger.name).setLevel(logging.DEBUG)
     logging.getLogger(similarity_embedder_logger.name).setLevel(logging.DEBUG)
-    task_classification_flow(batch_size=2, stop_after_batch_nr=1)  # type: ignore
+    task_classification_flow()  # type: ignore

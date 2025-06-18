@@ -121,7 +121,6 @@
             "facet": false,
             "index": false
         },
-        {"name": "space_id", "type": "string", "optional": true},
-        {"name": "commitment_duration", "type": "string", "optional": true}
+        {"name": "space_id", "type": "string", "optional": true}
     ]
 }
