@@ -10,24 +10,24 @@ dependencies = [
     "pyarrow>=3.0.0",
     "pydantic==2.11.5",
     "python-dateutil==2.9.0.post0",
-    "requests==2.32.3",
+    "requests==2.32.4",
     "trycast==1.2.1",
     "typing-extensions==4.13.2",
     "opentelemetry-resourcedetector-gcp==1.9.0a0",
     "opentelemetry-exporter-gcp-monitoring==1.9.0a0",
-    "whenever==0.8.3",
+    "whenever==0.8.5",
     "psycopg[binary]>=3.2.9",
 ]
 
 [dependency-groups]
 dev = [
     "faker==37.3.0",
-    "mypy==1.15.0",
+    "mypy==1.16.1",
     "pre-commit==4.2.0",
-    "pytest==8.3.5",
+    "pytest==8.4.1",
     "ruff==0.11.13",
     "types-python-dateutil==2.9.0.20250516",
     "types-pyyaml==6.0.12.20250516",
-    "types-requests==2.32.0.20250515",
+    "types-requests==2.32.4.20250611",
 ]
 
