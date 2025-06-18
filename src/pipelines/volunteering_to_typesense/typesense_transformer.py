@@ -1,12 +1,15 @@
 import decimal
 from decimal import Decimal
-from typing import Dict, Optional, Any
+from typing import Dict, Optional, Any, List
 
 from langdetect import detect, LangDetectException
 
 from src.common.logging.PipelineLogger import PipelineLogger
 
 logger = PipelineLogger(__name__)
+
+TOPICS_SKILLS_EMBEDDING_V2_EXPECTED_DIMENSIONS = 53
+SIMILARITY_EMBEDDING_EXPECTED_DIMENSIONS = 256
 
 
 def _key_for_lang(key: str, lang: str) -> str:
@@ -19,16 +22,47 @@ def _lang_for(value: Optional[str], doc_id: Optional[str]) -> str:
         if value:
             return detect(value)
         else:
-            logger.warning(
-                f"No text provided for language detection in document id:'{doc_id}', returning default 'de'"
-            )
+            logger.info(f"[id='{doc_id}'] No text provided for language detection in document, returning default 'de'")
     except LangDetectException:
-        logger.warning(f"Language detection failed in document id:'{doc_id}', returning default 'de'")
+        logger.warning(f"[id='{doc_id}'] Language detection failed, returning default 'de'")
 
     return "de"
 
 
-def transform_row(row: Dict[str, Optional[str]]) -> Dict[str, Optional[Any]]:
+def _validate_vector(row: Dict[str, Optional[Any]], key: str, expected_vector_dimension: int) -> List[float] | None:
+    vector = row.get(key)
+    if isinstance(vector, list):
+        match len(vector):
+            case n if n == expected_vector_dimension:
+                if all(isinstance(element, float) for element in vector):
+                    return vector
+                else:
+                    logger.warn(f"[id='{row.get('id')}'] Unexpected data type in vector {key}: {vector}")
+            case 0:
+                logger.info(f"[id='{row.get('id')}'] No {key} found")
+            case _:
+                logger.warn(f"[id='{row.get('id')}'] Unexpected dimensionality of {key}: {len(vector)}")
+    else:
+        logger.warn(
+            f"[id='{row.get('id')}'] Unexpected data type for vector {key} (found: {type(vector)}, expected: list)"
+        )
+    return None
+
+
+def _decimal_as_str_or_none(row: Dict[str, Optional[Any]], key: str) -> str | None:
+    value = row.get(key)
+    if value is None:
+        return None
+    try:
+        return str(Decimal(value))
+    except (ValueError, decimal.InvalidOperation):
+        logger.warning(
+            f"[id='{row.get('id')}'] Could not convert value '{value}' to str for '{key}' via Decimal for document."
+        )
+        return None
+
+
+def transform_row(row: Dict[str, Optional[Any]]) -> Dict[str, Optional[Any]]:
     """Transform each row, detect language, and format for Typesense."""
     if row.get("id") is None:
         raise ValueError("id is mandatory")
@@ -36,20 +70,14 @@ def transform_row(row: Dict[str, Optional[str]]) -> Dict[str, Optional[Any]]:
     if row.get("title") is None:
         raise ValueError("title is mandatory")
 
-    def decimal_as_str_or_none(value: Any) -> str | None:
-        if value is None:
-            return None
-        try:
-            return str(Decimal(value))
-        except (ValueError, decimal.InvalidOperation):
-            logger.warning(
-                f"Could not convert value '{value}' to str via Decimal for document with id '{row.get('id')}'."
-            )
-            return None
-
     # Compute latitude and longitude as decimals or None
-    latitude = decimal_as_str_or_none(row.get("latitude"))
-    longitude = decimal_as_str_or_none(row.get("longitude"))
+    latitude = _decimal_as_str_or_none(row, "latitude")
+    longitude = _decimal_as_str_or_none(row, "longitude")
+
+    topics_skills_embedding_v2 = _validate_vector(
+        row, "topics_skills_embedding_v2", TOPICS_SKILLS_EMBEDDING_V2_EXPECTED_DIMENSIONS
+    )
+    similarity_embedding = _validate_vector(row, "similarity_embedding", SIMILARITY_EMBEDDING_EXPECTED_DIMENSIONS)
 
     # prefix id with 'volunteering_' to avoid collisions with other document types later on
     # initialize title_* and description_* with default values (will be filled below with real values)
@@ -68,10 +96,10 @@ def transform_row(row: Dict[str, Optional[str]]) -> Dict[str, Optional[Any]]:
         "external_url": row.get("link"),
         "source": row.get("source"),
         "link_locators": {"volunteering": row.get("id")},
-        "topics_skills_embedding_v2": row.get("topics_skills_embedding_v2"),
+        "topics_skills_embedding_v2": topics_skills_embedding_v2,
         "topics_v2": row.get("topics_v2"),
         "skills_v2": row.get("skills_v2"),
-        "similarity_embedding": row.get("similarity_embedding"),
+        "similarity_embedding": similarity_embedding,
         "location_type": row.get("location_type"),
         "commitment_label": row.get("commitment_label"),
         "commitment_duration": row.get("commitment_duration"),
