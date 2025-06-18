@@ -130,12 +130,10 @@ class VolunteeringCommitmentDurationClassifier(CommitmentDurationClassifier[Volu
 
         VolunteeringCommitmentDurationClassifier._validate_response_structure(parsed_data)
 
-        commitment_duration = parse_commitment_duration(
-            DURATIONS_HUMAN_READABLE_TO_CONSTANTS[cast(str, parsed_data["Time required"])]
-        )
-        reasoning = cast(str, parsed_data["reasoning"])
+        commitment_duration_parsed = DURATIONS_HUMAN_READABLE_TO_CONSTANTS[cast(str, parsed_data["Time required"])]
+        commitment_duration = parse_commitment_duration(commitment_duration_parsed)
 
-        VolunteeringCommitmentDurationClassifier._validate_commitment_duration(commitment_duration)
+        reasoning = cast(str, parsed_data["reasoning"])
 
         return CommitmentDurationClassification(
             commitment_duration=commitment_duration,
@@ -168,8 +166,3 @@ class VolunteeringCommitmentDurationClassifier(CommitmentDurationClassifier[Volu
             raise ValueError("Response is not a JSON object")
         VolunteeringCommitmentDurationClassifier._validate_str_field_exists(parsed_data, "Time required")
         VolunteeringCommitmentDurationClassifier._validate_str_field_exists(parsed_data, "reasoning")
-
-    @staticmethod
-    def _validate_commitment_duration(commitment_duration: str) -> None:
-        if commitment_duration not in DURATIONS_HUMAN_READABLE_TO_CONSTANTS:
-            raise ValueError(f"Invalid time requirement category: {commitment_duration}")
