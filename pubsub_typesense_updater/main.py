@@ -92,6 +92,7 @@ def _upsert_task(ts_client: TypesenseClient, event: Union[TaskCreatedEvent, Task
     vertexai.init(project=gcloud_project_id(), location=gcloud_location())
     bq_client = bigquery.Client(project=gcloud_project_id(), location=gcloud_location())
     classifier = TaskClassifier(bigquery_table_name_classifications(), logger, bq_client)
+
     item = TaskClassificationInput(
         id=event.task.id,
         hash=event.farm_fingerprint(),
@@ -103,9 +104,16 @@ def _upsert_task(ts_client: TypesenseClient, event: Union[TaskCreatedEvent, Task
         similarity_embedding=None,
         location=event.task.location,
     )
-    classification = classifier.get_cached_classification(item)
+
+    classification = classifier.get_persisted_classification(item)
+
+    if classification and classification.classification_failed:
+        logger.info(f"[id={event.task.id}] Classification previously failed, not trying to classify")
+
     if not classification:
-        classification = classifier.classify_item_and_cache_classification(item)
+        classification = classifier.classify_item_and_persist_classification(item)
+
+    # upsert independent of classification success or failure, so that all available fields are updated in Typesense
     ts_client.upsert(event.as_typesense_document(classification))
     logger.info(f"[id={event.task.id}] Upserted task in Typesense")
 

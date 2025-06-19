@@ -109,8 +109,8 @@ def mock_task_classifier() -> Generator[MagicMock, Any, None]:
     with patch("main.TaskClassifier") as mock:
         mock_instance = MagicMock()
         mock.return_value = mock_instance
-        mock_instance.get_cached_classification.return_value = None
-        mock_instance.classify_item_and_cache_classification.return_value = None
+        mock_instance.get_persisted_classification.return_value = None
+        mock_instance.classify_item_and_persist_classification.return_value = None
         yield mock_instance
 
 
@@ -352,9 +352,9 @@ def test_space_deleted(mock_client: MagicMock) -> None:
 
 @patch("typesense.client.Client")
 def test_task_created(mock_client: MagicMock, mock_task_classifier: MagicMock) -> None:
-    # GIVEN no cached classification result
-    mock_task_classifier.get_cached_classification.return_value = None
-    mock_task_classifier.classify_item_and_cache_classification.return_value = mock_classification_result
+    # GIVEN no persisted classification result
+    mock_task_classifier.get_persisted_classification.return_value = None
+    mock_task_classifier.classify_item_and_persist_classification.return_value = mock_classification_result
 
     # WHEN receiving a TaskCreated event
     process_event(
@@ -365,9 +365,9 @@ def test_task_created(mock_client: MagicMock, mock_task_classifier: MagicMock) -
         ),
     )
 
-    # THEN classification cache should have been checked and classification should have been calculated
-    mock_task_classifier.get_cached_classification.assert_called_once()
-    mock_task_classifier.classify_item_and_cache_classification.assert_called_once()
+    # THEN classification persistence should have been checked and classification should have been calculated
+    mock_task_classifier.get_persisted_classification.assert_called_once()
+    mock_task_classifier.classify_item_and_persist_classification.assert_called_once()
 
     # THEN Typesense index should have been updated
     mock_client.upsert.assert_called_with(
@@ -394,16 +394,16 @@ def test_private_task_created(mock_client: MagicMock, mock_task_classifier: Magi
     )
 
     # THEN the event should be ignored
-    mock_task_classifier.get_cached_classification.assert_not_called()
-    mock_task_classifier.classify_item_and_cache_classification.assert_not_called()
+    mock_task_classifier.get_persisted_classification.assert_not_called()
+    mock_task_classifier.classify_item_and_persist_classification.assert_not_called()
     mock_client.upsert.assert_not_called()
     mock_client.delete.assert_not_called()
 
 
 @patch("typesense.client.Client")
-def test_task_created_cached_classification(mock_client: MagicMock, mock_task_classifier: MagicMock) -> None:
-    # GIVEN a cached classification result
-    mock_task_classifier.get_cached_classification.return_value = mock_classification_result
+def test_task_created_persisted_classification(mock_client: MagicMock, mock_task_classifier: MagicMock) -> None:
+    # GIVEN a persisted classification result
+    mock_task_classifier.get_persisted_classification.return_value = mock_classification_result
 
     # WHEN receiving a TaskCreated event
     process_event(
@@ -414,9 +414,9 @@ def test_task_created_cached_classification(mock_client: MagicMock, mock_task_cl
         ),
     )
 
-    # THEN classification should have been retrieved from cache and not been calculated
-    mock_task_classifier.get_cached_classification.assert_called_once()
-    mock_task_classifier.classify_item_and_cache_classification.assert_not_called()
+    # THEN classification should have been retrieved from persistence and not been calculated
+    mock_task_classifier.get_persisted_classification.assert_called_once()
+    mock_task_classifier.classify_item_and_persist_classification.assert_not_called()
 
     # THEN Typesense index should have been updated
     mock_client.upsert.assert_called_with(
@@ -426,9 +426,9 @@ def test_task_created_cached_classification(mock_client: MagicMock, mock_task_cl
 
 @patch("typesense.client.Client")
 def test_task_updated(mock_client: MagicMock, mock_task_classifier: MagicMock) -> None:
-    # GIVEN no cached classification result
-    mock_task_classifier.get_cached_classification.return_value = None
-    mock_task_classifier.classify_item_and_cache_classification.return_value = mock_classification_result
+    # GIVEN no persisted classification result
+    mock_task_classifier.get_persisted_classification.return_value = None
+    mock_task_classifier.classify_item_and_persist_classification.return_value = mock_classification_result
 
     # WHEN receiving a TaskUpdated event
     process_event(
@@ -439,9 +439,9 @@ def test_task_updated(mock_client: MagicMock, mock_task_classifier: MagicMock) -
         ),
     )
 
-    # THEN classification cache should have been checked and classification should have been calculated
-    mock_task_classifier.get_cached_classification.assert_called_once()
-    mock_task_classifier.classify_item_and_cache_classification.assert_called_once()
+    # THEN classification persistence should have been checked and classification should have been calculated
+    mock_task_classifier.get_persisted_classification.assert_called_once()
+    mock_task_classifier.classify_item_and_persist_classification.assert_called_once()
 
     # THEN Typesense index should have been updated
     mock_client.upsert.assert_called_with(
@@ -472,9 +472,9 @@ def test_task_updated_from_public_to_private(mock_client: MagicMock, mock_task_c
 
 
 @patch("typesense.client.Client")
-def test_task_updated_cached_classification(mock_client: MagicMock, mock_task_classifier: MagicMock) -> None:
-    # GIVEN a cached classification result
-    mock_task_classifier.get_cached_classification.return_value = mock_classification_result
+def test_task_updated_persisted_classification(mock_client: MagicMock, mock_task_classifier: MagicMock) -> None:
+    # GIVEN a persisted classification result
+    mock_task_classifier.get_persisted_classification.return_value = mock_classification_result
 
     # WHEN receiving a TaskUpdated event
     process_event(
@@ -485,9 +485,9 @@ def test_task_updated_cached_classification(mock_client: MagicMock, mock_task_cl
         ),
     )
 
-    # THEN classification cache should have been checked and classification should have been calculated
-    mock_task_classifier.get_cached_classification.assert_called_once()
-    mock_task_classifier.classify_item_and_cache_classification.assert_not_called()
+    # THEN classification persistence should have been checked and classification should have been calculated
+    mock_task_classifier.get_persisted_classification.assert_called_once()
+    mock_task_classifier.classify_item_and_persist_classification.assert_not_called()
 
     # THEN Typesense index should have been updated
     mock_client.upsert.assert_called_with(
