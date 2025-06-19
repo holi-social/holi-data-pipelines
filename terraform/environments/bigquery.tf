@@ -246,8 +246,8 @@ resource "google_bigquery_table" "volunteering_voltastics_without_classification
         classifications.similarity_embedding IS NULL
       )
       AND (
-        classification.classification_failed IS NULL
-        OR classification.classification_failed IS FALSE
+        classifications.classification_failed IS NULL
+        OR classifications.classification_failed IS FALSE
       )
       # Aktion Mensch is excluded because it is being sourced directly from Aktion Mensch.
       # Excluding it in this view implicates that rows from Aktion Mensch are not classified,
@@ -385,8 +385,8 @@ resource "google_bigquery_table" "volunteering_aktion_mensch_without_classificat
         OR classifications.similarity_embedding IS NULL
       )
       AND (
-        classification.classification_failed IS NULL
-        OR classification.classification_failed IS FALSE
+        classifications.classification_failed IS NULL
+        OR classifications.classification_failed IS FALSE
       )
     SQL
   }
