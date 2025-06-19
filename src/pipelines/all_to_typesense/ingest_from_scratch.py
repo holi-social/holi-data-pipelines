@@ -24,7 +24,7 @@ logger = PipelineLogger(__name__)
 
 
 @monitored_flow
-def all_to_typesense_ingest_from_scratch_flow() -> State:
+def all_to_typesense_ingest_from_scratch_flow(swap_alias: bool = True, drop_old_collection: bool = True) -> State:
     """
     Orchestrates the ETL pipeline to ingest all search data into Typesense from scratch.
     """
@@ -77,11 +77,12 @@ def all_to_typesense_ingest_from_scratch_flow() -> State:
     if isinstance(aktion_mensch_result, State) and aktion_mensch_result.is_failed():
         return Failed(message=aktion_mensch_result.message)
 
-    logger.info(f'Swapping alias {alias_name} to point to newly ingested collection "{next_collection}"')
-    typesense_client.set_active_collection(alias_name, next_collection)
-    logger.info(f'Alias {alias_name} is now pointing to "{next_collection}".')
+    if swap_alias:
+        logger.info(f'Swapping alias {alias_name} to point to newly ingested collection "{next_collection}"')
+        typesense_client.set_active_collection(alias_name, next_collection)
+        logger.info(f'Alias {alias_name} is now pointing to "{next_collection}".')
 
-    if active_collection is not None:
+    if active_collection is not None and drop_old_collection:
         logger.info(f'Dropping old collection "{active_collection}"')
         typesense_client.drop_collection(active_collection)
 
