@@ -26,6 +26,7 @@ class ClassificationResult:
     location_type: Optional[str] = None
     commitment_duration: Optional[str] = None
     commitment_duration_ai_reasoning: Optional[str] = None
+    classification_failed: Optional[bool] = None
 
     def to_dict(self) -> Dict[str, Any]:
         # noinspection PyTypeChecker
@@ -130,7 +131,7 @@ class Classifier(Generic[ClassificationInputT], ABC):
             self.logger.error(f"[id={item.id}] failed to classify", exc_info=e)
             return None
 
-    def get_cached_classification(self, item: ClassificationInputT) -> ClassificationResult | None:
+    def get_persisted_classification(self, item: ClassificationInputT) -> ClassificationResult | None:
         query = f"""
             SELECT * FROM `{self.table_name_classifications}`
             WHERE id="{item.id}"
@@ -139,12 +140,28 @@ class Classifier(Generic[ClassificationInputT], ABC):
         query_job = self.bqclient.query(query)
         rows = list(query_job.result(max_results=1))
         if rows:
-            self.logger.debug(f"[id={item.id}] found cached classification for hash={item.hash}")
+            self.logger.debug(f"[id={item.id}] found persisted classification for hash={item.hash}")
             return rows[0]
         else:
             return None
 
-    def classify_item_and_cache_classification(
+    def _persist_classification(self, item: ClassificationInputT, classification: ClassificationResult) -> None:
+        errors = self.bqclient.insert_rows_json(self.table_name_classifications, [classification.to_dict()])
+        self.logger.debug(f"[id={item.id}] written to BigQuery")
+        if len(errors) > 0:
+            raise Exception(f"[id={item.id}] failed to insert classification {classification}: {errors}")
+
+    def _persist_classification_failure(self, item: ClassificationInputT) -> None:
+        self.logger.debug(f"[id={item.id}] failed to classify item, skipping")
+        errors = self.bqclient.insert_rows_json(
+            self.table_name_classifications,
+            [{"type": item.type, "id": item.id, "hash": item.hash, "classification_failed": True}],
+        )
+        self.logger.debug(f"[id={item.id}] written to BigQuery")
+        if len(errors) > 0:
+            raise Exception(f"[id={item.id}] failed to persist classification failure: {errors}")
+
+    def classify_item_and_persist_classification(
         self,
         item: ClassificationInputT,
     ) -> ClassificationResult | None:
@@ -152,12 +169,9 @@ class Classifier(Generic[ClassificationInputT], ABC):
         try:
             classification = self._classify_item(item)
             if classification is None:
-                self.logger.debug(f"[id={item.id}] failed to classify item, skipping")
+                self._persist_classification_failure(item)
                 return None
-            errors = self.bqclient.insert_rows_json(self.table_name_classifications, [classification.to_dict()])
-            self.logger.debug(f"[id={item.id}] written to BigQuery")
-            if len(errors) > 0:
-                raise Exception(f"[id={item.id}] failed to insert classification {classification}: {errors}")
+            self._persist_classification(item, classification)
             return classification
         except Exception as e:
             self.logger.error(

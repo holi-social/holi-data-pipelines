@@ -125,7 +125,8 @@ resource "google_bigquery_table" "classifications" {
     { "name": "commitment_label", "type": "STRING", "mode": "NULLABLE" },
     { "name": "location_type", "type": "STRING", "mode": "NULLABLE" },
     { "name": "commitment_duration", "type": "STRING", "mode": "NULLABLE" },
-    { "name": "commitment_duration_ai_reasoning", "type": "STRING", "mode": "NULLABLE" }
+    { "name": "commitment_duration_ai_reasoning", "type": "STRING", "mode": "NULLABLE" },
+    { "name": "classification_failed", "type": "BOOLEAN", "mode": "NULLABLE" }
   ]
   EOF
 
@@ -169,6 +170,10 @@ resource "google_bigquery_table" "tasks_without_classifications" {
         AND (
           classification.topics_skills_embedding_v2 IS NULL
           OR classification.similarity_embedding IS NULL
+        )
+        AND (
+          classification.classification_failed IS NULL
+          OR classification.classification_failed IS FALSE
         )
     SQL
   }
@@ -223,7 +228,7 @@ resource "google_bigquery_table" "volunteering_voltastics_without_classification
       SELECT
         raw_deduped.*,
         classifications.topics_skills_embedding_v2 as topics_skills_embedding_v2,
-        classifications.similarity_embedding as similarity_embeddiung
+        classifications.similarity_embedding as similarity_embedding
       FROM `${local.datalake}.volunteering_voltastics_raw_deduped` raw_deduped
       LEFT OUTER JOIN `${google_bigquery_table.classifications.dataset_id}.${google_bigquery_table.classifications.table_id}` classifications
       ON
@@ -231,14 +236,18 @@ resource "google_bigquery_table" "volunteering_voltastics_without_classification
         raw_deduped.hash = classifications.hash AND
         classifications.type = 'volunteering'
       WHERE DATE(raw_deduped.partitiontime) = (
-          SELECT MAX(DATE(partitiontime))
-          FROM `${local.datalake}.volunteering_voltastics_raw_deduped`
-          WHERE partitiontime IS NOT NULL
+        SELECT MAX(DATE(partitiontime))
+        FROM `${local.datalake}.volunteering_voltastics_raw_deduped`
+        WHERE partitiontime IS NOT NULL
       )
       AND (
-          classifications.hash IS NULL OR
-          classifications.topics_skills_embedding_v2 IS NULL OR
-          classifications.similarity_embedding IS NULL
+        classifications.hash IS NULL OR
+        classifications.topics_skills_embedding_v2 IS NULL OR
+        classifications.similarity_embedding IS NULL
+      )
+      AND (
+        classification.classification_failed IS NULL
+        OR classification.classification_failed IS FALSE
       )
       # Aktion Mensch is excluded because it is being sourced directly from Aktion Mensch.
       # Excluding it in this view implicates that rows from Aktion Mensch are not classified,
@@ -366,14 +375,18 @@ resource "google_bigquery_table" "volunteering_aktion_mensch_without_classificat
         ) = classifications.hash AND
         classifications.type = 'aktion_mensch_volunteering'
       WHERE DATE(raw._PARTITIONDATE) = (
-          SELECT MAX(DATE(_PARTITIONDATE))
-          FROM `${local.datalake}.volunteering_aktion_mensch_raw`
-          WHERE _PARTITIONDATE IS NOT NULL
+        SELECT MAX(DATE(_PARTITIONDATE))
+        FROM `${local.datalake}.volunteering_aktion_mensch_raw`
+        WHERE _PARTITIONDATE IS NOT NULL
       )
       AND (
-          classifications.hash IS NULL OR
-          classifications.topics_skills_embedding_v2 IS NULL OR
-          classifications.similarity_embedding IS NULL
+        classifications.hash IS NULL
+        OR classifications.topics_skills_embedding_v2 IS NULL
+        OR classifications.similarity_embedding IS NULL
+      )
+      AND (
+        classification.classification_failed IS NULL
+        OR classification.classification_failed IS FALSE
       )
     SQL
   }
