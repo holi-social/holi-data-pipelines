@@ -19,7 +19,7 @@ from tenacity import retry, stop_after_attempt
 
 from src.pipelines.volunteering_classification.volunteering_classification_input import VolunteeringClassificationInput
 
-MODEL_NAME = "gemini-2.0-flash-001"
+MODEL_NAME = "gemini-2.5-flash"
 MODEL_RATE_LIMIT_PER_MINUTE = 2000
 MODEL_INVOCATION_RETRY_ATTEMPTS = 3
 
