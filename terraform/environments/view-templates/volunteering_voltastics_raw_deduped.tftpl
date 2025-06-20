@@ -1,0 +1,19 @@
+SELECT
+  longitude,
+  imageOrga,
+  location,
+  title,
+  source,
+  hashTags,
+  description,
+  images[SAFE_OFFSET(0)] as image,
+  link,
+  orga,
+  id,
+  latitude,
+  uses,
+  additionalData,
+  `hash`,
+  partitiontime
+FROM
+  `${raw_aggregated_table}`

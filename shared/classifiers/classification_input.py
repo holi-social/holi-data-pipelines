@@ -2,6 +2,7 @@ from typing import Protocol, Optional, List, TypeVar
 
 
 class ClassificationInput(Protocol):
+    type: str
     id: str
     hash: str
     topics_skills_embedding_v2: Optional[List[float]]
