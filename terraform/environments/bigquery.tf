@@ -1,4 +1,6 @@
 locals {
+  project_id = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
+
   dataset_id_datalake = local.environment == "production" ? data.terraform_remote_state.holi_infra_state.outputs.bigquery_dataset_id_datalake_production : data.terraform_remote_state.holi_infra_state.outputs.bigquery_dataset_id_datalake_development
   dataset_id_datapool = local.environment == "production" ? data.terraform_remote_state.holi_infra_state.outputs.bigquery_dataset_id_datapool_production : data.terraform_remote_state.holi_infra_state.outputs.bigquery_dataset_id_datapool_development
 
@@ -8,9 +10,28 @@ locals {
   okuna_dataset = "${local.default_project}.okuna_${local.environment_name}_public"
 }
 
+resource "google_bigquery_table" "location_cache" {
+  project    = local.project_id
+  dataset_id = local.dataset_id_datalake
+  table_id   = "location_cache"
+
+  schema = <<EOF
+  [
+    { "name": "location", "type": "STRING", "mode": "REQUIRED"},
+    { "name": "latitude", "type": "FLOAT", "mode": "NULLABLE"},
+    { "name": "longitude", "type": "FLOAT", "mode": "NULLABLE"},
+    { "name": "created_at", "type": "TIMESTAMP", "mode": "NULLABLE", "defaultExpression": "CURRENT_TIMESTAMP()" }
+  ]
+  EOF
+
+  lifecycle {
+    ignore_changes = [encryption_configuration]
+  }
+}
+
 // UDF for Aktion Mensch hash calculation
 resource "google_bigquery_routine" "calculate_aktion_mensch_hash" {
-  project         = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
+  project         = local.project_id
   dataset_id      = local.dataset_id_datalake
   routine_id      = "calculate_aktion_mensch_hash"
   routine_type    = "SCALAR_FUNCTION"
@@ -72,7 +93,7 @@ resource "google_bigquery_routine" "calculate_aktion_mensch_hash" {
 }
 
 resource "google_bigquery_table" "volunteering_voltastics_raw" {
-  project    = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
+  project    = local.project_id
   dataset_id = local.dataset_id_datalake
   table_id   = "volunteering_voltastics_raw"
 
@@ -109,7 +130,7 @@ EOF
 }
 
 resource "google_bigquery_table" "classifications" {
-  project    = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
+  project    = local.project_id
   dataset_id = local.dataset_id_datalake
   table_id   = "classifications"
 
@@ -136,7 +157,7 @@ resource "google_bigquery_table" "classifications" {
 }
 
 resource "google_bigquery_table" "tasks_without_classifications" {
-  project    = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
+  project    = local.project_id
   dataset_id = local.dataset_id_datapool
   table_id   = "tasks_without_classifications"
 
@@ -180,7 +201,7 @@ resource "google_bigquery_table" "tasks_without_classifications" {
 }
 
 resource "google_bigquery_table" "tasks_with_classifications" {
-  project    = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
+  project    = local.project_id
   dataset_id = local.dataset_id_datapool
   table_id   = "tasks_with_classifications"
 
@@ -217,8 +238,40 @@ resource "google_bigquery_table" "tasks_with_classifications" {
 
 }
 
+resource "google_bigquery_table" "volunteering_voltastics_raw_deduped_aggregated_images" {
+  project    = local.project_id
+  dataset_id = local.dataset_id_datalake
+  table_id   = "volunteering_voltastics_raw_deduped_aggregated_images"
+
+  view {
+    use_legacy_sql = false
+    query = templatefile(
+      "view-templates/volunteering_voltastics_raw_deduped_aggregated_images.tftpl",
+      {
+        raw_table = "${local.datalake}.${google_bigquery_table.volunteering_voltastics_raw.table_id}"
+      }
+    )
+  }
+}
+
+resource "google_bigquery_table" "volunteering_voltastics_raw_deduped" {
+  project    = local.project_id
+  dataset_id = local.dataset_id_datalake
+  table_id   = "volunteering_voltastics_raw_deduped"
+
+  view {
+    use_legacy_sql = false
+    query = templatefile(
+      "view-templates/volunteering_voltastics_raw_deduped.tftpl",
+      {
+        raw_aggregated_table = "${local.datalake}.${google_bigquery_table.volunteering_voltastics_raw_deduped_aggregated_images.table_id}"
+      }
+    )
+  }
+}
+
 resource "google_bigquery_table" "volunteering_voltastics_without_classifications" {
-  project    = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
+  project    = local.project_id
   dataset_id = local.dataset_id_datapool
   table_id   = "volunteering_voltastics_without_classifications"
 
@@ -257,14 +310,8 @@ resource "google_bigquery_table" "volunteering_voltastics_without_classification
   }
 }
 
-
-# TODO migrate table / view definitions from holi-data-classification once it is "shut down":
-# TODO - volunteering_voltastics_raw_deduped_aggregated_images
-# TODO - volunteering_voltastics_raw_deduped
-# TODO - location_cache
-
 resource "google_bigquery_table" "volunteering_voltastics_classified_enriched_partitioned" {
-  project     = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
+  project     = local.project_id
   dataset_id  = local.dataset_id_datalake
   table_id    = "volunteering_voltastics_classified_enriched_partitioned"
   description = "View holding all (partitioned) volunteering data, together with topics&skill classification, similarity classification and location enrichment. Used by the volunteering-to-typesense pipeline."
@@ -301,7 +348,7 @@ resource "google_bigquery_table" "volunteering_voltastics_classified_enriched_pa
 }
 
 resource "google_bigquery_table" "volunteering_aktion_mensch_raw" {
-  project    = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
+  project    = local.project_id
   dataset_id = local.dataset_id_datalake
   table_id   = "volunteering_aktion_mensch_raw"
 
@@ -336,7 +383,7 @@ EOF
 }
 
 resource "google_bigquery_table" "volunteering_aktion_mensch_without_classifications" {
-  project    = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
+  project    = local.project_id
   dataset_id = local.dataset_id_datapool
   table_id   = "volunteering_aktion_mensch_without_classifications"
 
@@ -396,7 +443,7 @@ resource "google_bigquery_table" "volunteering_aktion_mensch_without_classificat
 # so that both can be treated uniformly by downstream components (e.g., Typesense ingestion pipeline).
 # Any changes to the schema should be synchronized across both views.
 resource "google_bigquery_table" "volunteering_aktion_mensch_classified_enriched_partitioned" {
-  project     = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
+  project     = local.project_id
   dataset_id  = local.dataset_id_datalake
   table_id    = "volunteering_aktion_mensch_classified_enriched_partitioned"
   description = "View joining Aktion Mensch volunteering data with classifications, for ingestion to Typesense. Used by the aktion-mensch-to-typesense pipeline."
@@ -491,7 +538,7 @@ output "volunteering_voltastics_raw_table_full" {
 
 
 resource "google_bigquery_table" "donations_betterplace_raw" {
-  project    = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
+  project    = local.project_id
   dataset_id = local.dataset_id_datalake
   table_id   = "donations_betterplace_raw"
 
