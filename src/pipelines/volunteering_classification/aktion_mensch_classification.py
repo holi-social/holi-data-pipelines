@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Optional, cast
+from typing import Any, cast
 import json
 
 from prefect.states import Completed, State
@@ -35,7 +35,7 @@ commitment_duration_classification_logger = PipelineLogger("aktion_mensch_commit
 class AktionMenschBatchClassifier(PipelineBatchClassifier[AktionMenschClassificationInput]):
     """Classifier for Aktion Mensch volunteering opportunities using PipelineBatchClassifier."""
 
-    def __init__(self, batch_size: Optional[int] = 50, stop_after_batch_nr: Optional[int] = None) -> None:
+    def __init__(self, batch_size: int | None = 50, stop_after_batch_nr: int | None = None) -> None:
         # TODO this smells, cast is maybe only required because type parameter is not allowed to be extended
         topics_classifier = cast(
             TopicsSkillsClassifierV2[AktionMenschClassificationInput],
@@ -105,7 +105,7 @@ class AktionMenschBatchClassifier(PipelineBatchClassifier[AktionMenschClassifica
 
 
 @monitored_flow
-def aktion_mensch_classification(batch_size: Optional[int] = 50, stop_after_batch_nr: Optional[int] = None) -> State:
+def aktion_mensch_classification(batch_size: int | None = 50, stop_after_batch_nr: int | None = None) -> State:
     """Run Aktion Mensch classification pipeline."""
     logger.info("Starting Aktion Mensch classification")
     classifier = AktionMenschBatchClassifier(batch_size=batch_size, stop_after_batch_nr=stop_after_batch_nr)
@@ -123,6 +123,5 @@ if __name__ == "__main__":
     logging.getLogger(topics_skills_classifier_logger.name).setLevel(logging.DEBUG)
     logging.getLogger(similarity_embedder_logger.name).setLevel(logging.DEBUG)
     logging.getLogger(commitment_duration_classification_logger.name).setLevel(logging.DEBUG)
-    logging.getLogger("pipeline_batch_classifier").setLevel(logging.DEBUG)
 
-    state = aktion_mensch_classification(batch_size=10)  # type: ignore
+    aktion_mensch_classification(batch_size=10, stop_after_batch_nr=0)  # type: ignore

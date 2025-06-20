@@ -1,9 +1,9 @@
 import logging
-from typing import Optional, Any
+from typing import Any
 
 from prefect.states import Completed, State
 
-from src.common.classifiers.pipeline_batch_classifier import PipelineBatchClassifier
+from src.common.classifiers.pipeline_batch_classifier import PipelineBatchClassifier, DEFAULT_BATCH_SIZE
 from src.common.logging.PipelineLogger import PipelineLogger
 from src.common.monitoring.flow import monitored_flow
 
@@ -33,7 +33,7 @@ commitment_duration_classification_logger = PipelineLogger("volunteering_commitm
 
 
 class VolunteeringBatchClassifier(PipelineBatchClassifier[VolunteeringClassificationInput]):
-    def __init__(self, stop_after_batch_nr: Optional[int]) -> None:
+    def __init__(self, batch_size: int | None = DEFAULT_BATCH_SIZE, stop_after_batch_nr: int | None = None) -> None:
         super().__init__(
             topics_skills_classifier_v2=VolunteeringTopicsSkillsClassifierV2(topics_skills_classification_logger),
             similarity_embedder=VolunteeringSimilarityEmbedder(similarity_classification_logger),
@@ -46,6 +46,7 @@ class VolunteeringBatchClassifier(PipelineBatchClassifier[VolunteeringClassifica
             table_name_classifications=table_classifications(),
             view_name_without_classifications=volunteering_voltastics_without_classifications(),
             logger=logger,
+            batch_size=batch_size,
             stop_after_batch_nr=stop_after_batch_nr,
         )
 
@@ -72,16 +73,23 @@ class VolunteeringBatchClassifier(PipelineBatchClassifier[VolunteeringClassifica
 
 
 @monitored_flow
-def volunteering_classification(stop_after_batch_nr: Optional[int] = None) -> State:
-    # TODO use context manager to create and shut down classifier
-    classifier = VolunteeringBatchClassifier(stop_after_batch_nr)
+def volunteering_classification(
+    batch_size: int | None = DEFAULT_BATCH_SIZE, stop_after_batch_nr: int | None = None
+) -> State:
+    classifier = VolunteeringBatchClassifier(batch_size=batch_size, stop_after_batch_nr=stop_after_batch_nr)
     classifier.compute_classifications()
     return Completed(message="Volunteering classification completed successfully")
 
 
 if __name__ == "__main__":
+    # Set all loggers to DEBUG level for maximum visibility
+    logging.getLogger("shared").setLevel(logging.DEBUG)
+    logging.getLogger("src").setLevel(logging.DEBUG)
+
+    # Set specific loggers for this pipeline
     logging.getLogger(logger.name).setLevel(logging.DEBUG)
     logging.getLogger(topics_skills_classification_logger.name).setLevel(logging.DEBUG)
     logging.getLogger(similarity_classification_logger.name).setLevel(logging.DEBUG)
     logging.getLogger(commitment_duration_classification_logger.name).setLevel(logging.DEBUG)
-    volunteering_classification(stop_after_batch_nr=0)  # type: ignore
+
+    volunteering_classification(batch_size=10, stop_after_batch_nr=0)  # type: ignore
