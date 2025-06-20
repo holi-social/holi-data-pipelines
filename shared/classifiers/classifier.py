@@ -168,15 +168,16 @@ class Classifier(Generic[ClassificationInputT], ABC):
         self.logger.info(f"[id={item.id}] classifying item {item}")
         try:
             classification = self._classify_item(item)
-            if classification is None:
-                self._persist_classification_failure(item)
-                return None
-            self._persist_classification(item, classification)
-            return classification
         except Exception as e:
+            classification = None
             self.logger.error(
                 f"[id={item.id}] error while classifying item, skipping, error: %s",
                 str(e),
                 exc_info=e,
             )
+        if classification is None:
+            self._persist_classification_failure(item)
             return None
+        else:
+            self._persist_classification(item, classification)
+            return classification
