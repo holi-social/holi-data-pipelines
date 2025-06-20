@@ -331,6 +331,7 @@ resource "google_bigquery_table" "volunteering_voltastics_classified_enriched_pa
         classifications.location_type AS location_type,
         classifications.commitment_duration AS commitment_duration,
         classifications.commitment_duration_ai_reasoning AS commitment_duration_ai_reasoning,
+        classifications.classification_failed as classification_failed,
       FROM
         `${local.datalake}.volunteering_voltastics_raw_deduped` AS raw_deduped
       LEFT OUTER JOIN
@@ -502,6 +503,7 @@ resource "google_bigquery_table" "volunteering_aktion_mensch_classified_enriched
         classifications.location_type,
         classifications.commitment_duration,
         classifications.commitment_duration_ai_reasoning,
+        classifications.classification_failed,
         
         'Aktion Mensch' AS source,
         am._PARTITIONTIME AS partitiontime
