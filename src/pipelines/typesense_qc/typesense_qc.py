@@ -18,6 +18,7 @@ from src.pipelines.bigquery import (
     bigquery_okuna_dataset,
     tasks_with_classifications,
     volunteering_voltastics_classified_enriched_partitioned,
+    volunteering_aktion_mensch_classified_enriched_partitioned,
 )
 
 logger = PipelineLogger(__name__)
@@ -127,12 +128,19 @@ def get_task_ids_bq() -> list[str]:
 
 @task
 def get_volunteering_ids_bq() -> list[str]:
-    result = extract_data_from_bigquery(f"""
+    result_voltastics = extract_data_from_bigquery(f"""
         SELECT id
         FROM `{volunteering_voltastics_classified_enriched_partitioned()}`
         WHERE TIMESTAMP_TRUNC(partitiontime, DAY) = TIMESTAMP_TRUNC(CURRENT_TIMESTAMP(), DAY)
     """)  # noqa: S608
-    return cast(list[str], [str(row["id"]) for row in result])
+    result_aktion_mensch = extract_data_from_bigquery(f"""
+        SELECT id
+        FROM `{volunteering_aktion_mensch_classified_enriched_partitioned()}`
+        WHERE TIMESTAMP_TRUNC(partitiontime, DAY) = TIMESTAMP_TRUNC(CURRENT_TIMESTAMP(), DAY)
+    """)  # noqa: S608
+    return cast(
+        list[str], [str(row["id"]) for row in result_voltastics] + [str(row["id"]) for row in result_aktion_mensch]
+    )
 
 
 @task
