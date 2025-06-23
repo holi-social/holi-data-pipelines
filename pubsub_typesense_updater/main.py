@@ -55,11 +55,12 @@ def process_user_updated_event(ts_client: TypesenseClient, event: UserUpdatedEve
     if event.user.name is None or event.user.name.strip() == "":
         try:
             ts_client.delete(f"profile_{event.user.id}")
+            logger.info(f"[id={event.user.id}] Deleted user {event.user.id} from Typesense due to empty name")
         except ObjectNotFound:
             pass
     else:
         ts_client.upsert(event.as_typesense_document())
-    logger.info(f"[id={event.user.id}] Upserted user {event.user.id} in Typesense")
+        logger.info(f"[id={event.user.id}] Upserted user {event.user.id} in Typesense")
 
 
 def process_user_deleted_event(ts_client: TypesenseClient, event: UserDeletedEvent) -> None:
