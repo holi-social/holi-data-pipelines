@@ -10,7 +10,7 @@ from src.pipelines.bigquery import tasks_without_classifications, table_classifi
 from shared.embedders.task_similarity_embedder import TaskSimilarityEmbedder
 from shared.classifiers.task_topics_skills_classifier_v2 import TaskTopicsSkillsClassifierV2
 
-logger = PipelineLogger("task_classification")
+logger = PipelineLogger("tasks_classification")
 topics_skills_classifier_logger = PipelineLogger("task_topics_skills_classifier_v2")
 similarity_embedder_logger = PipelineLogger("task_similarity_embedder")
 
@@ -52,7 +52,7 @@ class TaskBatchClassifier(PipelineBatchClassifier[TaskClassificationInput]):
 
 
 @monitored_flow
-def task_classification_flow(batch_size: int | None = None, stop_after_batch_nr: int | None = None) -> State:
+def tasks_classification_flow(batch_size: int | None = None, stop_after_batch_nr: int | None = None) -> State:
     # TODO use context manager to create and shut down classifier
     classifier = TaskBatchClassifier(batch_size=batch_size, stop_after_batch_nr=stop_after_batch_nr)
     classifier.compute_classifications()
@@ -63,4 +63,4 @@ if __name__ == "__main__":
     logging.getLogger(logger.name).setLevel(logging.DEBUG)
     logging.getLogger(topics_skills_classifier_logger.name).setLevel(logging.DEBUG)
     logging.getLogger(similarity_embedder_logger.name).setLevel(logging.DEBUG)
-    task_classification_flow()  # type: ignore
+    tasks_classification_flow()  # type: ignore

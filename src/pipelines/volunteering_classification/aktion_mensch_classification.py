@@ -105,7 +105,7 @@ class AktionMenschBatchClassifier(PipelineBatchClassifier[AktionMenschClassifica
 
 
 @monitored_flow
-def aktion_mensch_classification(batch_size: int | None = 50, stop_after_batch_nr: int | None = None) -> State:
+def aktion_mensch_classification_flow(batch_size: int | None = 50, stop_after_batch_nr: int | None = None) -> State:
     """Run Aktion Mensch classification pipeline."""
     logger.info("Starting Aktion Mensch classification")
     classifier = AktionMenschBatchClassifier(batch_size=batch_size, stop_after_batch_nr=stop_after_batch_nr)
@@ -124,4 +124,4 @@ if __name__ == "__main__":
     logging.getLogger(similarity_embedder_logger.name).setLevel(logging.DEBUG)
     logging.getLogger(commitment_duration_classification_logger.name).setLevel(logging.DEBUG)
 
-    aktion_mensch_classification(batch_size=10, stop_after_batch_nr=0)  # type: ignore
+    aktion_mensch_classification_flow(batch_size=10, stop_after_batch_nr=0)  # type: ignore

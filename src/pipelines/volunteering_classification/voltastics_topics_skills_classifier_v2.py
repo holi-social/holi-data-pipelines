@@ -17,7 +17,7 @@ from src.pipelines.skills_v2 import skill_v2_titles, skill_v2_slugs
 
 from tenacity import retry, stop_after_attempt
 
-from src.pipelines.volunteering_classification.volunteering_classification_input import VolunteeringClassificationInput
+from src.pipelines.volunteering_classification.voltastics_classification_input import VoltasticsClassificationInput
 
 MODEL_NAME = "gemini-2.0-flash-001"
 MODEL_RATE_LIMIT_PER_MINUTE = 2000
@@ -50,14 +50,14 @@ class TermClassificationResult:
     slugs: List[str]
 
 
-class VolunteeringTopicsSkillsClassifierV2(TopicsSkillsClassifierV2[VolunteeringClassificationInput]):
+class VoltasticsTopicsSkillsClassifierV2(TopicsSkillsClassifierV2[VoltasticsClassificationInput]):
     model: GenerativeModel
 
     def __init__(self, logger: Logger) -> None:
         super().__init__(logger)
         self.model = GenerativeModel(MODEL_NAME, generation_config=(GenerationConfig()))
 
-    def get_classification(self, item: VolunteeringClassificationInput) -> TopicsSkillsClassificationV2:
+    def get_classification(self, item: VoltasticsClassificationInput) -> TopicsSkillsClassificationV2:
         topics_result = self._get_topic_v2_classification(item)
         skills_result = self._get_skill_v2_classification(item)
         topics_skills_embedding_v2 = topics_result.embedding + skills_result.embedding
@@ -68,7 +68,7 @@ class VolunteeringTopicsSkillsClassifierV2(TopicsSkillsClassifierV2[Volunteering
         )
 
     @retry(stop=stop_after_attempt(MODEL_INVOCATION_RETRY_ATTEMPTS))
-    def _get_skill_v2_classification(self, item: VolunteeringClassificationInput) -> TermClassificationResult:
+    def _get_skill_v2_classification(self, item: VoltasticsClassificationInput) -> TermClassificationResult:
         prompt = self._create_skills_prompt_volunteering(item)
         response = self._invoke_model(prompt)
         self.logger.debug(f"raw skill classification response: {response}")
@@ -80,7 +80,7 @@ class VolunteeringTopicsSkillsClassifierV2(TopicsSkillsClassifierV2[Volunteering
         )
 
     @retry(stop=stop_after_attempt(MODEL_INVOCATION_RETRY_ATTEMPTS))
-    def _get_topic_v2_classification(self, item: VolunteeringClassificationInput) -> TermClassificationResult:
+    def _get_topic_v2_classification(self, item: VoltasticsClassificationInput) -> TermClassificationResult:
         prompt = self._create_topics_prompt_volunteering(item)
         response = self._invoke_model(prompt)
         self.logger.debug(f"raw topic classification response: {response}")
@@ -105,8 +105,8 @@ class VolunteeringTopicsSkillsClassifierV2(TopicsSkillsClassifierV2[Volunteering
 
     @staticmethod
     def _parse_response(response: str) -> Dict[str, Any]:
-        cleaned_response = VolunteeringTopicsSkillsClassifierV2._strip_ellipsis(response)
-        yaml_response = VolunteeringTopicsSkillsClassifierV2._parse_yaml_response(cleaned_response)
+        cleaned_response = VoltasticsTopicsSkillsClassifierV2._strip_ellipsis(response)
+        yaml_response = VoltasticsTopicsSkillsClassifierV2._parse_yaml_response(cleaned_response)
         if not isinstance(yaml_response, Dict):
             raise Exception(f"Expected dict, found {type(yaml_response)}")
         return yaml_response
@@ -137,21 +137,19 @@ class VolunteeringTopicsSkillsClassifierV2(TopicsSkillsClassifierV2[Volunteering
         titles: List[str], slugs: List[str], confidence_threshold: float, response: str
     ) -> TermClassificationResult:
         try:
-            weights = VolunteeringTopicsSkillsClassifierV2._parse_response(response)
-            VolunteeringTopicsSkillsClassifierV2._validate_weights(weights, titles)
-            return VolunteeringTopicsSkillsClassifierV2._transform_weights(
-                weights, titles, slugs, confidence_threshold
-            )
+            weights = VoltasticsTopicsSkillsClassifierV2._parse_response(response)
+            VoltasticsTopicsSkillsClassifierV2._validate_weights(weights, titles)
+            return VoltasticsTopicsSkillsClassifierV2._transform_weights(weights, titles, slugs, confidence_threshold)
         except Exception as e:
             raise Exception(f"Invalid response:\n{str(response)}") from e
 
     @staticmethod
-    def _create_skills_prompt_volunteering(item: VolunteeringClassificationInput) -> str:
+    def _create_skills_prompt_volunteering(item: VoltasticsClassificationInput) -> str:
         title = shorten_str(item.title, MAX_TITLE_LEN)
         desc = shorten_str(remove_html(item.description), MAX_DESC_LEN)
         # Description can be empty
         desc_part = f' und der Beschreibung "{desc}"' if desc else ""
-        categories = VolunteeringTopicsSkillsClassifierV2._join_categories(item.uses or [])
+        categories = VoltasticsTopicsSkillsClassifierV2._join_categories(item.uses or [])
         # Categories might be empty
         categories_part = f" Das Freiwilligenprojekt ist den Kategorien {categories} zugeordnet." if categories else ""
         titles_list = "\n".join(map(lambda skill_title: f"- {skill_title}", skill_v2_titles))
@@ -163,13 +161,13 @@ class VolunteeringTopicsSkillsClassifierV2(TopicsSkillsClassifierV2[Volunteering
         """
 
     @staticmethod
-    def _create_topics_prompt_volunteering(item: VolunteeringClassificationInput) -> str:
+    def _create_topics_prompt_volunteering(item: VoltasticsClassificationInput) -> str:
         title = shorten_str(item.title, MAX_TITLE_LEN)
         topic_titles_list = "\n".join(map(lambda topic_title: f"- {topic_title}", topic_v2_titles))
         desc = shorten_str(remove_html(item.description), MAX_DESC_LEN)
         # Description can be empty
         desc_part = f' und der Beschreibung "{desc}"' if desc else ""
-        categories = VolunteeringTopicsSkillsClassifierV2._join_categories(item.uses or [])
+        categories = VoltasticsTopicsSkillsClassifierV2._join_categories(item.uses or [])
         # Categories might be empty
         categories_part = f" Das Freiwilligenprojekt ist den Kategorien {categories} zugeordnet." if categories else ""
         return f"""

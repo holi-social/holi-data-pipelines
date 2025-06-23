@@ -174,12 +174,12 @@ class VolunteeringGeoEnricher:
 
 
 @monitored_flow
-def volunteering_geo_enrichment() -> State:
+def voltastics_geo_enrichment_flow() -> State:
     enricher = VolunteeringGeoEnricher(cast(str, secret_value("geoapify-api-key")))
     enricher.enrich_location_data()
     return Completed()
 
 
 if __name__ == "__main__":
-    logging.getLogger("volunteering_geo_enrichment").setLevel(logging.DEBUG)
-    volunteering_geo_enrichment()  # type: ignore[call-overload]
+    logging.getLogger(logger.name).setLevel(logging.DEBUG)
+    voltastics_geo_enrichment_flow()  # type: ignore[call-overload]

@@ -1,11 +1,11 @@
 import dataclasses
 from typing import Any, Optional
 
-from src.pipelines.volunteering_classification.volunteering_classification_input import VolunteeringClassificationInput
+from src.pipelines.volunteering_classification.voltastics_classification_input import VoltasticsClassificationInput
 
 
 @dataclasses.dataclass
-class AktionMenschClassificationInput(VolunteeringClassificationInput):
+class AktionMenschClassificationInput(VoltasticsClassificationInput):
     """Classification input for Aktion Mensch volunteering opportunities."""
 
     kurzbeschreibung: str = ""

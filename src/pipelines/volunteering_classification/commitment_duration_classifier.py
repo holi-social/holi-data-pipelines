@@ -13,7 +13,7 @@ from shared.classifiers.commitment_duration_classifier import (
     parse_commitment_duration,
 )
 from src.common.str_utils import shorten_str, remove_html
-from src.pipelines.volunteering_classification.volunteering_classification_input import VolunteeringClassificationInput
+from src.pipelines.volunteering_classification.voltastics_classification_input import VoltasticsClassificationInput
 
 MODEL_NAME = "gemini-2.0-flash-001"
 MODEL_RATE_LIMIT_PER_MINUTE = 2000
@@ -44,14 +44,14 @@ MAX_TITLE_LEN = 500
 MAX_DESC_LEN = 10000
 
 
-class VolunteeringCommitmentDurationClassifier(CommitmentDurationClassifier[VolunteeringClassificationInput]):
+class VolunteeringCommitmentDurationClassifier(CommitmentDurationClassifier[VoltasticsClassificationInput]):
     model: GenerativeModel
 
     def __init__(self, logger: Logger) -> None:
         super().__init__(logger)
         self.model = GenerativeModel(MODEL_NAME, generation_config=GenerationConfig(temperature=0.5))
 
-    def get_classification(self, item: VolunteeringClassificationInput) -> CommitmentDurationClassification:
+    def get_classification(self, item: VoltasticsClassificationInput) -> CommitmentDurationClassification:
         prompt = self._create_classification_prompt(item)
         return self._invoke_and_parse_with_retry(prompt, item.id)
 
@@ -67,7 +67,7 @@ class VolunteeringCommitmentDurationClassifier(CommitmentDurationClassifier[Volu
         response = self.model.generate_content(prompt)
         return response.text
 
-    def _create_classification_prompt(self, item: VolunteeringClassificationInput) -> str:
+    def _create_classification_prompt(self, item: VoltasticsClassificationInput) -> str:
         """Create the classification prompt for time requirement classification."""
         title = shorten_str(item.title, MAX_TITLE_LEN)
         description = shorten_str(remove_html(item.description), MAX_DESC_LEN)
