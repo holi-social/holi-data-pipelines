@@ -13,6 +13,7 @@ from src.pipelines.aktion_mensch_to_typesense.ingest_from_scratch import (
 )
 from src.pipelines.aktion_mensch_to_typesense.ingest_updates import aktion_mensch_to_typesense_ingest_updates_flow
 from src.pipelines.all_to_typesense.ingest_from_scratch import all_to_typesense_ingest_from_scratch_flow
+from src.pipelines.classification_qc.classification_qc import classification_qc
 from src.pipelines.crawlers.aktion_mensch.pipeline import crawl_aktion_mensch
 from src.pipelines.crawlers.betterplace.pipeline import crawl_betterplace
 from src.pipelines.crawlers.voltastics.pipeline import crawl_voltastics
@@ -145,6 +146,12 @@ def get_deployments() -> List[RunnerDeployment]:
             description="Crawls betterplace.org for charity projects and ingests them into BigQuery",
             job_variables_overrides={"memory": "1024Mi"},
             paused=True,
+        ),
+        deployment_for_flow(
+            classification_qc,
+            description="Quality check to ensure that not too many classifications are failing",
+            schedules=[cron_schedule("00 7 * * *")],
+            job_variables_overrides={"memory": "1024Mi"},
         ),
         deployment_for_flow(
             typesense_qc,
