@@ -44,7 +44,8 @@ def count_classification_failed(view_name: str) -> int:
     result = extract_data_from_bigquery(f"""
         SELECT COUNT(classification_failed) as `count`
         FROM `{view_name}`
-        WHERE classification_failed IS TRUE
+        WHERE TIMESTAMP_TRUNC(partitiontime, DAY) = (SELECT MAX(TIMESTAMP_TRUNC(partitiontime, DAY)) FROM `{view_name}`)
+        AND classification_failed IS TRUE
     """)  # noqa: S608
     return cast(int, result[0]["count"])
 
