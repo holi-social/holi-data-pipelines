@@ -22,7 +22,9 @@ def map_task_location_type_to_typesense_location_type(
     )
 
 
-OkunaTaskRegularity = Literal["ONE_TIME", "ONCE_WEEK", "ONCE_MONTH", "REGULARLY", "PROJECT_BASED", "NEGOTIABLE"]
+OkunaTaskRegularity = Literal[
+    "ONE_TIME", "ONCE_WEEK", "ONCE_MONTH", "REGULARLY", "PROJECT_BASED", "SEVERAL_TIMES_WEEK", "NEGOTIABLE"
+]
 
 TypesenseTaskRegularity = Literal["one-time", "recurring", "negotiable"]
 
@@ -38,6 +40,8 @@ def map_task_regularity_to_commitment_label(
         case "ONCE_WEEK":
             return "recurring"
         case "ONCE_MONTH":
+            return "recurring"
+        case "SEVERAL_TIMES_WEEK":
             return "recurring"
         case "REGULARLY":
             return "recurring"
