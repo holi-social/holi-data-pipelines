@@ -16,9 +16,13 @@ from src.pipelines.tasks_to_typesense.ingest_from_scratch import (
     tasks_to_typesense_ingest_from_scratch,
 )
 from src.pipelines.typesense import schema_path
-from src.pipelines.volunteering_to_typesense.ingest_updates import volunteering_to_typesense_ingest_updates
+from src.pipelines.volunteering_to_typesense.aktion_mensch_to_typesense_ingest_from_scratch import (
+    aktion_mensch_to_typesense_ingest_from_scratch,
+)
 from src.pipelines.volunteering_to_typesense.tasks import store_last_complete_ingestion_timestamp
-from src.pipelines.aktion_mensch_to_typesense.ingest_from_scratch import aktion_mensch_to_typesense_ingest_from_scratch
+from src.pipelines.volunteering_to_typesense.voltastics_to_typesense_ingest_from_scratch import (
+    voltastics_to_typesense_ingest_from_scratch,
+)
 
 logger = PipelineLogger(__name__)
 
@@ -61,7 +65,7 @@ def all_to_typesense_ingest_from_scratch_flow(swap_alias: bool = True, drop_old_
         return Failed(message=tasks_result.message)
 
     logger.info("Ingesting volunteering from scratch")
-    volunteering_result = volunteering_to_typesense_ingest_updates(
+    volunteering_result = voltastics_to_typesense_ingest_from_scratch(
         typesense_client=typesense_client,
         typesense_collection_name=next_collection,
         last_complete_ingestion_timestamp=None,

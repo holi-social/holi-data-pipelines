@@ -5,7 +5,7 @@ from shared.classifiers.classification_input import ClassificationInput
 
 
 @dataclass
-class VolunteeringClassificationInput(ClassificationInput):
+class VoltasticsClassificationInput(ClassificationInput):
     id: str
     hash: str
     title: str

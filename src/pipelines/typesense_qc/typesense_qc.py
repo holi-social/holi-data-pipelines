@@ -6,9 +6,10 @@ from psycopg import Connection
 from typing import cast
 from urllib.parse import quote
 
-from prefect import flow, task
+from prefect import task
 from prefect.states import Completed, Failed, State
 
+from src.common.monitoring.flow import monitored_flow
 from src.common.variables import secret_value, variable_value_as
 from src.common.extractors.bq_extractor import extract_data_from_bigquery
 from src.common.logging.PipelineLogger import PipelineLogger
@@ -178,8 +179,8 @@ def get_ids_ts(ts_client: TypesenseClient, ts_collection: str, document_type: st
     return all_results
 
 
-@flow
-def typesense_qc() -> State:
+@monitored_flow
+def typesense_qc_flow() -> State:
     ts_client = TypesenseClient(TypesenseClientConfig.from_env())
     ts_collection = cast(str, variable_value("typesense_collection"))
 
@@ -257,4 +258,4 @@ def typesense_qc() -> State:
 
 
 if __name__ == "__main__":
-    typesense_qc()
+    typesense_qc_flow()

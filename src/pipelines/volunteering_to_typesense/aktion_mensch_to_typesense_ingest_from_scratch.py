@@ -6,7 +6,9 @@ from src.common.monitoring.flow import monitored_flow
 from src.common.typesense import extract_collection_name_from_schema
 from src.common.typesense_client import TypesenseClient, TypesenseClientConfig
 from src.pipelines.typesense import schema_path
-from src.pipelines.aktion_mensch_to_typesense.ingest_updates import aktion_mensch_to_typesense_ingest_updates
+from src.pipelines.volunteering_to_typesense.aktion_mensch_to_typesense_ingest_updates import (
+    aktion_mensch_to_typesense_ingest_updates,
+)
 
 
 @monitored_flow
