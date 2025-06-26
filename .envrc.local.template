@@ -66,20 +66,55 @@ daemonize() {
   exec 200>&-
 }
 
-export TYPESENSE_ADMIN_API_KEY=
-export TYPESENSE_HOST=
-export TYPESENSE_PORT=
-export TYPESENSE_PROTOCOL=
+draw_multiline_box() {
+    local text="$1"
+    local padding=${2:-2}
 
-export PREFECT_API_URL=http://prefect-server-staging.holi.internal:8421/api
-#export PREFECT_API_URL=http://prefect-server-production.holi.internal:8420/api
+    # Split text into array by newlines
+    IFS=$'\n' read -rd '' -a lines <<< "$text"
+
+    # Find the longest line
+    local max_length=0
+    for line in "${lines[@]}"; do
+        if [ ${#line} -gt $max_length ]; then
+            max_length=${#line}
+        fi
+    done
+
+    local total_width=$((max_length + padding * 2))
+
+    # Top border
+    printf "╔%*s╗\n" $((total_width)) "" | tr ' ' '═'
+
+    # Left-aligned text lines
+    for line in "${lines[@]}"; do
+        local right_padding=$((max_length - ${#line}))
+        printf "║%*s%s%*s%*s║\n" $padding "" "$line" $right_padding "" $padding ""
+    done
+
+    # Bottom border
+    printf "╚%*s╝\n" $((total_width)) "" | tr ' ' '═'
+}
+
+ENVIRONMENT='staging'
+
+if [ ! -f ".env.$ENVIRONMENT" ]; then
+  cp .env.$ENVIRONMENT.template .env.$ENVIRONMENT
+  echo ".env.$ENVIRONMENT was created from template, please add your credentials and customize to your env file"
+fi
+
+source_env_if_exists .env.$ENVIRONMENT
+
 daemonize prefect-tunnel-staging gcloud compute ssh --zone "europe-north1-a" prefect-server-staging-green --tunnel-through-iap --project "holi-shared" -- -L8421:localhost:8421 sleep 86400
 daemonize prefect-tunnel-production gcloud compute ssh --zone "europe-north1-a" prefect-server-production-green --tunnel-through-iap --project "holi-shared" -- -L8420:localhost:8420 sleep 86400
 
 echo
-echo "========================================================================"
-echo "Prefect staging    : http://prefect-server-staging.holi.internal:8421   "
-echo "Prefect production : http://prefect-server-production.holi.internal:8420"
-echo "========================================================================"
+draw_multiline_box "Prefect staging    : http://prefect-server-staging.holi.internal:8421
+Prefect production : http://prefect-server-production.holi.internal:8420
+"
 echo
 
+if [ $ENVIRONMENT = "production" ]; then
+  draw_multiline_box "RUNNING AGAINST PRODUCTION (!)"
+  echo
+fi
