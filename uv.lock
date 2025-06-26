@@ -437,14 +437,14 @@ wheels = [
 
 [[package]]
 name = "faker"
-version = "37.3.0"
+version = "37.4.0"
 source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
 dependencies = [
     { name = "tzdata" },
 ]
-sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/faker/faker-37.3.0.tar.gz", hash = "sha256:77b79e7a2228d57175133af0bbcdd26dc623df81db390ee52f5104d46c010f2f" }
+sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/faker/faker-37.4.0.tar.gz", hash = "sha256:7f69d579588c23d5ce671f3fa872654ede0e67047820255f43a4aa1925b89780" }
 wheels = [
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/faker/faker-37.3.0-py3-none-any.whl", hash = "sha256:48c94daa16a432f2d2bc803c7ff602509699fca228d13e97e379cd860a7e216e" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/faker/faker-37.4.0-py3-none-any.whl", hash = "sha256:cb81c09ebe06c32a10971d1bbdb264bb0e22b59af59548f011ac4809556ce533" },
 ]
 
 [[package]]
@@ -1772,7 +1772,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "faker", specifier = "==37.3.0" },
+    { name = "faker", specifier = "==37.4.0" },
     { name = "pre-commit", specifier = "==4.2.0" },
     { name = "pytest", specifier = "==8.4.1" },
     { name = "ruff", specifier = "==0.11.13" },
@@ -2422,7 +2422,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "faker", specifier = "==37.3.0" },
+    { name = "faker", specifier = "==37.4.0" },
     { name = "mypy", specifier = "==1.16.1" },
     { name = "pre-commit", specifier = "==4.2.0" },
     { name = "pytest", specifier = "==8.4.1" },
