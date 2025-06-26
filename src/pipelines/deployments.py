@@ -184,11 +184,6 @@ def get_deployments() -> List[RunnerDeployment]:
             job_variables_overrides={"memory": "4096Mi"},
         ),
         deployment_for_flow(
-            volunteering_ingest_vos_by_ids,
-            description="Ingest VOs by IDs into Typesense (good for debugging / fixing missing data)",
-            job_variables_overrides={"memory": "4096Mi"},
-        ),
-        deployment_for_flow(
             aktion_mensch_to_typesense_ingest_from_scratch_flow,
             description="Full ingestion of volunteering opportunities from Aktion Mensch into Typesense",
             job_variables_overrides={"memory": "4096Mi"},
