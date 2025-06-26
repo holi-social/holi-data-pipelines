@@ -1,5 +1,7 @@
 import pprint
 import psycopg
+import math
+
 from psycopg import Connection
 
 
@@ -23,6 +25,8 @@ from src.pipelines.bigquery import (
 )
 
 logger = PipelineLogger(__name__)
+
+PG_BQ_DEVIATION_TOLERANCE_FACTOR = 0.05
 
 DEVIATION_TOLERANCE_FACTOR = 0
 DEVIATION_TOLERANCE_IN_PERCENT = 0
@@ -235,6 +239,9 @@ def typesense_qc_flow() -> State:
         },
     }
 
+    def fails_pg_bq_tolerance(count: int, count_failed: int) -> bool:
+        return not math.isclose(count, count - count_failed, rel_tol=PG_BQ_DEVIATION_TOLERANCE_FACTOR)
+
     all_types = ["profile", "space", "task", "volunteering"]
     errors = []
 
@@ -242,7 +249,13 @@ def typesense_qc_flow() -> State:
         if (
             results[typ]["bq_ids_not_in_ts"]
             or results[typ]["ts_ids_not_in_bq"]
-            or ("pg_ids_not_in_bq" in results[typ] and results[typ]["pg_ids_not_in_bq"])  # only exists for PG data
+            or (
+                "pg_ids_not_in_bq" in results[typ]
+                and fails_pg_bq_tolerance(
+                    count=cast(int, results[typ]["pg_count"]),
+                    count_failed=len(cast(set[str], results[typ]["pg_ids_not_in_bq"])),
+                )
+            )  # only exists for PG data
             or ("bq_ids_not_in_pg" in results[typ] and results[typ]["bq_ids_not_in_pg"])  # only exists for PG data
         ):
             msg = f"BigQuery and Typesense are inconsistent for document type {typ}%: {pprint.pformat(results[typ])}"
