@@ -44,7 +44,7 @@ def voltastics_to_typesense_ingest_updates_flow() -> State:
         report_number_of_processed_entities(task_result)
         return Completed()
     else:
-        raise ValueError(f"Unexpected task result: {task_result}")
+        return Failed(message=f"Unexpected task result: {task_result}")
 
 
 @task(cache_policy=NONE)  # type: ignore[arg-type]
