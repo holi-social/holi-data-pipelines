@@ -20,7 +20,7 @@ logger = PipelineLogger(__name__)
 
 
 @monitored_flow
-def volunteering_ingest_vos_by_ids(ids: List[int], partition_date: date) -> State:
+def voltastics_to_typesense_ingest_by_ids_flow(ids: List[int], partition_date: date) -> State:
     typesense_client = TypesenseClient(TypesenseClientConfig.from_env())
     alias_name = extract_collection_name_from_schema(schema_path=schema_path)
     # ruff: noqa: S608
@@ -48,4 +48,4 @@ if __name__ == "__main__":
     logging.getLogger(__name__).setLevel(logging.DEBUG)
     ids = [int(id_str.strip()) for id_str in sys.argv[1].split(",")]
     partition_date = date.fromisoformat(sys.argv[2]) if len(sys.argv) >= 3 else date.today()
-    volunteering_ingest_vos_by_ids(ids, partition_date)  # type: ignore
+    voltastics_to_typesense_ingest_by_ids_flow(ids, partition_date)  # type: ignore

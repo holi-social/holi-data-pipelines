@@ -83,7 +83,7 @@ class PipelineBatchClassifier(Generic[ClassificationInputT], Classifier[Classifi
             self.logger.info(f"Batch {batch_nr} - starting classification of {batch_items.total_rows} items")
 
             futures = [
-                pool.submit(self.classify_item_and_cache_classification, self._to_classification_input(item))
+                pool.submit(self.classify_item_and_persist_classification, self._to_classification_input(item))
                 for item in batch_items
             ]
             wait(futures, return_when=ALL_COMPLETED)

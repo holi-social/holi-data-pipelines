@@ -1,14 +1,17 @@
 import pprint
 import psycopg
+import math
+
 from psycopg import Connection
 
 
 from typing import cast
 from urllib.parse import quote
 
-from prefect import flow, task
+from prefect import task
 from prefect.states import Completed, Failed, State
 
+from src.common.monitoring.flow import monitored_flow
 from src.common.variables import secret_value, variable_value_as
 from src.common.extractors.bq_extractor import extract_data_from_bigquery
 from src.common.logging.PipelineLogger import PipelineLogger
@@ -18,9 +21,12 @@ from src.pipelines.bigquery import (
     bigquery_okuna_dataset,
     tasks_with_classifications,
     volunteering_voltastics_classified_enriched_partitioned,
+    volunteering_aktion_mensch_classified_enriched_partitioned,
 )
 
 logger = PipelineLogger(__name__)
+
+PG_BQ_DEVIATION_TOLERANCE_FACTOR = 0.05
 
 DEVIATION_TOLERANCE_FACTOR = 0
 DEVIATION_TOLERANCE_IN_PERCENT = 0
@@ -127,12 +133,19 @@ def get_task_ids_bq() -> list[str]:
 
 @task
 def get_volunteering_ids_bq() -> list[str]:
-    result = extract_data_from_bigquery(f"""
+    result_voltastics = extract_data_from_bigquery(f"""
         SELECT id
         FROM `{volunteering_voltastics_classified_enriched_partitioned()}`
         WHERE TIMESTAMP_TRUNC(partitiontime, DAY) = TIMESTAMP_TRUNC(CURRENT_TIMESTAMP(), DAY)
     """)  # noqa: S608
-    return cast(list[str], [str(row["id"]) for row in result])
+    result_aktion_mensch = extract_data_from_bigquery(f"""
+        SELECT id
+        FROM `{volunteering_aktion_mensch_classified_enriched_partitioned()}`
+        WHERE TIMESTAMP_TRUNC(partitiontime, DAY) = TIMESTAMP_TRUNC(CURRENT_TIMESTAMP(), DAY)
+    """)  # noqa: S608
+    return cast(
+        list[str], [str(row["id"]) for row in result_voltastics] + [str(row["id"]) for row in result_aktion_mensch]
+    )
 
 
 @task
@@ -170,8 +183,8 @@ def get_ids_ts(ts_client: TypesenseClient, ts_collection: str, document_type: st
     return all_results
 
 
-@flow
-def typesense_qc() -> State:
+@monitored_flow
+def typesense_qc_flow() -> State:
     ts_client = TypesenseClient(TypesenseClientConfig.from_env())
     ts_collection = cast(str, variable_value("typesense_collection"))
 
@@ -226,6 +239,9 @@ def typesense_qc() -> State:
         },
     }
 
+    def fails_pg_bq_tolerance(count: int, count_failed: int) -> bool:
+        return not math.isclose(count, count - count_failed, rel_tol=PG_BQ_DEVIATION_TOLERANCE_FACTOR)
+
     all_types = ["profile", "space", "task", "volunteering"]
     errors = []
 
@@ -233,7 +249,13 @@ def typesense_qc() -> State:
         if (
             results[typ]["bq_ids_not_in_ts"]
             or results[typ]["ts_ids_not_in_bq"]
-            or ("pg_ids_not_in_bq" in results[typ] and results[typ]["pg_ids_not_in_bq"])  # only exists for PG data
+            or (
+                "pg_ids_not_in_bq" in results[typ]
+                and fails_pg_bq_tolerance(
+                    count=cast(int, results[typ]["pg_count"]),
+                    count_failed=len(cast(set[str], results[typ]["pg_ids_not_in_bq"])),
+                )
+            )  # only exists for PG data
             or ("bq_ids_not_in_pg" in results[typ] and results[typ]["bq_ids_not_in_pg"])  # only exists for PG data
         ):
             msg = f"BigQuery and Typesense are inconsistent for document type {typ}%: {pprint.pformat(results[typ])}"
@@ -249,4 +271,4 @@ def typesense_qc() -> State:
 
 
 if __name__ == "__main__":
-    typesense_qc()
+    typesense_qc_flow()

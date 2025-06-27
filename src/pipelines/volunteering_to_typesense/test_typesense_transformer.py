@@ -52,7 +52,17 @@ def _row() -> RowFixture:
         "similarity_embedding": [fake.pyfloat(min_value=-1, max_value=1) for i in range(SIMILARITY_EMBEDDING_LENGTH)],
         "location_type": _random([None, "REMOTE"]),
         "commitment_label": _random(
-            [None, "ONE_TIME", "ONCE_WEEK", "ONCE_MONTH", "REGULARLY", "PROJECT_BASED", "NEGOTIABLE", "UNKNOWN"]
+            [
+                None,
+                "ONE_TIME",
+                "ONCE_WEEK",
+                "ONCE_MONTH",
+                "REGULARLY",
+                "PROJECT_BASED",
+                "SEVERAL_TIMES_WEEK",
+                "NEGOTIABLE",
+                "UNKNOWN",
+            ]
         ),
         "commitment_duration": _random([None, *DURATIONS_CONSTANTS_TO_HUMAN_READABLE]),
         "commitment_duration_ai_reasoning": _random([None, "I hallucinate reasons"]),

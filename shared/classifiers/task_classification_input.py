@@ -15,3 +15,4 @@ class TaskClassificationInput(ClassificationInput):
     skills_v2: Optional[List[str]] = None
     similarity_embedding: Optional[List[float]] = None
     location: Optional[str] = None
+    type: str = "task"

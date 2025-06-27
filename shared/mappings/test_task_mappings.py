@@ -36,6 +36,7 @@ class TestTaskMappings:
             ("ONCE_WEEK", "recurring"),
             ("ONCE_MONTH", "recurring"),
             ("REGULARLY", "recurring"),
+            ("SEVERAL_TIMES_WEEK", "recurring"),
             ("PROJECT_BASED", "negotiable"),
             ("NEGOTIABLE", "negotiable"),
             (None, None),

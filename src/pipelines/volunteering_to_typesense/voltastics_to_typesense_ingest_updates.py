@@ -25,14 +25,14 @@ logger = PipelineLogger(__name__)
 
 
 @monitored_flow
-def volunteering_to_typesense_ingest_updates_flow() -> State:
+def voltastics_to_typesense_ingest_updates_flow() -> State:
     """
     Orchestrates the ETL pipeline to move volunteering data from BigQuery to Typesense.
     """
     typesense_client = TypesenseClient(TypesenseClientConfig.from_env())
     alias_name = extract_collection_name_from_schema(schema_path=schema_path)
     active_collection = typesense_client.get_active_collection_name(alias_name)
-    task_result = volunteering_to_typesense_ingest_updates(
+    task_result = voltastics_to_typesense_ingest_updates(
         typesense_client=typesense_client,
         typesense_collection_name=active_collection,
         last_complete_ingestion_timestamp=load_last_complete_ingestion_timestamp(),
@@ -44,11 +44,11 @@ def volunteering_to_typesense_ingest_updates_flow() -> State:
         report_number_of_processed_entities(task_result)
         return Completed()
     else:
-        raise ValueError(f"Unexpected task result: {task_result}")
+        return Failed(message=f"Unexpected task result: {task_result}")
 
 
 @task(cache_policy=NONE)  # type: ignore[arg-type]
-def volunteering_to_typesense_ingest_updates(
+def voltastics_to_typesense_ingest_updates(
     typesense_client: TypesenseClient,
     typesense_collection_name: str,
     last_complete_ingestion_timestamp: datetime | None,
@@ -85,4 +85,4 @@ def volunteering_to_typesense_ingest_updates(
 
 
 if __name__ == "__main__":
-    volunteering_to_typesense_ingest_updates_flow()
+    voltastics_to_typesense_ingest_updates_flow()

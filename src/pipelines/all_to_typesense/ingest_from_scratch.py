@@ -16,15 +16,19 @@ from src.pipelines.tasks_to_typesense.ingest_from_scratch import (
     tasks_to_typesense_ingest_from_scratch,
 )
 from src.pipelines.typesense import schema_path
-from src.pipelines.volunteering_to_typesense.ingest_updates import volunteering_to_typesense_ingest_updates
+from src.pipelines.volunteering_to_typesense.aktion_mensch_to_typesense_ingest_from_scratch import (
+    aktion_mensch_to_typesense_ingest_from_scratch,
+)
 from src.pipelines.volunteering_to_typesense.tasks import store_last_complete_ingestion_timestamp
-from src.pipelines.aktion_mensch_to_typesense.ingest_from_scratch import aktion_mensch_to_typesense_ingest_from_scratch
+from src.pipelines.volunteering_to_typesense.voltastics_to_typesense_ingest_from_scratch import (
+    voltastics_to_typesense_ingest_from_scratch,
+)
 
 logger = PipelineLogger(__name__)
 
 
 @monitored_flow
-def all_to_typesense_ingest_from_scratch_flow() -> State:
+def all_to_typesense_ingest_from_scratch_flow(swap_alias: bool = True, drop_old_collection: bool = True) -> State:
     """
     Orchestrates the ETL pipeline to ingest all search data into Typesense from scratch.
     """
@@ -61,7 +65,7 @@ def all_to_typesense_ingest_from_scratch_flow() -> State:
         return Failed(message=tasks_result.message)
 
     logger.info("Ingesting volunteering from scratch")
-    volunteering_result = volunteering_to_typesense_ingest_updates(
+    volunteering_result = voltastics_to_typesense_ingest_from_scratch(
         typesense_client=typesense_client,
         typesense_collection_name=next_collection,
         last_complete_ingestion_timestamp=None,
@@ -77,11 +81,12 @@ def all_to_typesense_ingest_from_scratch_flow() -> State:
     if isinstance(aktion_mensch_result, State) and aktion_mensch_result.is_failed():
         return Failed(message=aktion_mensch_result.message)
 
-    logger.info(f'Swapping alias {alias_name} to point to newly ingested collection "{next_collection}"')
-    typesense_client.set_active_collection(alias_name, next_collection)
-    logger.info(f'Alias {alias_name} is now pointing to "{next_collection}".')
+    if swap_alias:
+        logger.info(f'Swapping alias {alias_name} to point to newly ingested collection "{next_collection}"')
+        typesense_client.set_active_collection(alias_name, next_collection)
+        logger.info(f'Alias {alias_name} is now pointing to "{next_collection}".')
 
-    if active_collection is not None:
+    if active_collection is not None and drop_old_collection:
         logger.info(f'Dropping old collection "{active_collection}"')
         typesense_client.drop_collection(active_collection)
 

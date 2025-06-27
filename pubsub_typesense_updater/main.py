@@ -55,11 +55,12 @@ def process_user_updated_event(ts_client: TypesenseClient, event: UserUpdatedEve
     if event.user.name is None or event.user.name.strip() == "":
         try:
             ts_client.delete(f"profile_{event.user.id}")
+            logger.info(f"[id={event.user.id}] Deleted user {event.user.id} from Typesense due to empty name")
         except ObjectNotFound:
             pass
     else:
         ts_client.upsert(event.as_typesense_document())
-    logger.info(f"[id={event.user.id}] Upserted user {event.user.id} in Typesense")
+        logger.info(f"[id={event.user.id}] Upserted user {event.user.id} in Typesense")
 
 
 def process_user_deleted_event(ts_client: TypesenseClient, event: UserDeletedEvent) -> None:
@@ -92,6 +93,7 @@ def _upsert_task(ts_client: TypesenseClient, event: Union[TaskCreatedEvent, Task
     vertexai.init(project=gcloud_project_id(), location=gcloud_location())
     bq_client = bigquery.Client(project=gcloud_project_id(), location=gcloud_location())
     classifier = TaskClassifier(bigquery_table_name_classifications(), logger, bq_client)
+
     item = TaskClassificationInput(
         id=event.task.id,
         hash=event.farm_fingerprint(),
@@ -103,9 +105,16 @@ def _upsert_task(ts_client: TypesenseClient, event: Union[TaskCreatedEvent, Task
         similarity_embedding=None,
         location=event.task.location,
     )
-    classification = classifier.get_cached_classification(item)
+
+    classification = classifier.get_persisted_classification(item)
+
+    if classification and classification.classification_failed:
+        logger.info(f"[id={event.task.id}] Classification previously failed, not trying to classify")
+
     if not classification:
-        classification = classifier.classify_item_and_cache_classification(item)
+        classification = classifier.classify_item_and_persist_classification(item)
+
+    # upsert independent of classification success or failure, so that all available fields are updated in Typesense
     ts_client.upsert(event.as_typesense_document(classification))
     logger.info(f"[id={event.task.id}] Upserted task in Typesense")
 

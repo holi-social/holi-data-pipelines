@@ -1,0 +1,20 @@
+SELECT
+  ANY_VALUE(longitude) as longitude,
+  ANY_VALUE(imageOrga) as imageOrga,
+  location,
+  title,
+  source,
+  ANY_VALUE(hashTags) as hashTags,
+  description,
+  array_agg(distinct(image)) as images,
+  link,
+  ANY_VALUE(orga) as orga,
+  MIN(id) as id,
+  ANY_VALUE(latitude) as latitude,
+  ANY_VALUE(uses) as uses,
+  ANY_VALUE(additionalData) as additionalData,
+  cast(FARM_FINGERPRINT(CONCAT(title, '|', description, '|', location, '|', link)) as string) as `hash`,
+  _PARTITIONTIME as partitiontime
+FROM
+  `${raw_table}`
+GROUP BY title, description, location, link, source, partitiontime

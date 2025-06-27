@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 
 from prefect import State, task
 from prefect.cache_policies import NONE
-from prefect.states import Failed
+from prefect.states import Failed, Completed
 from prefect.variables import Variable
 from typing import Dict, Any, cast
 
@@ -41,7 +41,7 @@ def store_am_ingestion_timestamp(timestamp: datetime) -> None:
 
 
 @monitored_flow
-def aktion_mensch_to_typesense_ingest_updates_flow() -> None:
+def aktion_mensch_to_typesense_ingest_updates_flow() -> State:
     """Flow to ingest Aktion Mensch volunteering opportunities into Typesense."""
     typesense_client = TypesenseClient(TypesenseClientConfig.from_env())
     alias_name = extract_collection_name_from_schema(schema_path=schema_path)
@@ -57,6 +57,9 @@ def aktion_mensch_to_typesense_ingest_updates_flow() -> None:
         store_am_ingestion_timestamp(datetime.now(timezone.utc))
         report_number_of_processed_entities(task_result)
         logger.info(f"Successfully processed {task_result} Aktion Mensch records")
+        return Completed()
+    else:
+        return Failed()
 
 
 @task(cache_policy=NONE)  # type: ignore[arg-type]
