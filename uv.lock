@@ -2427,7 +2427,7 @@ requires-dist = [
     { name = "shared", virtual = "shared" },
     { name = "trycast", specifier = "==1.2.1" },
     { name = "typing-extensions", specifier = "==4.14.0" },
-    { name = "whenever", specifier = "==0.8.5" },
+    { name = "whenever", specifier = "==0.8.6" },
 ]
 
 [package.metadata.requires-dev]
@@ -2741,27 +2741,27 @@ wheels = [
 
 [[package]]
 name = "whenever"
-version = "0.8.5"
+version = "0.8.6"
 source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
 dependencies = [
     { name = "tzdata", marker = "sys_platform == 'win32'" },
 ]
-sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/whenever/whenever-0.8.5.tar.gz", hash = "sha256:23c7e0119103ef71aab080caf332e17b2b8ee4cb5e0ab61b393263755c377e19" }
+sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/whenever/whenever-0.8.6.tar.gz", hash = "sha256:aec343ce4b3e2c5981d6ede89b076dcd1a05cb00485f944e494464b93e559f38" }
 wheels = [
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/whenever/whenever-0.8.5-cp313-cp313-macosx_10_12_x86_64.whl", hash = "sha256:08c5c77c0387e3fda2726d312a68e374d441cd21ebe98802d07921ff6c6a7ecf" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/whenever/whenever-0.8.5-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:98c58420616b6c5ab824471e89c2fa0aff939ef28163e5bbfb7dfbea3d3f8098" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/whenever/whenever-0.8.5-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:c4a3dbed6168f68f5bad63c7a543446c530eff102bb24504bc4d87bea29ef62c" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/whenever/whenever-0.8.5-cp313-cp313-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:ce9b1b4ef98ee92b80d1d2cf518f0767d631cbcd2df3ad4fd1d863fdad2c030c" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/whenever/whenever-0.8.5-cp313-cp313-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:739d608ee0586d0972d6f7789c705016e416b3ef8ae5337c1f73605feb23a784" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/whenever/whenever-0.8.5-cp313-cp313-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:4487c7684f7292e66b9a4c2bd6b5efbd7271c48c4410648d90e967dc5e0144ca" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/whenever/whenever-0.8.5-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ef58e82d825a763860bf1de61c28bba7ffa0a7da3a6456381d441caf6693f845" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/whenever/whenever-0.8.5-cp313-cp313-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:f3992f8f3424ff52c5c21a95792b2dfbe537df08ab951ef7a0654ba517b7a28e" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/whenever/whenever-0.8.5-cp313-cp313-musllinux_1_2_aarch64.whl", hash = "sha256:a1988f40fe0d28902aa3f132e4fb23a18599cf9ad49a54311265425631d8ec96" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/whenever/whenever-0.8.5-cp313-cp313-musllinux_1_2_armv7l.whl", hash = "sha256:17d47930a318563180c06dcf3332db3956658751d2d29b367c8e550fdda34b2c" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/whenever/whenever-0.8.5-cp313-cp313-musllinux_1_2_i686.whl", hash = "sha256:0a28c299195fdf9082d7fa7d1aa985d709aef8c206160bd50b52d1913261af3d" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/whenever/whenever-0.8.5-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:4920995d03e26e225d2a733d9f58e3ed3cce7a33994b0bf2f6d94c9f85059dd4" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/whenever/whenever-0.8.5-cp313-cp313-win32.whl", hash = "sha256:f67d1054de92486baf8d48a28c0e2ff5fc78ab2e772b054f69520953727862f5" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/whenever/whenever-0.8.5-cp313-cp313-win_amd64.whl", hash = "sha256:f7b7f1814fd3d216c8ff5d62076a46f21b38d03af71a59887efa3fc3e8d1c5bb" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/whenever/whenever-0.8.6-cp313-cp313-macosx_10_12_x86_64.whl", hash = "sha256:a577db34d5fcaf6625d60120ddf40e029c53b02d0bc284202a698bf5711c3d4e" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/whenever/whenever-0.8.6-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:2cc7a2f12993011b2f86ab7ce2fe0184916a811ac671e7b174adb3e5873d3b9b" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/whenever/whenever-0.8.6-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:e891ea13eeccd3124393410894cbba1c4ebabae88b8e37bc1d25e484f7c3e822" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/whenever/whenever-0.8.6-cp313-cp313-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:303c7957e5936cb7fbfc1b40e11d2b056e5b55a7658d582c97538a0c0160315d" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/whenever/whenever-0.8.6-cp313-cp313-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:383402429e0b0b7eb87ca0dacd91c3921d2edaac4a46cbcf2cfe581646567cee" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/whenever/whenever-0.8.6-cp313-cp313-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:8219f90ba29c40e8b66cb457ae75cc0df2330ae88c17efcdcd8d86001aeb1223" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/whenever/whenever-0.8.6-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:954bcee4c53275c411a7f08d8f403c327df29a1acdc13508e954aa902ed313b8" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/whenever/whenever-0.8.6-cp313-cp313-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:580320167292b1ed6c6d0377c0a94453cc1577509f5303ccbf464a31817d3f64" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/whenever/whenever-0.8.6-cp313-cp313-musllinux_1_2_aarch64.whl", hash = "sha256:80622a4e78c34f1d6f5cf62d70aef0c20fc8bbf546f85644eb50c40330a46415" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/whenever/whenever-0.8.6-cp313-cp313-musllinux_1_2_armv7l.whl", hash = "sha256:8c481abc2c58b36e9c7f817e5af04b49a99bbf6fc8181f336d9b5a8825bf849b" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/whenever/whenever-0.8.6-cp313-cp313-musllinux_1_2_i686.whl", hash = "sha256:98ef19e47e83f03c391ddb5d031ec40c4769f34d4e09a6297e9551d8feb67e1f" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/whenever/whenever-0.8.6-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:c61b7036da21d3ed047710ac9ffff2ebd36dfcbb24ab32f37a675b850b781da7" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/whenever/whenever-0.8.6-cp313-cp313-win32.whl", hash = "sha256:afd70e71cc8ae2e83a4182bcce9afa5d8c11c29ba948c15afc1387d6c01e4693" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/whenever/whenever-0.8.6-cp313-cp313-win_amd64.whl", hash = "sha256:2ab4d90ba06173e8eba438b752e21172f5854e33ef65ac0f26a62a2d95487cce" },
 ]
 
 [[package]]
