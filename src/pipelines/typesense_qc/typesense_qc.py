@@ -1,3 +1,4 @@
+import dataclasses
 import pprint
 import psycopg
 import math
@@ -5,7 +6,7 @@ import math
 from psycopg import Connection
 
 
-from typing import cast
+from typing import cast, Optional
 from urllib.parse import quote
 
 from prefect import task
@@ -203,61 +204,85 @@ def typesense_qc_flow() -> State:
     volunteering_ids_bq = get_volunteering_ids_bq()
     volunteering_ids_ts = get_ids_ts(ts_client, ts_collection, "volunteering")
 
-    results = {
-        "profile": {
-            "pg_count": len(profile_ids_pg),
-            "bq_count": len(profile_ids_bq),
-            "ts_count": len(profile_ids_ts),
-            "pg_ids_not_in_bq": set(profile_ids_pg) - set(profile_ids_bq),
-            "bq_ids_not_in_pg": set(profile_ids_bq) - set(profile_ids_pg),
-            "bq_ids_not_in_ts": set(profile_ids_bq) - set(profile_ids_ts),
-            "ts_ids_not_in_bq": set(profile_ids_ts) - set(profile_ids_bq),
-        },
-        "space": {
-            "pg_count": len(space_ids_pg),
-            "bq_count": len(space_ids_bq),
-            "ts_count": len(space_ids_ts),
-            "pg_ids_not_in_bq": set(space_ids_pg) - set(space_ids_bq),
-            "bq_ids_not_in_pg": set(space_ids_bq) - set(space_ids_pg),
-            "bq_ids_not_in_ts": set(space_ids_bq) - set(space_ids_ts),
-            "ts_ids_not_in_bq": set(space_ids_ts) - set(space_ids_bq),
-        },
-        "task": {
-            "pg_count": len(task_ids_pg),
-            "bq_count": len(task_ids_bq),
-            "ts_count": len(task_ids_ts),
-            "pg_ids_not_in_bq": set(task_ids_pg) - set(task_ids_bq),
-            "bq_ids_not_in_pg": set(task_ids_bq) - set(task_ids_pg),
-            "bq_ids_not_in_ts": set(task_ids_bq) - set(task_ids_ts),
-            "ts_ids_not_in_bq": set(task_ids_ts) - set(task_ids_bq),
-        },
-        "volunteering": {
-            "bq_count": len(volunteering_ids_bq),
-            "ts_count": len(volunteering_ids_ts),
-            "bq_ids_not_in_ts": set(volunteering_ids_bq) - set(volunteering_ids_ts),
-            "ts_ids_not_in_bq": set(volunteering_ids_ts) - set(volunteering_ids_bq),
-        },
-    }
+    @dataclasses.dataclass
+    class ConsistencyCheckResult:
+        pg_count: Optional[int]
+        bq_count: int
+        ts_count: int
+        pg_ids_not_in_bq: Optional[set[str]]
+        bq_ids_not_in_pg: Optional[set[str]]
+        bq_ids_not_in_ts: set[str]
+        ts_ids_not_in_bq: set[str]
 
-    def fails_pg_bq_tolerance(count: int, count_failed: int) -> bool:
-        return not math.isclose(count, count - count_failed, rel_tol=PG_BQ_DEVIATION_TOLERANCE_FACTOR)
+        def passes_consistency_check(self) -> bool:
+            all_bq_docs_in_ts = self.bq_ids_not_in_ts == set()
+            not_too_many_docs_in_ts = self.ts_ids_not_in_bq == set()
+            processed_through_events_not_yet_in_bq = self.ts_ids_not_in_bq == self.pg_ids_not_in_bq
+            pg_bq_lags_too_much = (
+                ConsistencyCheckResult.fails_pg_bq_tolerance(
+                    count=self.pg_count,
+                    count_failed=len(self.pg_ids_not_in_bq or set()),
+                )
+                if self.pg_count
+                else False
+            )
+            bq_consistent_with_pg = self.bq_ids_not_in_pg is None or self.bq_ids_not_in_pg == set()
+
+            return (
+                all_bq_docs_in_ts
+                and (not_too_many_docs_in_ts or processed_through_events_not_yet_in_bq)
+                and not pg_bq_lags_too_much
+                and bq_consistent_with_pg
+            )
+
+        @staticmethod
+        def fails_pg_bq_tolerance(count: int, count_failed: int) -> bool:
+            return not math.isclose(count, count - count_failed, rel_tol=PG_BQ_DEVIATION_TOLERANCE_FACTOR)
+
+    results = {
+        "profile": ConsistencyCheckResult(
+            pg_count=len(profile_ids_pg),
+            bq_count=len(profile_ids_bq),
+            ts_count=len(profile_ids_ts),
+            pg_ids_not_in_bq=set(profile_ids_pg) - set(profile_ids_bq),
+            bq_ids_not_in_pg=set(profile_ids_bq) - set(profile_ids_pg),
+            bq_ids_not_in_ts=set(profile_ids_bq) - set(profile_ids_ts),
+            ts_ids_not_in_bq=set(profile_ids_ts) - set(profile_ids_bq),
+        ),
+        "space": ConsistencyCheckResult(
+            pg_count=len(space_ids_pg),
+            bq_count=len(space_ids_bq),
+            ts_count=len(space_ids_ts),
+            pg_ids_not_in_bq=set(space_ids_pg) - set(space_ids_bq),
+            bq_ids_not_in_pg=set(space_ids_bq) - set(space_ids_pg),
+            bq_ids_not_in_ts=set(space_ids_bq) - set(space_ids_ts),
+            ts_ids_not_in_bq=set(space_ids_ts) - set(space_ids_bq),
+        ),
+        "task": ConsistencyCheckResult(
+            pg_count=len(task_ids_pg),
+            bq_count=len(task_ids_bq),
+            ts_count=len(task_ids_ts),
+            pg_ids_not_in_bq=set(task_ids_pg) - set(task_ids_bq),
+            bq_ids_not_in_pg=set(task_ids_bq) - set(task_ids_pg),
+            bq_ids_not_in_ts=set(task_ids_bq) - set(task_ids_ts),
+            ts_ids_not_in_bq=set(task_ids_ts) - set(task_ids_bq),
+        ),
+        "volunteering": ConsistencyCheckResult(
+            pg_count=None,
+            bq_count=len(volunteering_ids_bq),
+            ts_count=len(volunteering_ids_ts),
+            pg_ids_not_in_bq=None,
+            bq_ids_not_in_pg=None,
+            bq_ids_not_in_ts=set(volunteering_ids_bq) - set(volunteering_ids_ts),
+            ts_ids_not_in_bq=set(volunteering_ids_ts) - set(volunteering_ids_bq),
+        ),
+    }
 
     all_types = ["profile", "space", "task", "volunteering"]
     errors = []
 
     for typ in all_types:
-        if (
-            results[typ]["bq_ids_not_in_ts"]
-            or results[typ]["ts_ids_not_in_bq"]
-            or (
-                "pg_ids_not_in_bq" in results[typ]
-                and fails_pg_bq_tolerance(
-                    count=cast(int, results[typ]["pg_count"]),
-                    count_failed=len(cast(set[str], results[typ]["pg_ids_not_in_bq"])),
-                )
-            )  # only exists for PG data
-            or ("bq_ids_not_in_pg" in results[typ] and results[typ]["bq_ids_not_in_pg"])  # only exists for PG data
-        ):
+        if not results[typ].passes_consistency_check():
             msg = f"BigQuery and Typesense are inconsistent for document type {typ}%: {pprint.pformat(results[typ])}"
             logger.error(msg)
             errors.append(msg)

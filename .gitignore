@@ -6,3 +6,5 @@
 *.pyc
 /.gitlab-ci-local
 .build
+/.env.staging
+/.env.production

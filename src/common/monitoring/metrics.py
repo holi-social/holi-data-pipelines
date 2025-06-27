@@ -210,24 +210,24 @@ class Metrics:
 
     def record_after_flow_metrics(
         self,
-        _flow: Flow[Any, Any],
-        _run: FlowRun,
-        _state: State,
+        flow: Flow[Any, Any],
+        flow_run: FlowRun,
+        state: State,
     ) -> None:
         """
         This function is called whenever a flow is completed, cancelled, crashed or failed.
         It increments the pipeline_runs counter.
         """
         self._common_counters["pipeline_run.count"].add(
-            1, self.get_labels() | {"prefect_flow_state": _state.type.lower()}
+            1, self.get_labels() | {"prefect_flow_state": state.type.lower()}
         )
 
-        start_time = _run.start_time
+        start_time = flow_run.start_time
         if start_time:
             full_timedelta = Instant.now() - Instant.from_py_datetime(start_time)
             self._common_gauges["pipeline_run.duration"].set(
                 full_timedelta.in_seconds(),
-                self.get_labels() | {"prefect_flow_state": _state.type.lower()},
+                self.get_labels() | {"prefect_flow_state": state.type.lower()},
             )
         else:
-            _logger.warning(f"Flow run has no start time, cannot calculate duration. State {_state.type}")
+            _logger.warning(f"Flow run has no start time, cannot calculate duration. State {state.type}")
