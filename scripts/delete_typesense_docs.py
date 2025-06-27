@@ -164,7 +164,7 @@ def get_env_config() -> Dict[str, Any]:
     config = {
         "api_key": api_key,
         "host": parse_json_env_var("TYPESENSE_HOST", "localhost"),
-        "port": parse_json_env_var("TYPESENSE_PORT", 8108),
+        "port": int(parse_json_env_var("TYPESENSE_PORT", 8108)),
         "protocol": parse_json_env_var("TYPESENSE_PROTOCOL", "http"),
         "collection_name": parse_json_env_var("TYPESENSE_COLLECTION_NAME"),
     }
