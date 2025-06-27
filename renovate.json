@@ -40,7 +40,11 @@
         "pep621"
       ],
       "postUpgradeTasks": {
-        "commands": ["uv lock --upgrade-package {{{depName}}}"],
+        "commands": [
+          "curl -LsSf https://astral.sh/uv/install.sh | sh",
+          "export PATH=\"$HOME/.cargo/bin:$PATH\"",
+          "uv lock --upgrade-package {{{depName}}}"
+        ],
         "fileFilters": ["uv.lock"]
       },
       "matchUpdateTypes": [
