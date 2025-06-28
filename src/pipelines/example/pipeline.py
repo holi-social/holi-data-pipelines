@@ -1,11 +1,16 @@
 from typing import cast
 
-from prefect import task
+from prefect import task, flow
 from prefect.futures import PrefectFuture
 from prefect.types import StrictVariableValue
 
 from src.common.logging.PipelineLogger import PipelineLogger
-from src.common.monitoring.flow import monitored_flow
+from src.common.monitoring.flow import (
+    on_cancellation_hooks,
+    on_crashed_hooks,
+    on_failure_hooks,
+    on_completion_hooks,
+)
 from src.common.monitoring.metrics import report_number_of_processed_entities
 
 logger = PipelineLogger(__name__)
@@ -29,7 +34,12 @@ def timed_out_answer() -> int:
     raise Exception("Deep thought not have enough time to complete calculation")
 
 
-@monitored_flow
+@flow(
+    on_cancellation=on_cancellation_hooks,
+    on_crashed=on_crashed_hooks,
+    on_failure=on_failure_hooks,
+    on_completion=on_completion_hooks,
+)
 def hello_universe() -> None:
     for name in cast(list[str], _CONFIG["names"]):
         say_hello(name)

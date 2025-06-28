@@ -6,7 +6,7 @@ from asyncio import Queue
 from typing import Any, Awaitable, Callable, Coroutine, Dict, Optional, cast
 
 import prefect
-from prefect import task
+from prefect import task, flow
 
 from src.common.extractors.rest_crawler import PagingInfo, RestCrawler
 from src.common.loaders.bq_loader import (
@@ -14,7 +14,12 @@ from src.common.loaders.bq_loader import (
     is_streaming_buffer_empty,
     wait_for_bigquery_data_to_be_accessible,
 )
-from src.common.monitoring.flow import monitored_flow
+from src.common.monitoring.flow import (
+    on_cancellation_hooks,
+    on_crashed_hooks,
+    on_failure_hooks,
+    on_completion_hooks,
+)
 from src.common.monitoring.metrics import report_number_of_processed_entities
 from src.common.variables import variable_value_as
 from src.pipelines.crawlers.crawler_common_code import (
@@ -119,7 +124,12 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
     return crawl_to_queue
 
 
-@monitored_flow
+@flow(
+    on_cancellation=on_cancellation_hooks,
+    on_crashed=on_crashed_hooks,
+    on_failure=on_failure_hooks,
+    on_completion=on_completion_hooks,
+)
 def crawl_betterplace(force_run: bool = False, wait_for_bq: bool = True) -> None:
     # only run for days that have not been successfully crawled yet, or when forced
     if not has_run_successfully_for_day(config()) or force_run:

@@ -4,12 +4,18 @@ import logging
 from datetime import date
 from typing import List
 
+from prefect import flow
 from prefect.states import State, Failed, Completed
 
 from src.common.extractors.bq_extractor import extract_data_from_bigquery
 from src.common.loaders.typesense_loader import upsert_typesense_documents
 from src.common.logging.PipelineLogger import PipelineLogger
-from src.common.monitoring.flow import monitored_flow
+from src.common.monitoring.flow import (
+    on_cancellation_hooks,
+    on_crashed_hooks,
+    on_failure_hooks,
+    on_completion_hooks,
+)
 from src.common.typesense import extract_collection_name_from_schema
 from src.common.typesense_client import TypesenseClient, TypesenseClientConfig
 from src.pipelines.bigquery import volunteering_voltastics_classified_enriched_partitioned
@@ -19,7 +25,12 @@ from src.pipelines.volunteering_to_typesense.tasks import transform_data
 logger = PipelineLogger(__name__)
 
 
-@monitored_flow
+@flow(
+    on_cancellation=on_cancellation_hooks,
+    on_crashed=on_crashed_hooks,
+    on_failure=on_failure_hooks,
+    on_completion=on_completion_hooks,
+)
 def voltastics_to_typesense_ingest_by_ids_flow(ids: List[int], partition_date: date) -> State:
     typesense_client = TypesenseClient(TypesenseClientConfig.from_env())
     alias_name = extract_collection_name_from_schema(schema_path=schema_path)

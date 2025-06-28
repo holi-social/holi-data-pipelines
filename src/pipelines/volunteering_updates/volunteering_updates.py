@@ -1,9 +1,14 @@
 from typing import cast
 
+from prefect import flow
 from prefect.states import State, Failed, Completed
-from prefect.task_runners import ConcurrentTaskRunner
 
-from src.common.monitoring.flow import monitored_flow
+from src.common.monitoring.flow import (
+    on_cancellation_hooks,
+    on_crashed_hooks,
+    on_failure_hooks,
+    on_completion_hooks,
+)
 from src.pipelines.crawlers.aktion_mensch.pipeline import crawl_aktion_mensch
 from src.pipelines.crawlers.voltastics.pipeline import crawl_voltastics
 from src.pipelines.volunteering_classification.aktion_mensch_classification import aktion_mensch_classification_flow
@@ -17,7 +22,12 @@ from src.pipelines.volunteering_to_typesense.voltastics_to_typesense_ingest_upda
 )
 
 
-@monitored_flow(task_runner=ConcurrentTaskRunner())  # type: ignore
+@flow(
+    on_cancellation=on_cancellation_hooks,
+    on_crashed=on_crashed_hooks,
+    on_failure=on_failure_hooks,
+    on_completion=on_completion_hooks,
+)
 def volunteering_updates_flow() -> State:
     """
     Automation graph to keep volunteering data up to date.

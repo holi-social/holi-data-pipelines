@@ -1,11 +1,10 @@
 import json
-from typing import Any, Mapping
+from typing import Any
 
 from prefect import runtime
 from prefect.blocks.notifications import SlackWebhook
 from prefect.client.schemas.objects import FlowRun, State, StateType
 from prefect.flows import Flow
-from prefect.types import StrictVariableValue
 from prefect.variables import Variable
 from typing_extensions import assert_never
 
@@ -18,13 +17,11 @@ def _msg_run_link(run: FlowRun) -> str:
     return f"{_prefect_base_url()}/runs/flow-run/{run.id}"
 
 
-def _compile_context_info(context: Mapping[str, StrictVariableValue], run: FlowRun, state: State) -> str:
+def _compile_context_info(run: FlowRun, state: State) -> str:
     context_info = []
     if state.message:
         context_info.append(f"*{state.message}*\n")
     context_info.append(f"Flow run URL: {_msg_run_link(run)}\n")
-    if context:
-        context_info.append(f"Context information: `{json.dumps(context)}`\n")
     if runtime.task_run.task_name:
         context_info.append(f"Current task `{runtime.task_run.task_name}`.\n")
     if run.context:
@@ -103,13 +100,12 @@ def _msg_state(state: State) -> str:
             raise ValueError(f"Unexpected state type: {state.type}")
 
 
-def alert(
-    context: Mapping[str, StrictVariableValue],
+def alert_hook(
     flow: Flow[Any, Any],
-    run: FlowRun,
+    flow_run: FlowRun,
     state: State,
 ) -> None:
-    if _in_development(run):
+    if _in_development(flow_run):
         return
     else:
         alerter: SlackWebhook = SlackWebhook.load("slack-alert")  # type: ignore[assignment]
@@ -121,7 +117,7 @@ def alert(
             # PAUSED and CANCELLING are maybe not interesting to us, but for now we include them
             case StateType.FAILED | StateType.CANCELLED | StateType.CRASHED | StateType.PAUSED | StateType.CANCELLING:
                 alerter.notify(  # type: ignore[unused-coroutine]
-                    subject=subject, body=_compile_context_info(context, run, state)
+                    subject=subject, body=_compile_context_info(flow_run, state)
                 )
                 return
             case _:

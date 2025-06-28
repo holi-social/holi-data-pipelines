@@ -1,8 +1,14 @@
 import math
+from prefect import flow
 from prefect.states import State, Failed, Completed
 
 from src.common.logging.PipelineLogger import PipelineLogger
-from src.common.monitoring.flow import monitored_flow
+from src.common.monitoring.flow import (
+    on_cancellation_hooks,
+    on_crashed_hooks,
+    on_failure_hooks,
+    on_completion_hooks,
+)
 from typing import cast
 from src.common.extractors.bq_extractor import extract_data_from_bigquery
 from src.pipelines.bigquery import (
@@ -75,7 +81,12 @@ def fails_tolerance(count: int, count_failed: int) -> bool:
     return not math.isclose(count, count - count_failed, rel_tol=TOLERANCE_FACTOR)
 
 
-@monitored_flow
+@flow(
+    on_cancellation=on_cancellation_hooks,
+    on_crashed=on_crashed_hooks,
+    on_failure=on_failure_hooks,
+    on_completion=on_completion_hooks,
+)
 def classification_qc() -> State:
     aktion_mensch_total = count_aktion_mensch_volunteering()
     aktion_mensch_failed = count_classification_failed_aktion_mensch_volunteering()

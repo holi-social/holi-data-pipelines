@@ -5,7 +5,7 @@ import json
 from asyncio import Queue
 from typing import Any, Dict, cast, Callable, Coroutine, Optional
 
-from prefect import task
+from prefect import task, flow
 
 from src.common.extractors.rest_crawler import RestCrawler, PagingInfo
 from src.common.loaders.bq_loader import (
@@ -14,7 +14,12 @@ from src.common.loaders.bq_loader import (
     wait_for_bigquery_data_to_be_accessible,
 )
 from src.common.logging.PipelineLogger import PipelineLogger
-from src.common.monitoring.flow import monitored_flow
+from src.common.monitoring.flow import (
+    on_cancellation_hooks,
+    on_crashed_hooks,
+    on_failure_hooks,
+    on_completion_hooks,
+)
 from src.common.monitoring.metrics import report_number_of_processed_entities
 from src.common.variables import variable_value_as, secret_value
 from src.pipelines.crawlers.crawler_common_code import (
@@ -134,7 +139,12 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
     return crawl_to_queue
 
 
-@monitored_flow
+@flow(
+    on_cancellation=on_cancellation_hooks,
+    on_crashed=on_crashed_hooks,
+    on_failure=on_failure_hooks,
+    on_completion=on_completion_hooks,
+)
 def crawl_aktion_mensch(force_run: bool = False, wait_for_bq: bool = True) -> None:
     """
     Main flow: crawl Aktion Mensch API and store results in BigQuery.
