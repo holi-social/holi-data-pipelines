@@ -5,11 +5,17 @@ from datetime import datetime
 import requests
 
 from google.cloud.bigquery import Client
+from prefect import flow
 from prefect.states import State, Completed
 from prefect_gcp import GcpCredentials
 
 from src.common.logging.PipelineLogger import PipelineLogger
-from src.common.monitoring.flow import monitored_flow
+from src.common.monitoring.flow import (
+    on_cancellation_hooks,
+    on_crashed_hooks,
+    on_failure_hooks,
+    on_completion_hooks,
+)
 from src.common.variables import secret_value
 from src.pipelines.bigquery import table_location_cache, volunteering_voltastics_raw_deduped
 
@@ -173,7 +179,12 @@ class VolunteeringGeoEnricher:
             logger.debug(f"no new location data found to add to location table '{table_location_cache()}'")
 
 
-@monitored_flow
+@flow(
+    on_cancellation=on_cancellation_hooks,
+    on_crashed=on_crashed_hooks,
+    on_failure=on_failure_hooks,
+    on_completion=on_completion_hooks,
+)
 def voltastics_geo_enrichment_flow() -> State:
     enricher = VolunteeringGeoEnricher(cast(str, secret_value("geoapify-api-key")))
     enricher.enrich_location_data()

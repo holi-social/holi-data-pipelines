@@ -2,12 +2,18 @@ import logging
 from typing import Any, cast
 import json
 
+from prefect import flow
 from prefect.states import Completed, State
 from shared.classifiers.topics_skills_classifier_v2 import TopicsSkillsClassifierV2
 from shared.classifiers.commitment_duration_classifier import CommitmentDurationClassifier
 from src.common.classifiers.pipeline_batch_classifier import PipelineBatchClassifier
 from src.common.logging.PipelineLogger import PipelineLogger
-from src.common.monitoring.flow import monitored_flow
+from src.common.monitoring.flow import (
+    on_cancellation_hooks,
+    on_crashed_hooks,
+    on_failure_hooks,
+    on_completion_hooks,
+)
 from src.pipelines.bigquery import volunteering_aktion_mensch_without_classifications, table_classifications
 from src.pipelines.volunteering_classification.aktion_mensch_classification_input import (
     AktionMenschClassificationInput,
@@ -104,7 +110,12 @@ class AktionMenschBatchClassifier(PipelineBatchClassifier[AktionMenschClassifica
         )
 
 
-@monitored_flow
+@flow(
+    on_cancellation=on_cancellation_hooks,
+    on_crashed=on_crashed_hooks,
+    on_failure=on_failure_hooks,
+    on_completion=on_completion_hooks,
+)
 def aktion_mensch_classification_flow(batch_size: int | None = 50, stop_after_batch_nr: int | None = None) -> State:
     """Run Aktion Mensch classification pipeline."""
     logger.info("Starting Aktion Mensch classification")

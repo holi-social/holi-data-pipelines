@@ -1,11 +1,17 @@
 import logging
 from typing import Any
 
+from prefect import flow
 from prefect.states import Completed, State
 
 from src.common.classifiers.pipeline_batch_classifier import PipelineBatchClassifier, DEFAULT_BATCH_SIZE
 from src.common.logging.PipelineLogger import PipelineLogger
-from src.common.monitoring.flow import monitored_flow
+from src.common.monitoring.flow import (
+    on_cancellation_hooks,
+    on_crashed_hooks,
+    on_failure_hooks,
+    on_completion_hooks,
+)
 
 from src.pipelines.volunteering_classification.voltastics_classification_input import VoltasticsClassificationInput
 from src.pipelines.bigquery import volunteering_voltastics_without_classifications, table_classifications
@@ -70,7 +76,12 @@ class VoltasticsBatchClassifier(PipelineBatchClassifier[VoltasticsClassification
         )
 
 
-@monitored_flow
+@flow(
+    on_cancellation=on_cancellation_hooks,
+    on_crashed=on_crashed_hooks,
+    on_failure=on_failure_hooks,
+    on_completion=on_completion_hooks,
+)
 def voltastics_classification_flow(
     batch_size: int | None = DEFAULT_BATCH_SIZE, stop_after_batch_nr: int | None = None
 ) -> State:

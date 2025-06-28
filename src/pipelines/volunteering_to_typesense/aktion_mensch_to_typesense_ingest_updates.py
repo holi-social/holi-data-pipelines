@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from prefect import State, task
+from prefect import State, task, flow
 from prefect.cache_policies import NONE
 from prefect.states import Failed, Completed
 from prefect.variables import Variable
@@ -8,7 +8,12 @@ from typing import Dict, Any, cast
 
 from src.common.extractors.bq_extractor import extract_latest_partition_timestamp_from_bigquery
 from src.common.logging.PipelineLogger import PipelineLogger
-from src.common.monitoring.flow import monitored_flow
+from src.common.monitoring.flow import (
+    on_cancellation_hooks,
+    on_crashed_hooks,
+    on_failure_hooks,
+    on_completion_hooks,
+)
 from src.common.monitoring.metrics import report_number_of_processed_entities
 from src.common.typesense import extract_collection_name_from_schema
 from src.common.typesense_client import TypesenseClient, TypesenseClientConfig
@@ -40,7 +45,12 @@ def store_am_ingestion_timestamp(timestamp: datetime) -> None:
     Variable.set(AKTION_MENSCH_STATE_VARIABLE, state, overwrite=True)
 
 
-@monitored_flow
+@flow(
+    on_cancellation=on_cancellation_hooks,
+    on_crashed=on_crashed_hooks,
+    on_failure=on_failure_hooks,
+    on_completion=on_completion_hooks,
+)
 def aktion_mensch_to_typesense_ingest_updates_flow() -> State:
     """Flow to ingest Aktion Mensch volunteering opportunities into Typesense."""
     typesense_client = TypesenseClient(TypesenseClientConfig.from_env())

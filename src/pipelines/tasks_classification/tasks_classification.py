@@ -1,11 +1,17 @@
 import logging
 from typing import Any
+from prefect import flow
 from prefect.states import Completed, State
 
 from shared.classifiers.task_classification_input import TaskClassificationInput
 from src.common.classifiers.pipeline_batch_classifier import PipelineBatchClassifier
 from src.common.logging.PipelineLogger import PipelineLogger
-from src.common.monitoring.flow import monitored_flow
+from src.common.monitoring.flow import (
+    on_cancellation_hooks,
+    on_crashed_hooks,
+    on_failure_hooks,
+    on_completion_hooks,
+)
 from src.pipelines.bigquery import tasks_without_classifications, table_classifications
 from shared.embedders.task_similarity_embedder import TaskSimilarityEmbedder
 from shared.classifiers.task_topics_skills_classifier_v2 import TaskTopicsSkillsClassifierV2
@@ -51,7 +57,12 @@ class TaskBatchClassifier(PipelineBatchClassifier[TaskClassificationInput]):
         )
 
 
-@monitored_flow
+@flow(
+    on_cancellation=on_cancellation_hooks,
+    on_crashed=on_crashed_hooks,
+    on_failure=on_failure_hooks,
+    on_completion=on_completion_hooks,
+)
 def tasks_classification_flow(batch_size: int | None = None, stop_after_batch_nr: int | None = None) -> State:
     # TODO use context manager to create and shut down classifier
     classifier = TaskBatchClassifier(batch_size=batch_size, stop_after_batch_nr=stop_after_batch_nr)

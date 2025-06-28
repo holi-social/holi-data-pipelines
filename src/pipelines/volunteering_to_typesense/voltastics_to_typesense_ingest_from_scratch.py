@@ -1,8 +1,13 @@
-from prefect import task
+from prefect import task, flow
 from prefect.cache_policies import NONE
 from prefect.states import State
 
-from src.common.monitoring.flow import monitored_flow
+from src.common.monitoring.flow import (
+    on_cancellation_hooks,
+    on_crashed_hooks,
+    on_failure_hooks,
+    on_completion_hooks,
+)
 from src.common.typesense import extract_collection_name_from_schema
 from src.common.typesense_client import TypesenseClient, TypesenseClientConfig
 from src.pipelines.typesense import schema_path
@@ -11,7 +16,12 @@ from src.pipelines.volunteering_to_typesense.voltastics_to_typesense_ingest_upda
 )
 
 
-@monitored_flow
+@flow(
+    on_cancellation=on_cancellation_hooks,
+    on_crashed=on_crashed_hooks,
+    on_failure=on_failure_hooks,
+    on_completion=on_completion_hooks,
+)
 def voltastics_to_typesense_ingest_from_scratch_flow() -> State | int:
     typesense_client = TypesenseClient(TypesenseClientConfig.from_env())
     alias_name = extract_collection_name_from_schema(schema_path=schema_path)
