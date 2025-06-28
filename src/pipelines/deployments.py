@@ -198,7 +198,7 @@ def get_deployments() -> List[RunnerDeployment]:
             volunteering_updates_flow,
             description="Orchestrates crawling, classification and enrichment and updating Typesense indexes for volunteering",
             schedules=[cron_schedule("40 1 * * *") if environment() == "production" else cron_schedule("40 2 * * *")],
-            job_variables_overrides={"memory": "1024Mi"},
+            job_variables_overrides={"memory": "4096Mi"},
         ),
         deployment_for_flow(
             all_to_typesense_ingest_from_scratch_flow,
