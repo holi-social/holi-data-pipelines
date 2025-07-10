@@ -177,14 +177,14 @@ resource "google_bigquery_table" "tasks_without_classifications" {
         community.name AS community_slug,
         community.title AS community_name,
         community.avatar AS community_avatar,
-        CAST(FARM_FINGERPRINT(CONCAT(IFNULL(task.name, ''), '|', IFNULL(task.description, ''), '|', IFNULL(task.location, ''), '|', IFNULL(ARRAY_TO_STRING(JSON_VALUE_ARRAY(community.topics_v2), ' '), ''), '|', IFNULL(ARRAY_TO_STRING(JSON_VALUE_ARRAY(task.skills_v2), ' '), ''))) AS STRING) AS `hash`
+        CAST(FARM_FINGERPRINT(CONCAT(task.name, '|', task.description, '|', IFNULL(task.location, ''), '|', IFNULL(CONCAT('[\'', ARRAY_TO_STRING(JSON_VALUE_ARRAY(community.topics_v2), '\', \'', ''), '\']'), '[]'), '|', IFNULL(CONCAT('[\'', ARRAY_TO_STRING(JSON_VALUE_ARRAY(task.skills_v2), '\', \'', ''), '\']'), '[]'))) AS STRING) AS `hash`,
       FROM `${local.okuna_dataset}.openbook_communities_task` AS task
       JOIN `${local.okuna_dataset}.openbook_communities_community` AS community
         ON task.community_id = community.id
       LEFT JOIN `${local.datalake}.classifications` AS classification
         ON task.id = classification.id
         AND classification.type = 'task'
-        AND classification.hash = CAST(FARM_FINGERPRINT(CONCAT(IFNULL(task.name, ''), '|', IFNULL(task.description, ''), '|', IFNULL(task.location, ''), '|', IFNULL(ARRAY_TO_STRING(JSON_VALUE_ARRAY(community.topics_v2), ' '), ''), '|', IFNULL(ARRAY_TO_STRING(JSON_VALUE_ARRAY(task.skills_v2), ' '), ''))) AS STRING)
+        AND classification.hash = CAST(FARM_FINGERPRINT(CONCAT(task.name, '|', task.description, '|', IFNULL(task.location, ''), '|', IFNULL(CONCAT('[\'', ARRAY_TO_STRING(JSON_VALUE_ARRAY(community.topics_v2), '\', \'', ''), '\']'), '[]'), '|', IFNULL(CONCAT('[\'', ARRAY_TO_STRING(JSON_VALUE_ARRAY(task.skills_v2), '\', \'', ''), '\']'), '[]'))) AS STRING)
       WHERE community.is_deleted IS FALSE
         AND visibility="PUBLIC"
         AND deleted_at IS NULL
@@ -218,14 +218,14 @@ resource "google_bigquery_table" "tasks_with_classifications" {
         community.name AS community_slug,
         community.title AS community_name,
         community.avatar AS community_avatar,
-        CAST(FARM_FINGERPRINT(CONCAT(IFNULL(task.name, ''), '|', IFNULL(task.description, ''), '|', IFNULL(task.location, ''), '|', IFNULL(ARRAY_TO_STRING(JSON_VALUE_ARRAY(community.topics_v2), ' '), ''), '|', IFNULL(ARRAY_TO_STRING(JSON_VALUE_ARRAY(task.skills_v2), ' '), ''))) AS STRING) AS `hash`
+        CAST(FARM_FINGERPRINT(CONCAT(task.name, '|', task.description, '|', IFNULL(task.location, ''), '|', IFNULL(CONCAT('[\'', ARRAY_TO_STRING(JSON_VALUE_ARRAY(community.topics_v2), '\', \'', ''), '\']'), '[]'), '|', IFNULL(CONCAT('[\'', ARRAY_TO_STRING(JSON_VALUE_ARRAY(task.skills_v2), '\', \'', ''), '\']'), '[]'))) AS STRING) AS `hash`
       FROM `${local.okuna_dataset}.openbook_communities_task` AS task
       JOIN `${local.okuna_dataset}.openbook_communities_community` AS community
         ON task.community_id = community.id
       LEFT JOIN `${local.datalake}.classifications` AS classification
         ON task.id = classification.id
         AND classification.type = 'task'
-        AND classification.hash = CAST(FARM_FINGERPRINT(CONCAT(IFNULL(task.name, ''), '|', IFNULL(task.description, ''), '|', IFNULL(task.location, ''), '|', IFNULL(ARRAY_TO_STRING(JSON_VALUE_ARRAY(community.topics_v2), ' '), ''), '|', IFNULL(ARRAY_TO_STRING(JSON_VALUE_ARRAY(task.skills_v2), ' '), ''))) AS STRING)
+        AND classification.hash = CAST(FARM_FINGERPRINT(CONCAT(task.name, '|', task.description, '|', IFNULL(task.location, ''), '|', IFNULL(CONCAT('[\'', ARRAY_TO_STRING(JSON_VALUE_ARRAY(community.topics_v2), '\', \'', ''), '\']'), '[]'), '|', IFNULL(CONCAT('[\'', ARRAY_TO_STRING(JSON_VALUE_ARRAY(task.skills_v2), '\', \'', ''), '\']'), '[]'))) AS STRING)
       WHERE community.is_deleted IS FALSE
         AND visibility="PUBLIC"
         AND deleted_at IS NULL
