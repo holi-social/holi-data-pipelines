@@ -65,11 +65,11 @@ def extract_latest_partition_timestamp_from_bigquery(
     return latest_partition_timestamp
 
 
-def extract_changes_in_partitions(
+def extract_upserted_records_in_partitions(
     table_name: str, new_partition_date: date, old_partition_date: Optional[date] = None
 ) -> list[Dict[str, Any]]:
     """
-    Extracts (new, updated, or deleted records) in a BigQuery table by comparing
+    Extracts new or updated records in a BigQuery table by comparing
     the old partition with the new partition timestamp. It requires the table to have a hash
     column which is used for the comparison of rows.
 
@@ -103,6 +103,54 @@ def extract_changes_in_partitions(
             FROM old_partition
         )
     ),
+    SELECT
+        'new_or_updated' AS change_type
+        ,*
+    FROM new_or_updated_records
+    """  # noqa: S608
+    return extract_data_from_bigquery(query)
+
+
+def extract_deleted_records_in_partitions(
+    table_name: str, new_partition_date: date, old_partition_date: Optional[date] = None
+) -> list[Dict[str, Any]]:
+    """
+    Extracts deleted records in a BigQuery table by comparing
+    the old partition with the new partition timestamp. It requires the table to have a hash
+    column which is used for the comparison of rows.
+
+    Args:
+        table_name (str): The BigQuery view or table name to query.
+        new_partition_date (date): The date of the newer partition
+        old_partition_date (date): The date of the older partition
+
+    Returns:
+        list[Dict]: A list of dictionaries, where each dictionary represents a record
+                    with an additional `change_type` field indicating whether it is
+                    "new_or_updated" or "deleted".
+    """
+
+    old_partition_where_clause = (
+        f"""
+      TIMESTAMP_TRUNC({VIEW_PARTITION_TIME_COLUMN_NAME}, DAY) = TIMESTAMP('{old_partition_date.strftime("%Y-%m-%d")}')
+    """
+        if old_partition_date
+        else f"""
+      TIMESTAMP_TRUNC({VIEW_PARTITION_TIME_COLUMN_NAME}, DAY) < TIMESTAMP('{new_partition_date.strftime("%Y-%m-%d")}')
+    """
+    )
+
+    query = f"""
+    WITH old_partition AS (
+        SELECT *
+        FROM `{table_name}`
+        WHERE {old_partition_where_clause}
+    ),
+    new_partition AS (
+        SELECT *
+        FROM `{table_name}`
+        WHERE TIMESTAMP_TRUNC({VIEW_PARTITION_TIME_COLUMN_NAME}, DAY) = TIMESTAMP('{new_partition_date.strftime("%Y-%m-%d")}')
+    ),
     deleted_records AS (
         SELECT *
         FROM old_partition
@@ -115,11 +163,6 @@ def extract_changes_in_partitions(
             FROM new_partition
         )
     )
-    SELECT
-        'new_or_updated' AS change_type
-        ,*
-    FROM new_or_updated_records
-    UNION ALL
     SELECT
         'deleted' AS change_type
         ,*

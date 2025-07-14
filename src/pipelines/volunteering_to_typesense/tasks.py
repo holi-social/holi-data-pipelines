@@ -7,7 +7,10 @@ from prefect import task, State
 from prefect.states import Failed, Completed
 from prefect.variables import Variable
 
-from src.common.extractors.bq_extractor import extract_changes_in_partitions
+from src.common.extractors.bq_extractor import (
+    extract_upserted_records_in_partitions,
+    extract_deleted_records_in_partitions,
+)
 from src.common.loaders.typesense_loader import upsert_typesense_documents
 from src.common.logging.PipelineLogger import PipelineLogger
 from src.common.typesense_client import TypesenseClient
@@ -42,15 +45,20 @@ def extract_changed_records(
     logger.info(
         f"Extracting changed records (table_name={table_name}, last_complete_ingestion_date={last_complete_ingestion_date}, latest_partition_date={latest_partition_date})."
     )
-    data = extract_changes_in_partitions(
+    new_or_updated = extract_upserted_records_in_partitions(
         table_name=table_name,
         new_partition_date=latest_partition_date,
         old_partition_date=last_complete_ingestion_date,
     )
-    logger.info(f"Extracted {len(data)} changed records")
+    deleted = extract_deleted_records_in_partitions(
+        table_name=table_name,
+        new_partition_date=latest_partition_date,
+        old_partition_date=last_complete_ingestion_date,
+    )
+    logger.info(f"Extracted {len(new_or_updated)} upserted and {len(deleted)} deleted records")
     return ChangedRecords(
-        new_or_updated=[record for record in data if record["change_type"] == "new_or_updated"],
-        deleted=[record for record in data if record["change_type"] == "deleted"],
+        new_or_updated=new_or_updated,
+        deleted=deleted,
     )
 
 
