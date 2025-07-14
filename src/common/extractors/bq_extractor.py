@@ -140,6 +140,7 @@ def extract_deleted_records_in_partitions(
     """
     )
 
+    # Not checking for hashes as there might be duplicates with the exact same content
     query = f"""
     WITH old_partition AS (
         SELECT *
@@ -154,11 +155,7 @@ def extract_deleted_records_in_partitions(
     deleted_records AS (
         SELECT *
         FROM old_partition
-        WHERE `hash` NOT IN (
-            SELECT `hash`
-            FROM new_partition
-        )
-        AND `id` NOT IN (
+        WHERE `id` NOT IN (
             SELECT `id`
             FROM new_partition
         )
