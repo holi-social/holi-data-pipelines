@@ -161,8 +161,7 @@ def extract_deleted_records_in_partitions(
         )
     )
     SELECT
-        'deleted' AS change_type
-        ,*
+        distinct(id)
     FROM deleted_records;
     """  # noqa: S608
     return extract_data_from_bigquery(query)
