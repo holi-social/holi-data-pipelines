@@ -102,7 +102,7 @@ def extract_upserted_records_in_partitions(
             SELECT `hash`
             FROM old_partition
         )
-    ),
+    )
     SELECT
         'new_or_updated' AS change_type
         ,*
