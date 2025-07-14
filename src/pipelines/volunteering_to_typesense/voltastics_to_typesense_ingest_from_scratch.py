@@ -29,6 +29,7 @@ def voltastics_to_typesense_ingest_from_scratch_flow() -> State | int:
     return voltastics_to_typesense_ingest_updates(
         typesense_client=typesense_client,
         typesense_collection_name=active_collection,
+        last_complete_ingestion_timestamp=None,
     )
 
 
