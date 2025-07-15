@@ -78,7 +78,6 @@ def all_to_typesense_ingest_from_scratch_flow(swap_alias: bool = True, drop_old_
     volunteering_result = voltastics_to_typesense_ingest_from_scratch(
         typesense_client=typesense_client,
         typesense_collection_name=next_collection,
-        last_complete_ingestion_timestamp=None,
     )
     if isinstance(volunteering_result, State) and volunteering_result.is_failed():
         return Failed(message=volunteering_result.message)
