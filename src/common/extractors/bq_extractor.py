@@ -101,6 +101,9 @@ def extract_upserted_records_in_partitions(
         WHERE `hash` NOT IN (
             SELECT `hash`
             FROM old_partition
+        ) OR id NOT IN (
+            SELECT id
+            FROM old_partition
         )
     )
     SELECT
