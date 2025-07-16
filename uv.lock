@@ -755,6 +755,26 @@ wheels = [
 ]
 
 [[package]]
+name = "google-cloud-pubsub"
+version = "2.30.0"
+source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
+dependencies = [
+    { name = "google-api-core", extra = ["grpc"] },
+    { name = "google-auth" },
+    { name = "grpc-google-iam-v1" },
+    { name = "grpcio" },
+    { name = "grpcio-status" },
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-sdk" },
+    { name = "proto-plus" },
+    { name = "protobuf" },
+]
+sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/google-cloud-pubsub/google_cloud_pubsub-2.30.0.tar.gz", hash = "sha256:26975ed728d2209479f4fb2667e3b3bd70de7605abadf4b301c651c39ed83042" }
+wheels = [
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/google-cloud-pubsub/google_cloud_pubsub-2.30.0-py3-none-any.whl", hash = "sha256:bd7adabc1b79ba2220529401e34dfd72bfdbdad9132a697b4200012a49281629" },
+]
+
+[[package]]
 name = "google-cloud-resource-manager"
 version = "1.14.2"
 source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
@@ -2383,6 +2403,7 @@ version = "1.0.0"
 source = { virtual = "src" }
 dependencies = [
     { name = "codetiming" },
+    { name = "google-cloud-pubsub" },
     { name = "langdetect" },
     { name = "opentelemetry-exporter-gcp-monitoring" },
     { name = "opentelemetry-resourcedetector-gcp" },
@@ -2414,6 +2435,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "codetiming", specifier = "==1.4.0" },
+    { name = "google-cloud-pubsub", specifier = ">=2.30.0" },
     { name = "langdetect", specifier = "==1.0.9" },
     { name = "opentelemetry-exporter-gcp-monitoring", specifier = "==1.9.0a0" },
     { name = "opentelemetry-resourcedetector-gcp", specifier = "==1.9.0a0" },
