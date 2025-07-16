@@ -1,126 +1,182 @@
 {
-    "name": "holi_search_production",
-    "enable_nested_fields": true,
-    "fields": [
-        {"name": "id", "type": "string"},
-        {"name": "type", "type": "string", "facet": true},
-        {
-            "name": "title_de",
-            "type": "string",
-            "optional": true,
-            "infix": true,
-            "stem": true,
-            "locale": "de"
-        },
-        {
-            "name": "title_en",
-            "type": "string",
-            "optional": true,
-            "infix": true,
-            "stem": true,
-            "locale": "en"
-        },
-        {
-            "name": "description_de",
-            "type": "string",
-            "optional": true,
-            "comment": "current assumption: we don't have really long text, so we don't store as separate paragraphs",
-            "stem": true,
-            "locale": "de"
-        },
-        {
-            "name": "description_en",
-            "type": "string",
-            "optional": true,
-            "comment": "current assumption: we don't have really long text, so we don't store as separate paragraphs",
-            "stem": true,
-            "locale": "en"
-        },
-        {"name": "location", "type": "string", "optional": true},
-        {"name": "location_type", "type": "string", "optional": true, "facet": true},
-        {"name": "location_lat_lng", "type": "geopoint", "optional": true},
-        {"name": "image_url", "type": "string", "optional": true, "index": false},
-        {
-            "name": "link_locators",
-            "type": "object",
-            "comment": "Stores locators for volunteering. Example: {'volunteering': '1234'}",
-            "index": false
-        },
-        {
-            "name": "user_full_name",
-            "type": "string",
-            "optional": true,
-            "infix": true,
-            "stem": true,
-            "sort": true,
-            "comment": "enabling sort can help display results in some meaningful order, such as alphabetical"
-        },
-        {
-            "name": "embedding",
-            "type": "float[]",
-            "optional": true,
-            "embed": {
-                "from": [
-                    "title_de",
-                    "title_en",
-                    "description_de",
-                    "description_en",
-                    "location"
-                ],
-                "model_config": {
-                    "model_name": "ts/multilingual-e5-base"
-                }
-            }
-        },
-        {
-            "name": "topics_v2",
-            "type": "string[]",
-            "optional": true,
-            "index": true
-        },
-        {
-            "name": "skills_v2",
-            "type": "string[]",
-            "optional": true,
-            "index": true
-        },
-        {
-            "name": "topics_skills_embedding_v2",
-            "type": "float[]",
-            "optional": true,
-            "num_dim": 53
-        },
-        {
-            "name": "similarity_embedding",
-            "type": "float[]",
-            "optional": true,
-            "num_dim": 256
-        },
-        {"name": "organizer_name", "type": "string", "optional": true, "index":  false},
-        {"name": "organizer_image_url", "type": "string", "optional": true, "index":  false},
-        {"name": "external_url", "type": "string", "optional": true, "index":  false},
-        {"name": "source", "type": "string", "optional": true, "index":  false},
-        {"name": "commitment_label", "type": "string", "optional": true, "facet": true},
-        {
-            "name": "commitment_duration",
-            "type": "string",
-            "optional": true,
-            "facet": true
-        },
-        {
-            "name": "commitment_duration_ai_derived",
-            "type": "bool",
-            "optional": true,
-            "facet": false,
-            "index": false
-        },
-        {
-            "name": "commitment_duration_ai_reasoning",
-            "type": "string",
-            "optional": true,
-            "facet": false,
-            "index": false
-        },
-        {"name": "space_id", "type": "string", "optional": true}
-    ]
+  "enable_nested_fields": true,
+  "fields": [
+    {
+      "name": "id",
+      "type": "string"
+    },
+    {
+      "facet": true,
+      "name": "type",
+      "type": "string"
+    },
+    {
+      "infix": true,
+      "locale": "de",
+      "name": "title_de",
+      "optional": true,
+      "stem": true,
+      "type": "string"
+    },
+    {
+      "infix": true,
+      "locale": "en",
+      "name": "title_en",
+      "optional": true,
+      "stem": true,
+      "type": "string"
+    },
+    {
+      "comment": "current assumption: we don't have really long text, so we don't store as separate paragraphs",
+      "locale": "de",
+      "name": "description_de",
+      "optional": true,
+      "stem": true,
+      "type": "string"
+    },
+    {
+      "comment": "current assumption: we don't have really long text, so we don't store as separate paragraphs",
+      "locale": "en",
+      "name": "description_en",
+      "optional": true,
+      "stem": true,
+      "type": "string"
+    },
+    {
+      "name": "location",
+      "optional": true,
+      "type": "string"
+    },
+    {
+      "facet": true,
+      "name": "location_type",
+      "optional": true,
+      "type": "string"
+    },
+    {
+      "name": "location_lat_lng",
+      "optional": true,
+      "type": "geopoint"
+    },
+    {
+      "index": false,
+      "name": "image_url",
+      "optional": true,
+      "type": "string"
+    },
+    {
+      "comment": "Stores locators for volunteering. Example: {'volunteering': '1234'}",
+      "index": false,
+      "name": "link_locators",
+      "type": "object"
+    },
+    {
+      "comment": "enabling sort can help display results in some meaningful order, such as alphabetical",
+      "infix": true,
+      "name": "user_full_name",
+      "optional": true,
+      "sort": true,
+      "stem": true,
+      "type": "string"
+    },
+    {
+      "embed": {
+        "from": [
+          "title_de",
+          "title_en",
+          "description_de",
+          "description_en",
+          "location"
+        ],
+        "model_config": {
+          "model_name": "ts/multilingual-e5-base"
+        }
+      },
+      "name": "embedding",
+      "optional": true,
+      "type": "float[]"
+    },
+    {
+      "index": true,
+      "name": "topics_v2",
+      "optional": true,
+      "type": "string[]",
+      "facet": true
+    },
+    {
+      "index": true,
+      "name": "skills_v2",
+      "optional": true,
+      "type": "string[]",
+      "facet": true
+    },
+    {
+      "name": "topics_skills_embedding_v2",
+      "num_dim": 53,
+      "optional": true,
+      "type": "float[]"
+    },
+    {
+      "name": "similarity_embedding",
+      "num_dim": 256,
+      "optional": true,
+      "type": "float[]"
+    },
+    {
+      "index": false,
+      "name": "organizer_name",
+      "optional": true,
+      "type": "string"
+    },
+    {
+      "index": false,
+      "name": "organizer_image_url",
+      "optional": true,
+      "type": "string"
+    },
+    {
+      "index": false,
+      "name": "external_url",
+      "optional": true,
+      "type": "string"
+    },
+    {
+      "index": false,
+      "name": "source",
+      "optional": true,
+      "type": "string"
+    },
+    {
+      "facet": true,
+      "name": "commitment_label",
+      "optional": true,
+      "type": "string"
+    },
+    {
+      "facet": true,
+      "name": "commitment_duration",
+      "optional": true,
+      "type": "string"
+    },
+    {
+      "facet": false,
+      "index": false,
+      "name": "commitment_duration_ai_derived",
+      "optional": true,
+      "type": "bool"
+    },
+    {
+      "facet": false,
+      "index": false,
+      "name": "commitment_duration_ai_reasoning",
+      "optional": true,
+      "type": "string"
+    },
+    {
+      "name": "space_id",
+      "optional": true,
+      "type": "string"
+    }
+  ],
+  "name": "holi_search_production"
 }
