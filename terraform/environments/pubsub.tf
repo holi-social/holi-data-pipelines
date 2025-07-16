@@ -1,15 +1,3 @@
-resource "google_project_iam_member" "external_data_pubsub_publisher" {
-  project = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
-  member  = "serviceAccount:${data.terraform_remote_state.holi_data_pipeline_common_state.outputs.data_pipeline_service_account_email}"
-  role    = "roles/pubsub.publisher"
-}
-
-resource "google_kms_crypto_key_iam_member" "external_data_pubsub_publisher_encrypter_decrypter" {
-  crypto_key_id = data.terraform_remote_state.holi_data_pipeline_common_state.outputs.data_pipeline_key
-  role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
-  member        = "serviceAccount:${data.terraform_remote_state.holi_data_pipeline_common_state.outputs.data_pipeline_service_account_email}"
-}
-
 resource "google_pubsub_topic" "external_data_staging" {
   project      = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
   name         = "external-data-staging"

@@ -15,10 +15,10 @@ resource "google_project_iam_member" "data_pipeline" {
     "roles/monitoring.metricWriter",
     "roles/aiplatform.user",
     "roles/artifactregistry.reader",
+    "roles/pubsub.publisher"
   ])
   role   = each.key
   member = "serviceAccount:${google_service_account.data_pipeline.email}"
-
 }
 
 # this account was imported after default creation by google

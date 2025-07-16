@@ -13,6 +13,12 @@ resource "google_kms_crypto_key_iam_member" "data_pipeline" {
   member        = "serviceAccount:service-${data.terraform_remote_state.holi_infra_state.outputs.shared_project_number}@compute-system.iam.gserviceaccount.com"
 }
 
+resource "google_kms_crypto_key_iam_member" "data_pipeline_pubsub" {
+  crypto_key_id = google_kms_crypto_key.data_pipeline.id
+  role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
+  member        = "serviceAccount:service-${data.terraform_remote_state.holi_infra_state.outputs.shared_project_number}@gcp-sa-pubsub.iam.gserviceaccount.com"
+}
+
 output "data_pipeline_key" {
   value = google_kms_crypto_key.data_pipeline.id
 }
