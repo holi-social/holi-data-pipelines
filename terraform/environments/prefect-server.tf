@@ -65,6 +65,7 @@ resource "google_compute_instance" "prefect_server_green" {
       "compute-rw",
       "logging-write",
       "monitoring-write",
+      "pubsub",
     ]
   }
 }

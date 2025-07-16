@@ -8,3 +8,4 @@
 .build
 /.env.staging
 /.env.production
+/.env.local
