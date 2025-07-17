@@ -6,6 +6,7 @@ from urllib.parse import quote
 from prefect import task, State
 from prefect.states import Failed, Completed
 from prefect.variables import Variable
+from prefect.cache_policies import NONE
 
 from src.common.extractors.bq_extractor import (
     extract_upserted_records_in_partitions,
@@ -146,7 +147,7 @@ def store_last_complete_ingestion_timestamp(timestamp: datetime) -> None:
     Variable.set(VOLUNTEERING_STATE_VARIABLE, state, overwrite=True)
 
 
-@task
+@task(cache_policy=NONE)
 def diff_ingest(
     table_name: str,
     last_complete_ingestion_timestamp: Optional[datetime],
