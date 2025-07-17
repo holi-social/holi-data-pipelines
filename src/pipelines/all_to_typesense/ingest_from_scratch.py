@@ -13,6 +13,7 @@ from src.common.monitoring.flow import (
     on_completion_hooks,
 )
 from src.common.monitoring.metrics import report_number_of_processed_entities
+from src.common.pubsub_client import PubSubClient
 from src.common.typesense import extract_collection_name_from_schema
 from src.common.typesense_client import TypesenseClient, TypesenseClientConfig
 from src.pipelines.profiles_to_typesense.ingest_from_scratch import profiles_to_typesense_ingest_from_scratch
@@ -43,6 +44,7 @@ def all_to_typesense_ingest_from_scratch_flow(swap_alias: bool = True, drop_old_
     Orchestrates the ETL pipeline to ingest all search data into Typesense from scratch.
     """
     typesense_client = TypesenseClient(TypesenseClientConfig.from_env())
+    pubsub_client = PubSubClient()
     alias_name = extract_collection_name_from_schema(schema_path=schema_path)
 
     try:
@@ -77,6 +79,7 @@ def all_to_typesense_ingest_from_scratch_flow(swap_alias: bool = True, drop_old_
     logger.info("Ingesting volunteering from scratch")
     volunteering_result = voltastics_to_typesense_ingest_from_scratch(
         typesense_client=typesense_client,
+        pubsub_client=pubsub_client,
         typesense_collection_name=next_collection,
     )
     if isinstance(volunteering_result, State) and volunteering_result.is_failed():
@@ -85,6 +88,7 @@ def all_to_typesense_ingest_from_scratch_flow(swap_alias: bool = True, drop_old_
     logger.info("Ingesting Aktion Mensch volunteering from scratch")
     aktion_mensch_result = aktion_mensch_to_typesense_ingest_from_scratch(
         typesense_client=typesense_client,
+        pubsub_client=pubsub_client,
         typesense_collection_name=next_collection,
     )
     if isinstance(aktion_mensch_result, State) and aktion_mensch_result.is_failed():
