@@ -156,8 +156,6 @@ def process_event(ts_client: TypesenseClient, cloud_event: CloudEvent) -> None:
     event_type = get_event_type(cloud_event)
     event_version = get_event_version(cloud_event)
 
-    logger.debug(f"Receiving {event_type} (v{event_version}) event")
-
     if event_type == "UserUpdated":
         user_updated_event = UserUpdatedEvent(cloud_event)
         add_logging_context(user_updated_event)
@@ -210,4 +208,8 @@ def process_message(event: CloudEvent) -> None:
     ts_client = TypesenseClient()
     if isinstance(logger, EventProcessorLogger):
         logger.cloud_event = event
-    process_event(ts_client, event)
+    try:
+        process_event(ts_client, event)
+    except Exception as e:
+        logger.error(f"Error processing event {event}: {e}")
+        raise e
