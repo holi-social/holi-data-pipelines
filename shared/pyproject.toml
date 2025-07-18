@@ -1,3 +1,5 @@
+tool.uv.package = false
+
 [project]
 name = "shared"
 version = "1.0.0"

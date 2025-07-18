@@ -1,3 +1,5 @@
+tool.uv.package = false
+
 [project]
 name = "src"
 version = "1.0.0"
