@@ -1531,6 +1531,15 @@ wheels = [
 ]
 
 [[package]]
+name = "phonenumbers"
+version = "9.0.10"
+source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
+sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/phonenumbers/phonenumbers-9.0.10.tar.gz", hash = "sha256:c2d15a6a9d0534b14a7764f51246ada99563e263f65b80b0251d1a760ac4a1ba" }
+wheels = [
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/phonenumbers/phonenumbers-9.0.10-py2.py3-none-any.whl", hash = "sha256:13b12d269be1f2b363c9bc2868656a7e2e8b50f1a1cef629c75005da6c374c6b" },
+]
+
+[[package]]
 name = "platformdirs"
 version = "4.3.8"
 source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
@@ -2407,6 +2416,7 @@ dependencies = [
     { name = "langdetect" },
     { name = "opentelemetry-exporter-gcp-monitoring" },
     { name = "opentelemetry-resourcedetector-gcp" },
+    { name = "phonenumbers" },
     { name = "prefect", extra = ["gcp"] },
     { name = "prefect-gcp", extra = ["all-extras"] },
     { name = "psycopg", extra = ["binary"] },
@@ -2439,6 +2449,7 @@ requires-dist = [
     { name = "langdetect", specifier = "==1.0.9" },
     { name = "opentelemetry-exporter-gcp-monitoring", specifier = "==1.9.0a0" },
     { name = "opentelemetry-resourcedetector-gcp", specifier = "==1.9.0a0" },
+    { name = "phonenumbers", specifier = ">=9.0.10" },
     { name = "prefect", extras = ["gcp"], specifier = "==3.4.0" },
     { name = "prefect-gcp", extras = ["all-extras"], specifier = "==0.6.7" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2.9" },

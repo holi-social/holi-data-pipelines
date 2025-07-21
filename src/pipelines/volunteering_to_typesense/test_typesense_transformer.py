@@ -66,6 +66,7 @@ def _row() -> RowFixture:
         ),
         "commitment_duration": _random([None, *DURATIONS_CONSTANTS_TO_HUMAN_READABLE]),
         "commitment_duration_ai_reasoning": _random([None, "I hallucinate reasons"]),
+        "contact": None,
     }
 
 
@@ -102,6 +103,7 @@ def test_german_all_fields(row: RowFixture) -> None:
     assert result["commitment_duration"] == row["commitment_duration"]
     assert result["commitment_duration_ai_derived"] is True
     assert result["commitment_duration_ai_reasoning"] == row["commitment_duration_ai_reasoning"]
+    assert result["contact"] == [{"type": "website", "value": row["link"], "label": row["orga"]}]
 
 
 def test_english_title_and_description(row: RowFixture) -> None:
@@ -232,3 +234,100 @@ def test_falls_back_to_german_if_language_is_other(row: RowFixture) -> None:
     result = transform_row(row)
 
     assert result["description_de"] == row["description"]
+
+
+def test_full_contact_information(row: RowFixture) -> None:
+    first_name = fake.first_name()
+    last_name = fake.last_name()
+    expected_label = f"{first_name} {last_name}"
+    mobile = "+1 910-561-5313"
+    phone = "(319)748-9241"
+    email = fake.email()
+    row["contact"] = {
+        "anrede": fake.prefix(),
+        "email": email,
+        "id": fake.uuid4(),
+        "mobil": mobile,
+        "nachname": last_name,
+        "telefon": phone,
+        "titel": None,
+        "vorname": first_name,
+        "whatsapp": None,
+    }
+
+    result = transform_row(row)
+
+    assert result["contact"] == [
+        {"type": "email", "value": email, "label": expected_label},
+        {"type": "phone", "value": "+1 910-561-5313", "label": expected_label},
+        {"type": "phone", "value": "+49 31974 89241", "label": expected_label},
+        {"type": "website", "value": row["link"], "label": row["orga"]},
+    ]
+
+
+def test_falls_back_to_first_name_for_contact(row: RowFixture) -> None:
+    first_name = fake.first_name()
+    email = fake.email()
+    row["contact"] = {
+        "anrede": None,
+        "email": email,
+        "id": fake.uuid4(),
+        "mobil": None,
+        "nachname": None,
+        "telefon": None,
+        "titel": None,
+        "vorname": first_name,
+        "whatsapp": None,
+    }
+
+    result = transform_row(row)
+
+    assert result["contact"] == [
+        {"type": "email", "value": email, "label": first_name},
+        {"type": "website", "value": row["link"], "label": row["orga"]},
+    ]
+
+
+def test_falls_back_to_last_name_for_contact(row: RowFixture) -> None:
+    last_name = fake.last_name()
+    email = fake.email()
+    row["contact"] = {
+        "anrede": None,
+        "email": email,
+        "id": fake.uuid4(),
+        "mobil": None,
+        "nachname": last_name,
+        "telefon": None,
+        "titel": None,
+        "vorname": None,
+        "whatsapp": None,
+    }
+
+    result = transform_row(row)
+
+    assert result["contact"] == [
+        {"type": "email", "value": email, "label": last_name},
+        {"type": "website", "value": row["link"], "label": row["orga"]},
+    ]
+
+
+def test_handles_missing_contact_name(row: RowFixture) -> None:
+    email = fake.email()
+    row["contact"] = {
+        "anrede": None,
+        "email": email,
+        "id": fake.uuid4(),
+        "mobil": None,
+        "nachname": None,
+        "telefon": None,
+        "titel": None,
+        "vorname": None,
+        "whatsapp": None,
+    }
+
+    result = transform_row(row)
+
+    assert result["contact"] == [
+        {"type": "email", "value": email, "label": None},
+        {"type": "website", "value": row["link"], "label": row["orga"]},
+    ]

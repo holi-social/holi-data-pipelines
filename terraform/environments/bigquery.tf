@@ -323,6 +323,7 @@ resource "google_bigquery_table" "volunteering_voltastics_classified_enriched_pa
         raw_deduped.* EXCEPT(latitude, longitude),
         COALESCE(raw_deduped.latitude, location_cache.latitude) AS latitude,
         COALESCE(raw_deduped.longitude, location_cache.longitude) AS longitude,
+        NULL as contact,
         classifications.topics_skills_embedding_v2 AS topics_skills_embedding_v2,
         classifications.topics_v2 AS topics_v2,
         classifications.skills_v2 AS skills_v2,
@@ -484,6 +485,8 @@ resource "google_bigquery_table" "volunteering_aktion_mensch_classified_enriched
         
         JSON_EXTRACT_SCALAR(am.durchfuehrendeOrganisation, "$.homepage") AS link,
         
+        am.kontaktDurchfuehrendeOrganisation as contact,
+
         ARRAY(
           SELECT JSON_EXTRACT_SCALAR(attr, "$.name") 
           FROM UNNEST(JSON_EXTRACT_ARRAY(am.attribute)) attr 

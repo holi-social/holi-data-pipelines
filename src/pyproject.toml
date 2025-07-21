@@ -20,6 +20,7 @@ dependencies = [
     "whenever==0.8.6",
     "psycopg[binary]>=3.2.9",
     "google-cloud-pubsub>=2.30.0",
+    "phonenumbers>=9.0.10",
 ]
 
 [dependency-groups]

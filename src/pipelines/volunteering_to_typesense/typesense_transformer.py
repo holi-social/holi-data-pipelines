@@ -1,6 +1,7 @@
 import decimal
 from decimal import Decimal
 from typing import Dict, Optional, Any, List
+import phonenumbers
 
 from langdetect import detect, LangDetectException
 
@@ -62,6 +63,39 @@ def _decimal_as_str_or_none(row: Dict[str, Optional[Any]], key: str) -> str | No
         return None
 
 
+def _transform_contact(
+    contact: Optional[Dict[str, Optional[Any]]], orga: Optional[str], link: Optional[str]
+) -> List[Dict[str, Optional[Any]]]:
+    contact_info = []
+    if contact:
+        first_name = contact.get("vorname")
+        last_name = contact.get("nachname")
+        label = f"{first_name} {last_name}" if first_name and last_name else first_name or last_name
+        if contact.get("email"):
+            contact_info.append({"type": "email", "value": contact.get("email"), "label": label})
+        if contact.get("mobil"):
+            parsed_number = phonenumbers.parse(str(contact.get("mobil")), "DE")
+            contact_info.append(
+                {
+                    "type": "phone",
+                    "value": phonenumbers.format_number(parsed_number, phonenumbers.PhoneNumberFormat.INTERNATIONAL),
+                    "label": label,
+                }
+            )
+        if contact.get("telefon"):
+            parsed_number = phonenumbers.parse(str(contact.get("telefon")), "DE")
+            contact_info.append(
+                {
+                    "type": "phone",
+                    "value": phonenumbers.format_number(parsed_number, phonenumbers.PhoneNumberFormat.INTERNATIONAL),
+                    "label": label,
+                }
+            )
+    if link and orga:
+        contact_info.append({"type": "website", "value": link, "label": orga})
+    return contact_info
+
+
 def transform_row(row: Dict[str, Optional[Any]]) -> Dict[str, Optional[Any]]:
     """Transform each row, detect language, and format for Typesense."""
     if row.get("id") is None:
@@ -95,6 +129,7 @@ def transform_row(row: Dict[str, Optional[Any]]) -> Dict[str, Optional[Any]]:
         "organizer_image_url": row.get("imageOrga"),
         "external_url": row.get("link"),
         "source": row.get("source"),
+        "contact": _transform_contact(row.get("contact"), row.get("orga"), row.get("link")),
         "link_locators": {"volunteering": row.get("id")},
         "topics_skills_embedding_v2": topics_skills_embedding_v2,
         "topics_v2": row.get("topics_v2"),
