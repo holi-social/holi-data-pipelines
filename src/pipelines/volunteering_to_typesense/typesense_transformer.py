@@ -74,34 +74,43 @@ def _transform_contact(
             first_name = contact.get("vorname")
             last_name = contact.get("nachname")
             label = f"{first_name} {last_name}" if first_name and last_name else first_name or last_name
-            if contact.get("email"):
-                contact_info.append({"type": "email", "value": contact.get("email"), "label": label})
-            if contact.get("mobil"):
-                parsed_number = phonenumbers.parse(str(contact.get("mobil")), "DE")
-                contact_info.append(
-                    {
-                        "type": "phone",
-                        "value": phonenumbers.format_number(
-                            parsed_number, phonenumbers.PhoneNumberFormat.INTERNATIONAL
-                        ),
-                        "label": label,
-                    }
-                )
-            if contact.get("telefon"):
-                parsed_number = phonenumbers.parse(str(contact.get("telefon")), "DE")
-                contact_info.append(
-                    {
-                        "type": "phone",
-                        "value": phonenumbers.format_number(
-                            parsed_number, phonenumbers.PhoneNumberFormat.INTERNATIONAL
-                        ),
-                        "label": label,
-                    }
-                )
+            email = contact.get("email")
+            mobile = contact.get("mobil")
+            phone = contact.get("telefon")
+            if email:
+                contact_info.append({"type": "email", "value": email, "label": label})
+            if mobile:
+                try:
+                    parsed_number = phonenumbers.parse(str(mobile), "DE")
+                    contact_info.append(
+                        {
+                            "type": "phone",
+                            "value": phonenumbers.format_number(
+                                parsed_number, phonenumbers.PhoneNumberFormat.INTERNATIONAL
+                            ),
+                            "label": label,
+                        }
+                    )
+                except phonenumbers.NumberParseException as e:
+                    logger.error(f"Error parsing phone number {mobile}: {e}")
+            if phone:
+                try:
+                    parsed_number = phonenumbers.parse(str(phone), "DE")
+                    contact_info.append(
+                        {
+                            "type": "phone",
+                            "value": phonenumbers.format_number(
+                                parsed_number, phonenumbers.PhoneNumberFormat.INTERNATIONAL
+                            ),
+                            "label": label,
+                        }
+                    )
+                except phonenumbers.NumberParseException as e:
+                    logger.error(f"Error parsing phone number {phone}: {e}")
         if link and orga:
             contact_info.append({"type": "website", "value": link, "label": orga})
     except json.JSONDecodeError as e:
-        logger.error(f"Error parsing contact JSON: {contact_str} {e}")
+        logger.error(f"Error parsing contact JSON {contact_str}: {e}")
     return contact_info
 
 

@@ -339,3 +339,33 @@ def test_handles_missing_contact_name(row: RowFixture) -> None:
         {"type": "email", "value": email, "label": None},
         {"type": "website", "value": row["link"], "label": row["orga"]},
     ]
+
+
+def test_ignores_invalid_phone_numbers(row: RowFixture) -> None:
+    first_name = fake.first_name()
+    last_name = fake.last_name()
+    expected_label = f"{first_name} {last_name}"
+    mobile = "+1 910-561-5313"
+    phone = "NOT A PROPER NUMBER"
+    email = fake.email()
+    row["contact"] = json.dumps(
+        {
+            "anrede": fake.prefix(),
+            "email": email,
+            "id": fake.uuid4(),
+            "mobil": mobile,
+            "nachname": last_name,
+            "telefon": phone,
+            "titel": None,
+            "vorname": first_name,
+            "whatsapp": None,
+        }
+    )
+
+    result = transform_row(row)
+
+    assert result["contact"] == [
+        {"type": "email", "value": email, "label": expected_label},
+        {"type": "phone", "value": "+1 910-561-5313", "label": expected_label},
+        {"type": "website", "value": row["link"], "label": row["orga"]},
+    ]
