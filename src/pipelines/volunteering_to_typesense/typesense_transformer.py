@@ -2,6 +2,7 @@ import decimal
 from decimal import Decimal
 from typing import Dict, Optional, Any, List
 import phonenumbers
+import json
 
 from langdetect import detect, LangDetectException
 
@@ -64,35 +65,43 @@ def _decimal_as_str_or_none(row: Dict[str, Optional[Any]], key: str) -> str | No
 
 
 def _transform_contact(
-    contact: Optional[Dict[str, Optional[Any]]], orga: Optional[str], link: Optional[str]
+    contact_str: Optional[str], orga: Optional[str], link: Optional[str]
 ) -> List[Dict[str, Optional[Any]]]:
     contact_info = []
-    if contact:
-        first_name = contact.get("vorname")
-        last_name = contact.get("nachname")
-        label = f"{first_name} {last_name}" if first_name and last_name else first_name or last_name
-        if contact.get("email"):
-            contact_info.append({"type": "email", "value": contact.get("email"), "label": label})
-        if contact.get("mobil"):
-            parsed_number = phonenumbers.parse(str(contact.get("mobil")), "DE")
-            contact_info.append(
-                {
-                    "type": "phone",
-                    "value": phonenumbers.format_number(parsed_number, phonenumbers.PhoneNumberFormat.INTERNATIONAL),
-                    "label": label,
-                }
-            )
-        if contact.get("telefon"):
-            parsed_number = phonenumbers.parse(str(contact.get("telefon")), "DE")
-            contact_info.append(
-                {
-                    "type": "phone",
-                    "value": phonenumbers.format_number(parsed_number, phonenumbers.PhoneNumberFormat.INTERNATIONAL),
-                    "label": label,
-                }
-            )
-    if link and orga:
-        contact_info.append({"type": "website", "value": link, "label": orga})
+    try:
+        contact = json.loads(contact_str) if contact_str else None
+        if contact:
+            first_name = contact.get("vorname")
+            last_name = contact.get("nachname")
+            label = f"{first_name} {last_name}" if first_name and last_name else first_name or last_name
+            if contact.get("email"):
+                contact_info.append({"type": "email", "value": contact.get("email"), "label": label})
+            if contact.get("mobil"):
+                parsed_number = phonenumbers.parse(str(contact.get("mobil")), "DE")
+                contact_info.append(
+                    {
+                        "type": "phone",
+                        "value": phonenumbers.format_number(
+                            parsed_number, phonenumbers.PhoneNumberFormat.INTERNATIONAL
+                        ),
+                        "label": label,
+                    }
+                )
+            if contact.get("telefon"):
+                parsed_number = phonenumbers.parse(str(contact.get("telefon")), "DE")
+                contact_info.append(
+                    {
+                        "type": "phone",
+                        "value": phonenumbers.format_number(
+                            parsed_number, phonenumbers.PhoneNumberFormat.INTERNATIONAL
+                        ),
+                        "label": label,
+                    }
+                )
+        if link and orga:
+            contact_info.append({"type": "website", "value": link, "label": orga})
+    except json.JSONDecodeError as e:
+        logger.error(f"Error parsing contact JSON: {contact_str} {e}")
     return contact_info
 
 
