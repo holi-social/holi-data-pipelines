@@ -176,6 +176,12 @@
       "name": "space_id",
       "optional": true,
       "type": "string"
+    },
+    {
+      "name": "contact",
+      "type": "object[]",
+      "optional": true,
+      "index": false
     }
   ],
   "name": "holi_search_production"
