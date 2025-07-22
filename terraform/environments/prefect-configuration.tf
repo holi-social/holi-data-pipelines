@@ -208,6 +208,16 @@ resource "prefect_variable" "bigquery_okuna_dataset" {
   }
 }
 
+resource "prefect_variable" "google_cloud_project_id" {
+  name  = "google_cloud_project_id"
+  value = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
+}
+
+resource "prefect_variable" "google_cloud_pubsub_external_data_topic_name" {
+  name  = "google_cloud_pubsub_external_data_topic_name"
+  value = local.environment == "production" ? data.terraform_remote_state.holi_data_pipeline_common_state.outputs.google_pubsub_topic_external_data_production_name : data.terraform_remote_state.holi_data_pipeline_common_state.outputs.google_pubsub_topic_external_data_staging_name
+}
+
 # create one: create the GCP secret in the ui console
 # create a block that references it.
 resource "prefect_block" "typesense_admin_api_key" {

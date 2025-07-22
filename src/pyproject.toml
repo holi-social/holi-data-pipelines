@@ -1,3 +1,5 @@
+tool.uv.package = false
+
 [project]
 name = "src"
 version = "1.0.0"
@@ -17,6 +19,8 @@ dependencies = [
     "opentelemetry-exporter-gcp-monitoring==1.9.0a0",
     "whenever==0.8.6",
     "psycopg[binary]>=3.2.9",
+    "google-cloud-pubsub>=2.30.0",
+    "phonenumbers>=9.0.10",
 ]
 
 [dependency-groups]
@@ -30,4 +34,3 @@ dev = [
     "types-pyyaml==6.0.12.20250516",
     "types-requests==2.32.4.20250611",
 ]
-

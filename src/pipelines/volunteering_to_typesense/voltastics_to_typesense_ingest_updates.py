@@ -15,6 +15,7 @@ from src.common.monitoring.flow import (
     on_completion_hooks,
 )
 from src.common.monitoring.metrics import report_number_of_processed_entities
+from src.common.pubsub_client import PubSubClient
 from src.common.typesense import extract_collection_name_from_schema
 from src.common.typesense_client import TypesenseClient, TypesenseClientConfig
 from src.pipelines.bigquery import volunteering_voltastics_classified_enriched_partitioned
@@ -40,10 +41,12 @@ def voltastics_to_typesense_ingest_updates_flow() -> State:
     Orchestrates the ETL pipeline to move volunteering data from BigQuery to Typesense.
     """
     typesense_client = TypesenseClient(TypesenseClientConfig.from_env())
+    pubsub_client = PubSubClient()
     alias_name = extract_collection_name_from_schema(schema_path=schema_path)
     active_collection = typesense_client.get_active_collection_name(alias_name)
     task_result = voltastics_to_typesense_ingest_updates(
         typesense_client=typesense_client,
+        pubsub_client=pubsub_client,
         typesense_collection_name=active_collection,
         last_complete_ingestion_timestamp=load_last_complete_ingestion_timestamp(),
     )
@@ -60,6 +63,7 @@ def voltastics_to_typesense_ingest_updates_flow() -> State:
 @task(cache_policy=NONE)  # type: ignore[arg-type]
 def voltastics_to_typesense_ingest_updates(
     typesense_client: TypesenseClient,
+    pubsub_client: PubSubClient,
     typesense_collection_name: str,
     last_complete_ingestion_timestamp: datetime | None,
 ) -> State | int:
@@ -81,6 +85,7 @@ def voltastics_to_typesense_ingest_updates(
         last_complete_ingestion_timestamp=last_complete_ingestion_timestamp,
         latest_partition_timestamp=latest_partition_timestamp,
         typesense_client=typesense_client,
+        pubsub_client=pubsub_client,
         typesense_collection_name=typesense_collection_name,
     )
 

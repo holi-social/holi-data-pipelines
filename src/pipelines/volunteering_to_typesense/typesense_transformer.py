@@ -1,6 +1,9 @@
 import decimal
 from decimal import Decimal
 from typing import Dict, Optional, Any, List
+import phonenumbers
+import json
+import re
 
 from langdetect import detect, LangDetectException
 
@@ -62,6 +65,53 @@ def _decimal_as_str_or_none(row: Dict[str, Optional[Any]], key: str) -> str | No
         return None
 
 
+def _extract_phonenumber(number: str) -> Optional[str]:
+    try:
+        parsed_number = phonenumbers.parse(number, "DE")
+        return phonenumbers.format_number(parsed_number, phonenumbers.PhoneNumberFormat.INTERNATIONAL)
+    except phonenumbers.NumberParseException as e:
+        any_number = re.search(r"\d+", number)
+        message = "falling back to original string" if any_number else "omitting"
+        logger.warn(f"Failed to parse phone number {number}: {e}, {message}")
+        if any_number:
+            return number
+    return None
+
+
+def _transform_contact(
+    contact_str: Optional[str], orga: Optional[str], link: Optional[str]
+) -> List[Dict[str, Optional[Any]]]:
+    contact_info = []
+    try:
+        contact = json.loads(contact_str) if contact_str else None
+        if contact:
+            first_name = contact.get("vorname")
+            last_name = contact.get("nachname")
+            contact_person = f"{first_name} {last_name}" if first_name and last_name else first_name or last_name
+            email = contact.get("email")
+            mobile = contact.get("mobil")
+            phone = contact.get("telefon")
+            if contact_person:
+                contact_info.append({"type": "person", "value": contact_person})
+            if email:
+                contact_info.append({"type": "email", "value": email})
+            if mobile:
+                parsed_number = _extract_phonenumber(str(mobile))
+                if parsed_number:
+                    contact_info.append({"type": "phone", "value": parsed_number})
+            if phone:
+                parsed_number = _extract_phonenumber(str(phone))
+                if parsed_number:
+                    contact_info.append({"type": "phone", "value": parsed_number})
+        if link and orga:
+            contact_info.append({"type": "website", "value": link, "label": orga})
+    except json.JSONDecodeError as e:
+        logger.error(f"Error parsing contact JSON {contact_str}: {e}")
+    except TypeError as e:
+        logger.error(f"Error parsing contact JSON {contact_str}: {e}")
+    return contact_info
+
+
 def transform_row(row: Dict[str, Optional[Any]]) -> Dict[str, Optional[Any]]:
     """Transform each row, detect language, and format for Typesense."""
     if row.get("id") is None:
@@ -95,6 +145,7 @@ def transform_row(row: Dict[str, Optional[Any]]) -> Dict[str, Optional[Any]]:
         "organizer_image_url": row.get("imageOrga"),
         "external_url": row.get("link"),
         "source": row.get("source"),
+        "contact": _transform_contact(row.get("contact"), row.get("orga"), row.get("link")),
         "link_locators": {"volunteering": row.get("id")},
         "topics_skills_embedding_v2": topics_skills_embedding_v2,
         "topics_v2": row.get("topics_v2"),

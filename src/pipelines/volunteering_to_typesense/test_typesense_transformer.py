@@ -66,6 +66,7 @@ def _row() -> RowFixture:
         ),
         "commitment_duration": _random([None, *DURATIONS_CONSTANTS_TO_HUMAN_READABLE]),
         "commitment_duration_ai_reasoning": _random([None, "I hallucinate reasons"]),
+        "contact": None,
     }
 
 
@@ -102,6 +103,7 @@ def test_german_all_fields(row: RowFixture) -> None:
     assert result["commitment_duration"] == row["commitment_duration"]
     assert result["commitment_duration_ai_derived"] is True
     assert result["commitment_duration_ai_reasoning"] == row["commitment_duration_ai_reasoning"]
+    assert result["contact"] == [{"type": "website", "value": row["link"], "label": row["orga"]}]
 
 
 def test_english_title_and_description(row: RowFixture) -> None:
@@ -232,3 +234,172 @@ def test_falls_back_to_german_if_language_is_other(row: RowFixture) -> None:
     result = transform_row(row)
 
     assert result["description_de"] == row["description"]
+
+
+def test_full_contact_information(row: RowFixture) -> None:
+    first_name = fake.first_name()
+    last_name = fake.last_name()
+    contact_person = f"{first_name} {last_name}"
+    mobile = "+1 910-561-5313"
+    phone = "(319)748-9241"
+    email = fake.email()
+    row["contact"] = json.dumps(
+        {
+            "anrede": fake.prefix(),
+            "email": email,
+            "id": fake.uuid4(),
+            "mobil": mobile,
+            "nachname": last_name,
+            "telefon": phone,
+            "titel": None,
+            "vorname": first_name,
+            "whatsapp": None,
+        }
+    )
+
+    result = transform_row(row)
+
+    assert result["contact"] == [
+        {"type": "person", "value": contact_person},
+        {"type": "email", "value": email},
+        {"type": "phone", "value": "+1 910-561-5313"},
+        {"type": "phone", "value": "+49 31974 89241"},
+        {"type": "website", "value": row["link"], "label": row["orga"]},
+    ]
+
+
+def test_falls_back_to_first_name_for_contact(row: RowFixture) -> None:
+    first_name = fake.first_name()
+    email = fake.email()
+    row["contact"] = json.dumps(
+        {
+            "anrede": None,
+            "email": email,
+            "id": fake.uuid4(),
+            "mobil": None,
+            "nachname": None,
+            "telefon": None,
+            "titel": None,
+            "vorname": first_name,
+            "whatsapp": None,
+        }
+    )
+
+    result = transform_row(row)
+
+    assert result["contact"] == [
+        {"type": "person", "value": first_name},
+        {"type": "email", "value": email},
+        {"type": "website", "value": row["link"], "label": row["orga"]},
+    ]
+
+
+def test_falls_back_to_last_name_for_contact(row: RowFixture) -> None:
+    last_name = fake.last_name()
+    email = fake.email()
+    row["contact"] = json.dumps(
+        {
+            "anrede": None,
+            "email": email,
+            "id": fake.uuid4(),
+            "mobil": None,
+            "nachname": last_name,
+            "telefon": None,
+            "titel": None,
+            "vorname": None,
+            "whatsapp": None,
+        }
+    )
+
+    result = transform_row(row)
+
+    assert result["contact"] == [
+        {"type": "person", "value": last_name},
+        {"type": "email", "value": email},
+        {"type": "website", "value": row["link"], "label": row["orga"]},
+    ]
+
+
+def test_handles_missing_contact_name(row: RowFixture) -> None:
+    email = fake.email()
+    row["contact"] = json.dumps(
+        {
+            "anrede": None,
+            "email": email,
+            "id": fake.uuid4(),
+            "mobil": None,
+            "nachname": None,
+            "telefon": None,
+            "titel": None,
+            "vorname": None,
+            "whatsapp": None,
+        }
+    )
+
+    result = transform_row(row)
+
+    assert result["contact"] == [
+        {"type": "email", "value": email},
+        {"type": "website", "value": row["link"], "label": row["orga"]},
+    ]
+
+
+def test_ignores_invalid_phone_numbers(row: RowFixture) -> None:
+    first_name = fake.first_name()
+    last_name = fake.last_name()
+    contact_person = f"{first_name} {last_name}"
+    mobile = "+1 910-561-5313"
+    phone = "NOT A PROPER NUMBER"
+    email = fake.email()
+    row["contact"] = json.dumps(
+        {
+            "anrede": fake.prefix(),
+            "email": email,
+            "id": fake.uuid4(),
+            "mobil": mobile,
+            "nachname": last_name,
+            "telefon": phone,
+            "titel": None,
+            "vorname": first_name,
+            "whatsapp": None,
+        }
+    )
+
+    result = transform_row(row)
+
+    assert result["contact"] == [
+        {"type": "person", "value": contact_person},
+        {"type": "email", "value": email},
+        {"type": "phone", "value": "+1 910-561-5313"},
+        {"type": "website", "value": row["link"], "label": row["orga"]},
+    ]
+
+
+def test_keeps_phonenumbers_with_remarks(row: RowFixture) -> None:
+    first_name = fake.first_name()
+    last_name = fake.last_name()
+    contact_person = f"{first_name} {last_name}"
+    phone = "0123/1234567 (Di+Mi von 11-12 Uhr)"
+    email = fake.email()
+    row["contact"] = json.dumps(
+        {
+            "anrede": fake.prefix(),
+            "email": email,
+            "id": fake.uuid4(),
+            "mobil": None,
+            "nachname": last_name,
+            "telefon": phone,
+            "titel": None,
+            "vorname": first_name,
+            "whatsapp": None,
+        }
+    )
+
+    result = transform_row(row)
+
+    assert result["contact"] == [
+        {"type": "person", "value": contact_person},
+        {"type": "email", "value": email},
+        {"type": "phone", "value": phone},
+        {"type": "website", "value": row["link"], "label": row["orga"]},
+    ]

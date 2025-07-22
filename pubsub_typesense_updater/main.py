@@ -208,4 +208,8 @@ def process_message(event: CloudEvent) -> None:
     ts_client = TypesenseClient()
     if isinstance(logger, EventProcessorLogger):
         logger.cloud_event = event
-    process_event(ts_client, event)
+    try:
+        process_event(ts_client, event)
+    except Exception as e:
+        logger.error(f"Error processing event {event}: {e}")
+        raise e

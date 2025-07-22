@@ -6,6 +6,7 @@ from urllib.parse import quote
 from prefect import task, State
 from prefect.states import Failed, Completed
 from prefect.variables import Variable
+from prefect.cache_policies import NONE
 
 from src.common.extractors.bq_extractor import (
     extract_upserted_records_in_partitions,
@@ -14,19 +15,14 @@ from src.common.extractors.bq_extractor import (
 from src.common.loaders.typesense_loader import upsert_typesense_documents
 from src.common.logging.PipelineLogger import PipelineLogger
 from src.common.typesense_client import TypesenseClient
+from src.common.pubsub_client import PubSubClient
 from src.common.variables import variable_value
 from src.pipelines.constants import LAST_INGESTION_TIMESTAMP_KEY, VOLUNTEERING_STATE_VARIABLE
+from src.pipelines.volunteering_to_typesense.typesense_doc_id import TypesenseDocId
+from src.pipelines.volunteering_to_typesense.publish_typesense_changes import publish_volunteering_deletion
 from src.pipelines.volunteering_to_typesense.typesense_transformer import transform_row
 
 logger = PipelineLogger(__name__)
-
-
-@dataclass
-class TypesenseDocId:
-    id: str
-
-    def __str__(self) -> str:
-        return f"volunteering_{self.id}"
 
 
 @dataclass
@@ -151,12 +147,13 @@ def store_last_complete_ingestion_timestamp(timestamp: datetime) -> None:
     Variable.set(VOLUNTEERING_STATE_VARIABLE, state, overwrite=True)
 
 
-@task
+@task(cache_policy=NONE)
 def diff_ingest(
     table_name: str,
     last_complete_ingestion_timestamp: Optional[datetime],
     latest_partition_timestamp: date,
     typesense_client: TypesenseClient,
+    pubsub_client: PubSubClient,
     typesense_collection_name: str,
 ) -> Tuple[bool, bool, int]:
     """
@@ -197,6 +194,9 @@ def diff_ingest(
         )
         if deletion_succeeded:
             processed_items_count += len(document_ids_to_delete)
+
+            if not publish_volunteering_deletion(pubsub_client, document_ids_to_delete):
+                logger.warning("Failed to publish deletion to Pubsub, but Typesense deletion succeeded")
 
     # Step 4: Upsert documents into Typesense
     # Please note that deletion must come first. If a record happens to be in both new_or_updated and deleted, this

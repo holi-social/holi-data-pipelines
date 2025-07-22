@@ -177,6 +177,12 @@
       "name": "space_id",
       "type": "string",
       "optional": true
+    },
+    {
+      "name": "contact",
+      "type": "object[]",
+      "optional": true,
+      "index": false
     }
   ]
 }

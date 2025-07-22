@@ -755,6 +755,26 @@ wheels = [
 ]
 
 [[package]]
+name = "google-cloud-pubsub"
+version = "2.30.0"
+source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
+dependencies = [
+    { name = "google-api-core", extra = ["grpc"] },
+    { name = "google-auth" },
+    { name = "grpc-google-iam-v1" },
+    { name = "grpcio" },
+    { name = "grpcio-status" },
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-sdk" },
+    { name = "proto-plus" },
+    { name = "protobuf" },
+]
+sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/google-cloud-pubsub/google_cloud_pubsub-2.30.0.tar.gz", hash = "sha256:26975ed728d2209479f4fb2667e3b3bd70de7605abadf4b301c651c39ed83042" }
+wheels = [
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/google-cloud-pubsub/google_cloud_pubsub-2.30.0-py3-none-any.whl", hash = "sha256:bd7adabc1b79ba2220529401e34dfd72bfdbdad9132a697b4200012a49281629" },
+]
+
+[[package]]
 name = "google-cloud-resource-manager"
 version = "1.14.2"
 source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
@@ -1508,6 +1528,15 @@ source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-rem
 sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/pathspec/pathspec-0.12.1.tar.gz", hash = "sha256:a482d51503a1ab33b1c67a6c3813a26953dbdc71c31dacaef9a838c4e29f5712" }
 wheels = [
     { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/pathspec/pathspec-0.12.1-py3-none-any.whl", hash = "sha256:a0d503e138a4c123b27490a4f7beda6a01c6f288df0e4a8b79c7eb0dc7b4cc08" },
+]
+
+[[package]]
+name = "phonenumbers"
+version = "9.0.10"
+source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
+sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/phonenumbers/phonenumbers-9.0.10.tar.gz", hash = "sha256:c2d15a6a9d0534b14a7764f51246ada99563e263f65b80b0251d1a760ac4a1ba" }
+wheels = [
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/phonenumbers/phonenumbers-9.0.10-py2.py3-none-any.whl", hash = "sha256:13b12d269be1f2b363c9bc2868656a7e2e8b50f1a1cef629c75005da6c374c6b" },
 ]
 
 [[package]]
@@ -2383,9 +2412,11 @@ version = "1.0.0"
 source = { virtual = "src" }
 dependencies = [
     { name = "codetiming" },
+    { name = "google-cloud-pubsub" },
     { name = "langdetect" },
     { name = "opentelemetry-exporter-gcp-monitoring" },
     { name = "opentelemetry-resourcedetector-gcp" },
+    { name = "phonenumbers" },
     { name = "prefect", extra = ["gcp"] },
     { name = "prefect-gcp", extra = ["all-extras"] },
     { name = "psycopg", extra = ["binary"] },
@@ -2414,9 +2445,11 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "codetiming", specifier = "==1.4.0" },
+    { name = "google-cloud-pubsub", specifier = ">=2.30.0" },
     { name = "langdetect", specifier = "==1.0.9" },
     { name = "opentelemetry-exporter-gcp-monitoring", specifier = "==1.9.0a0" },
     { name = "opentelemetry-resourcedetector-gcp", specifier = "==1.9.0a0" },
+    { name = "phonenumbers", specifier = ">=9.0.10" },
     { name = "prefect", extras = ["gcp"], specifier = "==3.4.0" },
     { name = "prefect-gcp", extras = ["all-extras"], specifier = "==0.6.7" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2.9" },
