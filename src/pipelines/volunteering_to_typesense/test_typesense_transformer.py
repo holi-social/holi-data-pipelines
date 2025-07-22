@@ -369,3 +369,32 @@ def test_ignores_invalid_phone_numbers(row: RowFixture) -> None:
         {"type": "phone", "value": "+1 910-561-5313", "label": expected_label},
         {"type": "website", "value": row["link"], "label": row["orga"]},
     ]
+
+
+def test_keeps_phonenumbers_with_remarks(row: RowFixture) -> None:
+    first_name = fake.first_name()
+    last_name = fake.last_name()
+    expected_label = f"{first_name} {last_name}"
+    phone = "0123/1234567 (Di+Mi von 11-12 Uhr)"
+    email = fake.email()
+    row["contact"] = json.dumps(
+        {
+            "anrede": fake.prefix(),
+            "email": email,
+            "id": fake.uuid4(),
+            "mobil": None,
+            "nachname": last_name,
+            "telefon": phone,
+            "titel": None,
+            "vorname": first_name,
+            "whatsapp": None,
+        }
+    )
+
+    result = transform_row(row)
+
+    assert result["contact"] == [
+        {"type": "email", "value": email, "label": expected_label},
+        {"type": "phone", "value": phone, "label": expected_label},
+        {"type": "website", "value": row["link"], "label": row["orga"]},
+    ]

@@ -3,6 +3,7 @@ from decimal import Decimal
 from typing import Dict, Optional, Any, List
 import phonenumbers
 import json
+import re
 
 from langdetect import detect, LangDetectException
 
@@ -64,6 +65,19 @@ def _decimal_as_str_or_none(row: Dict[str, Optional[Any]], key: str) -> str | No
         return None
 
 
+def _extract_phonenumber(number: str) -> Optional[str]:
+    try:
+        parsed_number = phonenumbers.parse(number, "DE")
+        return phonenumbers.format_number(parsed_number, phonenumbers.PhoneNumberFormat.INTERNATIONAL)
+    except phonenumbers.NumberParseException as e:
+        any_number = re.search(r"\d+", number)
+        message = "falling back to original string" if any_number else "omitting"
+        logger.warn(f"Failed to parse phone number {number}: {e}, {message}")
+        if any_number:
+            return number
+    return None
+
+
 def _transform_contact(
     contact_str: Optional[str], orga: Optional[str], link: Optional[str]
 ) -> List[Dict[str, Optional[Any]]]:
@@ -80,33 +94,25 @@ def _transform_contact(
             if email:
                 contact_info.append({"type": "email", "value": email, "label": label})
             if mobile:
-                try:
-                    parsed_number = phonenumbers.parse(str(mobile), "DE")
+                parsed_number = _extract_phonenumber(str(mobile))
+                if parsed_number:
                     contact_info.append(
                         {
                             "type": "phone",
-                            "value": phonenumbers.format_number(
-                                parsed_number, phonenumbers.PhoneNumberFormat.INTERNATIONAL
-                            ),
+                            "value": parsed_number,
                             "label": label,
                         }
                     )
-                except phonenumbers.NumberParseException as e:
-                    logger.error(f"Error parsing phone number {mobile}: {e}")
             if phone:
-                try:
-                    parsed_number = phonenumbers.parse(str(phone), "DE")
+                parsed_number = _extract_phonenumber(str(phone))
+                if parsed_number:
                     contact_info.append(
                         {
                             "type": "phone",
-                            "value": phonenumbers.format_number(
-                                parsed_number, phonenumbers.PhoneNumberFormat.INTERNATIONAL
-                            ),
+                            "value": parsed_number,
                             "label": label,
                         }
                     )
-                except phonenumbers.NumberParseException as e:
-                    logger.error(f"Error parsing phone number {phone}: {e}")
         if link and orga:
             contact_info.append({"type": "website", "value": link, "label": orga})
     except json.JSONDecodeError as e:
