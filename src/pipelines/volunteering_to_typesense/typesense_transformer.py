@@ -87,35 +87,27 @@ def _transform_contact(
         if contact:
             first_name = contact.get("vorname")
             last_name = contact.get("nachname")
-            label = f"{first_name} {last_name}" if first_name and last_name else first_name or last_name
+            contact_person = f"{first_name} {last_name}" if first_name and last_name else first_name or last_name
             email = contact.get("email")
             mobile = contact.get("mobil")
             phone = contact.get("telefon")
+            if contact_person:
+                contact_info.append({"type": "person", "value": contact_person})
             if email:
-                contact_info.append({"type": "email", "value": email, "label": label})
+                contact_info.append({"type": "email", "value": email})
             if mobile:
                 parsed_number = _extract_phonenumber(str(mobile))
                 if parsed_number:
-                    contact_info.append(
-                        {
-                            "type": "phone",
-                            "value": parsed_number,
-                            "label": label,
-                        }
-                    )
+                    contact_info.append({"type": "phone", "value": parsed_number})
             if phone:
                 parsed_number = _extract_phonenumber(str(phone))
                 if parsed_number:
-                    contact_info.append(
-                        {
-                            "type": "phone",
-                            "value": parsed_number,
-                            "label": label,
-                        }
-                    )
+                    contact_info.append({"type": "phone", "value": parsed_number})
         if link and orga:
             contact_info.append({"type": "website", "value": link, "label": orga})
     except json.JSONDecodeError as e:
+        logger.error(f"Error parsing contact JSON {contact_str}: {e}")
+    except TypeError as e:
         logger.error(f"Error parsing contact JSON {contact_str}: {e}")
     return contact_info
 

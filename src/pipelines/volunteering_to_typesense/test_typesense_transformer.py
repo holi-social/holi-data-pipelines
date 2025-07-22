@@ -239,7 +239,7 @@ def test_falls_back_to_german_if_language_is_other(row: RowFixture) -> None:
 def test_full_contact_information(row: RowFixture) -> None:
     first_name = fake.first_name()
     last_name = fake.last_name()
-    expected_label = f"{first_name} {last_name}"
+    contact_person = f"{first_name} {last_name}"
     mobile = "+1 910-561-5313"
     phone = "(319)748-9241"
     email = fake.email()
@@ -260,9 +260,10 @@ def test_full_contact_information(row: RowFixture) -> None:
     result = transform_row(row)
 
     assert result["contact"] == [
-        {"type": "email", "value": email, "label": expected_label},
-        {"type": "phone", "value": "+1 910-561-5313", "label": expected_label},
-        {"type": "phone", "value": "+49 31974 89241", "label": expected_label},
+        {"type": "person", "value": contact_person},
+        {"type": "email", "value": email},
+        {"type": "phone", "value": "+1 910-561-5313"},
+        {"type": "phone", "value": "+49 31974 89241"},
         {"type": "website", "value": row["link"], "label": row["orga"]},
     ]
 
@@ -287,7 +288,8 @@ def test_falls_back_to_first_name_for_contact(row: RowFixture) -> None:
     result = transform_row(row)
 
     assert result["contact"] == [
-        {"type": "email", "value": email, "label": first_name},
+        {"type": "person", "value": first_name},
+        {"type": "email", "value": email},
         {"type": "website", "value": row["link"], "label": row["orga"]},
     ]
 
@@ -312,7 +314,8 @@ def test_falls_back_to_last_name_for_contact(row: RowFixture) -> None:
     result = transform_row(row)
 
     assert result["contact"] == [
-        {"type": "email", "value": email, "label": last_name},
+        {"type": "person", "value": last_name},
+        {"type": "email", "value": email},
         {"type": "website", "value": row["link"], "label": row["orga"]},
     ]
 
@@ -336,7 +339,7 @@ def test_handles_missing_contact_name(row: RowFixture) -> None:
     result = transform_row(row)
 
     assert result["contact"] == [
-        {"type": "email", "value": email, "label": None},
+        {"type": "email", "value": email},
         {"type": "website", "value": row["link"], "label": row["orga"]},
     ]
 
@@ -344,7 +347,7 @@ def test_handles_missing_contact_name(row: RowFixture) -> None:
 def test_ignores_invalid_phone_numbers(row: RowFixture) -> None:
     first_name = fake.first_name()
     last_name = fake.last_name()
-    expected_label = f"{first_name} {last_name}"
+    contact_person = f"{first_name} {last_name}"
     mobile = "+1 910-561-5313"
     phone = "NOT A PROPER NUMBER"
     email = fake.email()
@@ -365,8 +368,9 @@ def test_ignores_invalid_phone_numbers(row: RowFixture) -> None:
     result = transform_row(row)
 
     assert result["contact"] == [
-        {"type": "email", "value": email, "label": expected_label},
-        {"type": "phone", "value": "+1 910-561-5313", "label": expected_label},
+        {"type": "person", "value": contact_person},
+        {"type": "email", "value": email},
+        {"type": "phone", "value": "+1 910-561-5313"},
         {"type": "website", "value": row["link"], "label": row["orga"]},
     ]
 
@@ -374,7 +378,7 @@ def test_ignores_invalid_phone_numbers(row: RowFixture) -> None:
 def test_keeps_phonenumbers_with_remarks(row: RowFixture) -> None:
     first_name = fake.first_name()
     last_name = fake.last_name()
-    expected_label = f"{first_name} {last_name}"
+    contact_person = f"{first_name} {last_name}"
     phone = "0123/1234567 (Di+Mi von 11-12 Uhr)"
     email = fake.email()
     row["contact"] = json.dumps(
@@ -394,7 +398,8 @@ def test_keeps_phonenumbers_with_remarks(row: RowFixture) -> None:
     result = transform_row(row)
 
     assert result["contact"] == [
-        {"type": "email", "value": email, "label": expected_label},
-        {"type": "phone", "value": phone, "label": expected_label},
+        {"type": "person", "value": contact_person},
+        {"type": "email", "value": email},
+        {"type": "phone", "value": phone},
         {"type": "website", "value": row["link"], "label": row["orga"]},
     ]
