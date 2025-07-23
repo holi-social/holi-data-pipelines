@@ -490,7 +490,7 @@ resource "google_bigquery_table" "volunteering_aktion_mensch_classified_enriched
         
         am.kontaktDurchfuehrendeOrganisation as contact,
 
-        CONCAT(${local.aktion_mensch_base_url}, am.id) AS link,
+        CONCAT("${local.aktion_mensch_base_url}", am.id) AS link,
 
         ARRAY(
           SELECT JSON_EXTRACT_SCALAR(attr, "$.name") 
