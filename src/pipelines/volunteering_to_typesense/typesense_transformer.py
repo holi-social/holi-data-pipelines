@@ -83,7 +83,8 @@ def _transform_contact(
 ) -> List[Dict[str, Optional[Any]]]:
     contact_info = []
     try:
-        contact = json.loads(contact_str) if contact_str else None
+        # TODO: contact is of type str during full ingest, but dict during update ingest?
+        contact = json.loads(contact_str) if contact_str and isinstance(contact_str, str) else contact_str
         if contact:
             first_name = contact.get("vorname")
             last_name = contact.get("nachname")
