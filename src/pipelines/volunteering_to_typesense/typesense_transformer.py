@@ -104,8 +104,8 @@ def _transform_contact(
                 parsed_number = _extract_phonenumber(str(phone))
                 if parsed_number:
                     contact_info.append({"type": "phone", "value": parsed_number})
-        if link and orga:
-            contact_info.append({"type": "website", "value": link, "label": orga})
+            if link and orga:
+                contact_info.append({"type": "website", "value": link, "label": orga})
     except json.JSONDecodeError as e:
         logger.error(f"Error parsing contact JSON {contact_str}: {e}")
     except TypeError as e:
@@ -147,7 +147,7 @@ def transform_row(row: Dict[str, Optional[Any]]) -> Dict[str, Optional[Any]]:
         "organizer_url": row.get("linkOrga"),
         "external_url": row.get("link"),
         "source": row.get("source"),
-        "contact": _transform_contact(row.get("contact"), row.get("orga"), row.get("link")),
+        "contact": _transform_contact(row.get("contact"), row.get("orga"), row.get("linkOrga")),
         "link_locators": {"volunteering": row.get("id")},
         "topics_skills_embedding_v2": topics_skills_embedding_v2,
         "topics_v2": row.get("topics_v2"),
