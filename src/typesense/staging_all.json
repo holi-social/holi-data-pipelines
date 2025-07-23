@@ -136,6 +136,12 @@
       "index": false
     },
     {
+      "name": "organizer_url",
+      "type": "string",
+      "optional": true,
+      "index": false
+    },
+    {
       "name": "external_url",
       "type": "string",
       "optional": true,

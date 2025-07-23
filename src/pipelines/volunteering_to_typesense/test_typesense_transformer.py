@@ -37,6 +37,7 @@ def _row() -> RowFixture:
         "link": fake.url(),
         "orga": fake.company(),
         "imageOrga": fake.image_url(),
+        "linkOrga": fake.image_url(),
         "source": fake.company(),
         "topics_skills_embedding_v2": [
             fake.pyfloat(min_value=-1, max_value=1) for i in range(TOPICS_SKILLS_EMBEDDING_V2_LENGTH)
@@ -93,6 +94,7 @@ def test_german_all_fields(row: RowFixture) -> None:
     assert result["source"] == row["source"]
     assert result["organizer_name"] == row["orga"]
     assert result["organizer_image_url"] == row["imageOrga"]
+    assert result["organizer_url"] == row["linkOrga"]
 
     assert result["topics_skills_embedding_v2"] == row["topics_skills_embedding_v2"]
     assert result["topics_v2"] == row["topics_v2"]

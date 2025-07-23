@@ -144,6 +144,7 @@ def transform_row(row: Dict[str, Optional[Any]]) -> Dict[str, Optional[Any]]:
         "image_url": row.get("image"),
         "organizer_name": row.get("orga"),
         "organizer_image_url": row.get("imageOrga"),
+        "organizer_url": row.get("linkOrga"),
         "external_url": row.get("link"),
         "source": row.get("source"),
         "contact": _transform_contact(row.get("contact"), row.get("orga"), row.get("link")),

@@ -135,6 +135,12 @@
       "type": "string"
     },
     {
+      "name": "organizer_url",
+      "type": "string",
+      "optional": true,
+      "index": false
+    },
+    {
       "index": false,
       "name": "external_url",
       "optional": true,
