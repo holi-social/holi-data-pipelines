@@ -8,6 +8,8 @@ locals {
   datapool = "${local.default_project}.${local.dataset_id_datapool}"
 
   okuna_dataset = "${local.default_project}.okuna_${local.environment_name}_public"
+
+  aktion_mensch_base_url = "https://www.aktion-mensch.de/was-du-tun-kannst/ehrenamt/engagement-plattform#/lokale-angebote/"
 }
 
 resource "google_bigquery_table" "location_cache" {
@@ -324,6 +326,7 @@ resource "google_bigquery_table" "volunteering_voltastics_classified_enriched_pa
         COALESCE(raw_deduped.latitude, location_cache.latitude) AS latitude,
         COALESCE(raw_deduped.longitude, location_cache.longitude) AS longitude,
         NULL as contact,
+        NULL as linkOrga,
         classifications.topics_skills_embedding_v2 AS topics_skills_embedding_v2,
         classifications.topics_v2 AS topics_v2,
         classifications.skills_v2 AS skills_v2,
@@ -483,9 +486,11 @@ resource "google_bigquery_table" "volunteering_aktion_mensch_classified_enriched
         ) AS image,
         NULL AS imageOrga,
         
-        JSON_EXTRACT_SCALAR(am.durchfuehrendeOrganisation, "$.homepage") AS link,
+        JSON_EXTRACT_SCALAR(am.durchfuehrendeOrganisation, "$.homepage") AS linkOrga,
         
         am.kontaktDurchfuehrendeOrganisation as contact,
+
+        CONCAT("${local.aktion_mensch_base_url}", am.id) AS link,
 
         ARRAY(
           SELECT JSON_EXTRACT_SCALAR(attr, "$.name") 

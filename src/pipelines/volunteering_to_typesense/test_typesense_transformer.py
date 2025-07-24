@@ -37,6 +37,7 @@ def _row() -> RowFixture:
         "link": fake.url(),
         "orga": fake.company(),
         "imageOrga": fake.image_url(),
+        "linkOrga": fake.image_url(),
         "source": fake.company(),
         "topics_skills_embedding_v2": [
             fake.pyfloat(min_value=-1, max_value=1) for i in range(TOPICS_SKILLS_EMBEDDING_V2_LENGTH)
@@ -93,6 +94,7 @@ def test_german_all_fields(row: RowFixture) -> None:
     assert result["source"] == row["source"]
     assert result["organizer_name"] == row["orga"]
     assert result["organizer_image_url"] == row["imageOrga"]
+    assert result["organizer_url"] == row["linkOrga"]
 
     assert result["topics_skills_embedding_v2"] == row["topics_skills_embedding_v2"]
     assert result["topics_v2"] == row["topics_v2"]
@@ -103,7 +105,7 @@ def test_german_all_fields(row: RowFixture) -> None:
     assert result["commitment_duration"] == row["commitment_duration"]
     assert result["commitment_duration_ai_derived"] is True
     assert result["commitment_duration_ai_reasoning"] == row["commitment_duration_ai_reasoning"]
-    assert result["contact"] == [{"type": "website", "value": row["link"], "label": row["orga"]}]
+    assert result["contact"] == []
 
 
 def test_english_title_and_description(row: RowFixture) -> None:
@@ -264,7 +266,7 @@ def test_full_contact_information(row: RowFixture) -> None:
         {"type": "email", "value": email},
         {"type": "phone", "value": "+1 910-561-5313"},
         {"type": "phone", "value": "+49 31974 89241"},
-        {"type": "website", "value": row["link"], "label": row["orga"]},
+        {"type": "website", "value": row["linkOrga"], "label": row["orga"]},
     ]
 
 
@@ -294,7 +296,7 @@ def test_full_contact_information_dict(row: RowFixture) -> None:
         {"type": "email", "value": email},
         {"type": "phone", "value": "+1 910-561-5313"},
         {"type": "phone", "value": "+49 31974 89241"},
-        {"type": "website", "value": row["link"], "label": row["orga"]},
+        {"type": "website", "value": row["linkOrga"], "label": row["orga"]},
     ]
 
 
@@ -320,7 +322,7 @@ def test_falls_back_to_first_name_for_contact(row: RowFixture) -> None:
     assert result["contact"] == [
         {"type": "person", "value": first_name},
         {"type": "email", "value": email},
-        {"type": "website", "value": row["link"], "label": row["orga"]},
+        {"type": "website", "value": row["linkOrga"], "label": row["orga"]},
     ]
 
 
@@ -346,7 +348,7 @@ def test_falls_back_to_last_name_for_contact(row: RowFixture) -> None:
     assert result["contact"] == [
         {"type": "person", "value": last_name},
         {"type": "email", "value": email},
-        {"type": "website", "value": row["link"], "label": row["orga"]},
+        {"type": "website", "value": row["linkOrga"], "label": row["orga"]},
     ]
 
 
@@ -370,7 +372,7 @@ def test_handles_missing_contact_name(row: RowFixture) -> None:
 
     assert result["contact"] == [
         {"type": "email", "value": email},
-        {"type": "website", "value": row["link"], "label": row["orga"]},
+        {"type": "website", "value": row["linkOrga"], "label": row["orga"]},
     ]
 
 
@@ -401,7 +403,7 @@ def test_ignores_invalid_phone_numbers(row: RowFixture) -> None:
         {"type": "person", "value": contact_person},
         {"type": "email", "value": email},
         {"type": "phone", "value": "+1 910-561-5313"},
-        {"type": "website", "value": row["link"], "label": row["orga"]},
+        {"type": "website", "value": row["linkOrga"], "label": row["orga"]},
     ]
 
 
@@ -431,5 +433,5 @@ def test_keeps_phonenumbers_with_remarks(row: RowFixture) -> None:
         {"type": "person", "value": contact_person},
         {"type": "email", "value": email},
         {"type": "phone", "value": phone},
-        {"type": "website", "value": row["link"], "label": row["orga"]},
+        {"type": "website", "value": row["linkOrga"], "label": row["orga"]},
     ]
