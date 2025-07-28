@@ -79,9 +79,7 @@ def test_diff_ingest(
     )
 
     # THEN deletion events are published to Pubsub
-    mock_publish_volunteering_deletion.assert_called_with(
-        mock_pubsub_client, [TypesenseDocId(doc["id"]) for doc in deleted_records]
-    )
+    mock_publish_volunteering_deletion.assert_called_with(mock_pubsub_client, [doc["id"] for doc in deleted_records])
 
     # THEN return values match expected values after successful execution
     assert deletion_succeeded

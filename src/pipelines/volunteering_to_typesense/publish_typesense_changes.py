@@ -1,12 +1,11 @@
 from src.common.events.VolunteeringDeletedEvent import VolunteeringDeletedEvent
 from src.common.logging.PipelineLogger import PipelineLogger
 from src.common.pubsub_client import PubSubClient
-from src.pipelines.volunteering_to_typesense.typesense_doc_id import TypesenseDocId
 
 logger = PipelineLogger(__name__)
 
 
-def publish_volunteering_deletion(pubsub_client: PubSubClient, deleted_record_ids: list[TypesenseDocId]) -> bool:
+def publish_volunteering_deletion(pubsub_client: PubSubClient, deleted_record_ids: list[str]) -> bool:
     try:
         publish_futures = []
 

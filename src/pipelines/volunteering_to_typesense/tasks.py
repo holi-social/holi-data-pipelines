@@ -188,14 +188,15 @@ def diff_ingest(
     # Step 3: Delete outdated documents from Typesense
     deletion_succeeded = True
     if changed_records.deleted:
-        document_ids_to_delete = [TypesenseDocId(record["id"]) for record in changed_records.deleted]
+        deleted_record_ids = [record["id"] for record in changed_records.deleted]
+        document_ids_to_delete = [TypesenseDocId(deleted_id) for deleted_id in deleted_record_ids]
         deletion_succeeded = delete_typesense_documents(
             typesense_client, typesense_collection_name, document_ids_to_delete
         )
         if deletion_succeeded:
             processed_items_count += len(document_ids_to_delete)
 
-            if not publish_volunteering_deletion(pubsub_client, document_ids_to_delete):
+            if not publish_volunteering_deletion(pubsub_client, deleted_record_ids):
                 logger.warning("Failed to publish deletion to Pubsub, but Typesense deletion succeeded")
 
     # Step 4: Upsert documents into Typesense
