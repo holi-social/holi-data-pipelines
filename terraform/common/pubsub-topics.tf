@@ -3,8 +3,6 @@ resource "google_pubsub_topic" "external_data_staging" {
   name         = "external-data-staging"
   kms_key_name = google_kms_crypto_key.data_pipeline.id
 
-  message_retention_duration = "604800s"  # 7 days
-
   message_storage_policy {
     allowed_persistence_regions = [local.default_region]
   }
@@ -15,8 +13,6 @@ resource "google_pubsub_topic" "external_data_production" {
   project      = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
   name         = "external-data-production"
   kms_key_name = google_kms_crypto_key.data_pipeline.id
-
-  message_retention_duration = "604800s"  # 7 days
 
   message_storage_policy {
     allowed_persistence_regions = [local.default_region]
