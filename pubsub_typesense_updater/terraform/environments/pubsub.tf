@@ -21,7 +21,7 @@ resource "google_pubsub_subscription" "pubsub-typesense-updater-okuna-sub" {
 
 resource "google_monitoring_alert_policy" "pubsub_unacked_messages" {
   project      = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
-  display_name = "MATCHING: PubSub Unacked Messages Alert (${local.environment_name}) / subscription_id='${google_pubsub_subscription.pubsub-typesense-updater-okuna-sub.name}'"
+  display_name = "TOFU: PubSub Unacked Messages Alert (${local.environment_name}) / subscription_id='${google_pubsub_subscription.pubsub-typesense-updater-okuna-sub.name}'"
   combiner     = "OR"
   conditions {
     display_name = "Unacked messages condition"
@@ -35,7 +35,7 @@ resource "google_monitoring_alert_policy" "pubsub_unacked_messages" {
     auto_close = "300s"
   }
 
-  notification_channels = [local.environment_name == "production" ? data.terraform_remote_state.holi_infra_monitoring_state.outputs.monitoring_notification_channel_slack_matching_data_production_id : data.terraform_remote_state.holi_infra_monitoring_state.outputs.monitoring_notification_channel_slack_matching_data_staging_id]
+  notification_channels = [local.environment_name == "production" ? data.terraform_remote_state.holi_infra_monitoring_state.outputs.monitoring_notification_channel_slack_tofu_data_production_id : data.terraform_remote_state.holi_infra_monitoring_state.outputs.monitoring_notification_channel_slack_tofu_data_staging_id]
 
   documentation {
     content   = "Alert triggered when Pub/Sub subscription(s) (subscription_id='${google_pubsub_subscription.pubsub-typesense-updater-okuna-sub.name}') have unacknowledged messages for more than 5 minutes. Please check the cloud function deployment and logs to see if the subscriber works correctly."

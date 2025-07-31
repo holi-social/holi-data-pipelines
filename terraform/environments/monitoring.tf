@@ -3,15 +3,15 @@
 #}
 
 resource "google_monitoring_alert_policy" "prefect_disk_utilization" {
-  display_name          = "MATCHING: Prefect disk utilization (${local.environment_name})"
-  notification_channels = [local.environment_name == "production" ? data.terraform_remote_state.holi_infra_monitoring_state.outputs.monitoring_notification_channel_slack_matching_data_production_id : data.terraform_remote_state.holi_infra_monitoring_state.outputs.monitoring_notification_channel_slack_matching_data_staging_id]
+  display_name          = "TOFU: Prefect disk utilization (${local.environment_name})"
+  notification_channels = [local.environment_name == "production" ? data.terraform_remote_state.holi_infra_monitoring_state.outputs.monitoring_notification_channel_slack_tofu_data_production_id : data.terraform_remote_state.holi_infra_monitoring_state.outputs.monitoring_notification_channel_slack_tofu_data_staging_id]
   severity              = "WARNING"
   alert_strategy {
     auto_close = "86400s" # 1 day
   }
   combiner = "OR"
   conditions {
-    display_name = "MATCHING: Prefect disk utilization (${local.environment_name})"
+    display_name = "TOFU: Prefect disk utilization (${local.environment_name})"
     condition_threshold {
       comparison = "COMPARISON_GT"
       duration   = "0s"
@@ -31,21 +31,21 @@ resource "google_monitoring_alert_policy" "prefect_disk_utilization" {
     }
   }
   documentation {
-    content   = "MATCHING: Prefect disk utilization exceeded (${local.environment_name})"
+    content   = "TOFU: Prefect disk utilization exceeded (${local.environment_name})"
     mime_type = "text/markdown"
   }
 }
 
 resource "google_monitoring_alert_policy" "prefect_cpu_utilization" {
-  display_name          = "MATCHING: Prefect CPU utilization (${local.environment_name})"
-  notification_channels = [local.environment_name == "production" ? data.terraform_remote_state.holi_infra_monitoring_state.outputs.monitoring_notification_channel_slack_matching_data_production_id : data.terraform_remote_state.holi_infra_monitoring_state.outputs.monitoring_notification_channel_slack_matching_data_staging_id]
+  display_name          = "TOFU: Prefect CPU utilization (${local.environment_name})"
+  notification_channels = [local.environment_name == "production" ? data.terraform_remote_state.holi_infra_monitoring_state.outputs.monitoring_notification_channel_slack_tofu_data_production_id : data.terraform_remote_state.holi_infra_monitoring_state.outputs.monitoring_notification_channel_slack_tofu_data_staging_id]
   severity              = "WARNING"
   alert_strategy {
     auto_close = "86400s" # 1 day
   }
   combiner = "OR"
   conditions {
-    display_name = "MATCHING: Prefect CPU utilization (${local.environment_name})"
+    display_name = "TOFU: Prefect CPU utilization (${local.environment_name})"
     condition_threshold {
       comparison = "COMPARISON_GT"
       duration   = "0s"
@@ -66,7 +66,7 @@ resource "google_monitoring_alert_policy" "prefect_cpu_utilization" {
     }
   }
   documentation {
-    content   = "MATCHING: Prefect CPU utilization exceeded (${local.environment_name})"
+    content   = "TOFU: Prefect CPU utilization exceeded (${local.environment_name})"
     mime_type = "text/markdown"
   }
 }
@@ -76,15 +76,15 @@ resource "google_monitoring_alert_policy" "prefect_cpu_utilization" {
 
 
 resource "google_monitoring_alert_policy" "prefect_memory_utilization" {
-  display_name          = "MATCHING: Prefect Memory utilization (${local.environment_name})"
-  notification_channels = [local.environment_name == "production" ? data.terraform_remote_state.holi_infra_monitoring_state.outputs.monitoring_notification_channel_slack_matching_data_production_id : data.terraform_remote_state.holi_infra_monitoring_state.outputs.monitoring_notification_channel_slack_matching_data_staging_id]
+  display_name          = "TOFU: Prefect Memory utilization (${local.environment_name})"
+  notification_channels = [local.environment_name == "production" ? data.terraform_remote_state.holi_infra_monitoring_state.outputs.monitoring_notification_channel_slack_tofu_data_production_id : data.terraform_remote_state.holi_infra_monitoring_state.outputs.monitoring_notification_channel_slack_tofu_data_staging_id]
   severity              = "WARNING"
   alert_strategy {
     auto_close = "86400s" # 1 day
   }
   combiner = "OR"
   conditions {
-    display_name = "MATCHING: Prefect Memory utilization (${local.environment_name})"
+    display_name = "TOFU: Prefect Memory utilization (${local.environment_name})"
     condition_threshold {
       comparison = "COMPARISON_GT"
       duration   = "0s"
@@ -105,7 +105,7 @@ resource "google_monitoring_alert_policy" "prefect_memory_utilization" {
     }
   }
   documentation {
-    content   = "MATCHING: Prefect Memory utilization exceeded (${local.environment_name})"
+    content   = "TOFU: Prefect Memory utilization exceeded (${local.environment_name})"
     mime_type = "text/markdown"
   }
 }
@@ -114,8 +114,8 @@ resource "google_monitoring_alert_policy" "prefect_memory_utilization" {
 
 
 resource "google_monitoring_alert_policy" "prefect_system_log_errors" {
-  display_name          = "MATCHING: Prefect system log errors (${local.environment_name})"
-  notification_channels = [local.environment_name == "production" ? data.terraform_remote_state.holi_infra_monitoring_state.outputs.monitoring_notification_channel_slack_matching_data_production_id : data.terraform_remote_state.holi_infra_monitoring_state.outputs.monitoring_notification_channel_slack_matching_data_staging_id]
+  display_name          = "TOFU: Prefect system log errors (${local.environment_name})"
+  notification_channels = [local.environment_name == "production" ? data.terraform_remote_state.holi_infra_monitoring_state.outputs.monitoring_notification_channel_slack_tofu_data_production_id : data.terraform_remote_state.holi_infra_monitoring_state.outputs.monitoring_notification_channel_slack_tofu_data_staging_id]
   severity              = "WARNING"
   alert_strategy {
     auto_close = "86400s" # 1 day
@@ -125,7 +125,7 @@ resource "google_monitoring_alert_policy" "prefect_system_log_errors" {
   }
   combiner = "OR"
   conditions {
-    display_name = "MATCHING: Prefect system log errors (${local.environment_name})"
+    display_name = "TOFU: Prefect system log errors (${local.environment_name})"
     condition_matched_log {
       filter = templatefile("./monitoring_prefect_system_log_errors.tftpl", {
         instance_id = google_compute_instance.prefect_server_green.instance_id
@@ -133,7 +133,7 @@ resource "google_monitoring_alert_policy" "prefect_system_log_errors" {
     }
   }
   documentation {
-    content   = "MATCHING: Prefect system log errors (${local.environment_name})"
+    content   = "TOFU: Prefect system log errors (${local.environment_name})"
     mime_type = "text/markdown"
   }
 }
