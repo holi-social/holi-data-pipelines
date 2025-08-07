@@ -29,9 +29,13 @@ data "terraform_remote_state" "holi_infra_state" {
 provider "google" {
   project = "holi-shared" # string, because referencing google_project.holi_shared would be a cycle
   region  = local.default_region
+  user_project_override = true
+  billing_project = "holi-shared"
 }
 
 provider "google-beta" {
   project = "holi-shared" # string, because referencing google_project.holi_shared would be a cycle
   region  = local.default_region
+  user_project_override = true
+  billing_project = "holi-shared"
 }
