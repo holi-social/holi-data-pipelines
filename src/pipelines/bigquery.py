@@ -83,3 +83,8 @@ def volunteering_aktion_mensch_without_classifications() -> str:
 @cache
 def volunteering_aktion_mensch_classified_enriched_partitioned() -> str:
     return f"{bigquery_datalake()}.volunteering_aktion_mensch_classified_enriched_partitioned"
+
+
+@cache
+def donations_betterplace_raw() -> str:
+    return f"{bigquery_datalake()}.donations_betterplace_raw"

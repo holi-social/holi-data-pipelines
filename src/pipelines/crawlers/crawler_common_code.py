@@ -1,6 +1,7 @@
 import asyncio
 from asyncio import Queue
-from typing import Any, Callable, Coroutine
+from typing import Any, Callable, Coroutine, Optional
+from datetime import date
 
 import prefect
 from prefect import task
@@ -67,3 +68,9 @@ def update_last_successful_day(config: CrawlerConfig) -> None:
     state = _get_state(config)
     state.last_successful_day = config.partition_date
     state.persist_to_variable()
+
+
+@task
+def get_last_successful_day(config: CrawlerConfig) -> Optional[str]:
+    state = _get_state(config)
+    return state.last_successful_day
