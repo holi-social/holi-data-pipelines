@@ -8,7 +8,7 @@ from src.common.monitoring.flow import (
     on_failure_hooks,
     on_completion_hooks,
 )
-from src.common.pubsub_client import PubSubClient
+from src.common.external_data_pubsub_client import ExternalDataPubSubClient
 from src.common.typesense import extract_collection_name_from_schema
 from src.common.typesense_client import TypesenseClient, TypesenseClientConfig
 from src.pipelines.typesense import schema_path
@@ -25,7 +25,7 @@ from src.pipelines.volunteering_to_typesense.voltastics_to_typesense_ingest_upda
 )
 def voltastics_to_typesense_ingest_from_scratch_flow() -> State | int:
     typesense_client = TypesenseClient(TypesenseClientConfig.from_env())
-    pubsub_client = PubSubClient()
+    pubsub_client = ExternalDataPubSubClient()
     alias_name = extract_collection_name_from_schema(schema_path=schema_path)
     active_collection = typesense_client.get_active_collection_name(alias_name)
 
@@ -40,7 +40,7 @@ def voltastics_to_typesense_ingest_from_scratch_flow() -> State | int:
 @task(cache_policy=NONE)  # type: ignore[arg-type]
 def voltastics_to_typesense_ingest_from_scratch(
     typesense_client: TypesenseClient,
-    pubsub_client: PubSubClient,
+    pubsub_client: ExternalDataPubSubClient,
     typesense_collection_name: str,
 ) -> State | int:
     return voltastics_to_typesense_ingest_updates(

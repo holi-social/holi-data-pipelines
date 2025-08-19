@@ -20,7 +20,7 @@ from src.common.typesense_client import TypesenseClient, TypesenseClientConfig
 from src.pipelines.bigquery import volunteering_aktion_mensch_classified_enriched_partitioned
 from src.pipelines.typesense import schema_path
 from src.pipelines.constants import LAST_INGESTION_TIMESTAMP_KEY, AKTION_MENSCH_STATE_VARIABLE
-from src.common.pubsub_client import PubSubClient
+from src.common.external_data_pubsub_client import ExternalDataPubSubClient
 from src.pipelines.volunteering_to_typesense.tasks import (
     validate_collection,
     diff_ingest,
@@ -55,7 +55,7 @@ def store_am_ingestion_timestamp(timestamp: datetime) -> None:
 def aktion_mensch_to_typesense_ingest_updates_flow() -> State:
     """Flow to ingest Aktion Mensch volunteering opportunities into Typesense."""
     typesense_client = TypesenseClient(TypesenseClientConfig.from_env())
-    pubsub_client = PubSubClient()
+    pubsub_client = ExternalDataPubSubClient()
     alias_name = extract_collection_name_from_schema(schema_path=schema_path)
     active_collection = typesense_client.get_active_collection_name(alias_name)
 
@@ -78,7 +78,7 @@ def aktion_mensch_to_typesense_ingest_updates_flow() -> State:
 @task(cache_policy=NONE)  # type: ignore[arg-type]
 def aktion_mensch_to_typesense_ingest_updates(
     typesense_client: TypesenseClient,
-    pubsub_client: PubSubClient,
+    pubsub_client: ExternalDataPubSubClient,
     typesense_collection_name: str,
     last_complete_ingestion_timestamp: datetime | None,
 ) -> State | int:

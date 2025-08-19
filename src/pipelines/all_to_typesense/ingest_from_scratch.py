@@ -13,7 +13,7 @@ from src.common.monitoring.flow import (
     on_completion_hooks,
 )
 from src.common.monitoring.metrics import report_number_of_processed_entities
-from src.common.pubsub_client import PubSubClient
+from src.common.external_data_pubsub_client import ExternalDataPubSubClient
 from src.common.typesense import extract_collection_name_from_schema
 from src.common.typesense_client import TypesenseClient, TypesenseClientConfig
 from src.pipelines.profiles_to_typesense.ingest_from_scratch import profiles_to_typesense_ingest_from_scratch
@@ -44,7 +44,7 @@ def all_to_typesense_ingest_from_scratch_flow(swap_alias: bool = True, drop_old_
     Orchestrates the ETL pipeline to ingest all search data into Typesense from scratch.
     """
     typesense_client = TypesenseClient(TypesenseClientConfig.from_env())
-    pubsub_client = PubSubClient()
+    pubsub_client = ExternalDataPubSubClient()
     alias_name = extract_collection_name_from_schema(schema_path=schema_path)
 
     try:

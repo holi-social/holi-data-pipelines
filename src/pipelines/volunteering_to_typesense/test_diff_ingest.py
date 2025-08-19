@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 from pytest import fixture
 
-from src.common.pubsub_client import PubSubClient
+from src.common.external_data_pubsub_client import ExternalDataPubSubClient
 from src.pipelines.volunteering_to_typesense.tasks import diff_ingest, TypesenseDocId, ChangedRecords
 from src.common.typesense_client import TypesenseClient
 from src.pipelines.volunteering_to_typesense.test_typesense_transformer import _row
@@ -26,7 +26,7 @@ def latest_partition_timestamp() -> date:
 
 
 @patch("src.common.typesense_client.TypesenseClient")
-@patch("src.common.pubsub_client.PubSubClient")
+@patch("src.common.external_data_pubsub_client.ExternalDataPubSubClient")
 @patch("src.pipelines.volunteering_to_typesense.tasks.extract_changed_records")
 @patch("src.pipelines.volunteering_to_typesense.tasks.upsert_typesense_documents", return_value=True)
 @patch("src.pipelines.volunteering_to_typesense.tasks.delete_typesense_documents", return_value=True)
@@ -36,7 +36,7 @@ def test_diff_ingest(
     mock_delete_typesense_documents: Any,
     mock_upsert_typesense_documents: Any,
     mock_extract_changed_records: Any,
-    mock_pubsub_client: PubSubClient,
+    mock_pubsub_client: ExternalDataPubSubClient,
     mock_typesense_client: TypesenseClient,
     table_name: str,
     latest_partition_timestamp: date,
@@ -88,7 +88,7 @@ def test_diff_ingest(
 
 
 @patch("src.common.typesense_client.TypesenseClient")
-@patch("src.common.pubsub_client.PubSubClient")
+@patch("src.common.external_data_pubsub_client.ExternalDataPubSubClient")
 @patch("src.pipelines.volunteering_to_typesense.tasks.extract_changed_records")
 @patch("src.pipelines.volunteering_to_typesense.tasks.upsert_typesense_documents")
 @patch("src.pipelines.volunteering_to_typesense.tasks.delete_typesense_documents")
@@ -98,7 +98,7 @@ def test_diff_ingest_no_changes(
     mock_delete_typesense_documents: Any,
     mock_upsert_typesense_documents: Any,
     mock_extract_changed_records: Any,
-    mock_pubsub_client: PubSubClient,
+    mock_pubsub_client: ExternalDataPubSubClient,
     mock_typesense_client: TypesenseClient,
     table_name: str,
     latest_partition_timestamp: date,
