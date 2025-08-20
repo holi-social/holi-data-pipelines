@@ -1,4 +1,5 @@
 import argparse
+import logging
 from datetime import date
 from prefect import flow
 from prefect.states import State, Completed
@@ -11,8 +12,10 @@ from src.common.monitoring.flow import (
     on_failure_hooks,
     on_completion_hooks,
 )
-from shared.events.event import Donation
+from shared.events.event import Event, Donation, DonationCreatedEvent, DonationUpdatedEvent, DonationDeletedEvent
 from src.common.logging.PipelineLogger import PipelineLogger
+from src.common.pubsub_client import PubSubClient
+from src.common.variables import variable_value_as
 
 ChangeType = Literal["created", "updated", "deleted"]
 
@@ -87,6 +90,18 @@ def extract_changes_from_bigquery(
     return [(record["change_type"], Donation(**record)) for record in changes]
 
 
+def create_event(change_type: ChangeType, change: Donation) -> Event:
+    match change_type:
+        case "created":
+            return DonationCreatedEvent(change)
+        case "updated":
+            return DonationUpdatedEvent(change)
+        case "deleted":
+            return DonationDeletedEvent(change)
+        case _:
+            raise Exception(f"Unknown change type {change_type}")
+
+
 @flow(
     on_cancellation=on_cancellation_hooks,
     on_crashed=on_crashed_hooks,
@@ -97,17 +112,29 @@ def donation_events_flow(old_partition_date: Optional[date], new_partition_date:
     """
     Automation graph to emit donation updated, created and deleted events to pubsub.
     """
+    topic_name = variable_value_as(str, "google_cloud_pubsub_donations_topic_name")
+    pubsub_client = PubSubClient(topic_name)
     changes = extract_changes_from_bigquery(old_partition_date, new_partition_date)
+
     counts = {"created": 0, "updated": 0, "deleted": 0}
-    for change, _ in changes:
-        counts[change] = counts[change] + 1
+    for change_type, _ in changes:
+        counts[change_type] = counts[change_type] + 1
     logger.info(
         f"{len(changes)} total changes, {counts['created']} creations, {counts['updated']} updates, {counts['deleted']} deletions"
     )
+
+    for change_type, change in changes:
+        event = create_event(change_type, change)
+        future = pubsub_client.publish(event)
+        message_id = future.result()
+        logger.debug(f"Published event {event.event_type} with message id {message_id} for donation {change.id}")
+
     return Completed()
 
 
 if __name__ == "__main__":
+    logging.getLogger(logger.name).setLevel(logging.DEBUG)
+
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )

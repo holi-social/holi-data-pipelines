@@ -1,5 +1,3 @@
-import json
-
 from google.cloud import pubsub_v1  # type: ignore[attr-defined]
 
 from shared.events.event import Event
@@ -14,5 +12,5 @@ class PubSubClient:
         self.topic_name = f"projects/{project_id}/topics/{topic_name}"
 
     def publish(self, event: Event) -> pubsub_v1.publisher.futures.Future:
-        data = json.dumps(event.to_dict()).encode("utf-8")
+        data = event.model_dump_json().encode("utf-8")
         return self.publisher.publish(self.topic_name, data)
