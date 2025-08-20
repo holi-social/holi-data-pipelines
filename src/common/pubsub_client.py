@@ -2,7 +2,7 @@ import json
 
 from google.cloud import pubsub_v1  # type: ignore[attr-defined]
 
-from src.common.events.event import Event
+from shared.events.event import Event
 from src.common.variables import variable_value_as
 
 

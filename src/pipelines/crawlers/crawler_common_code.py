@@ -71,6 +71,6 @@ def update_last_successful_day(config: CrawlerConfig) -> None:
 
 
 @task
-def get_last_successful_day(config: CrawlerConfig) -> Optional[str]:
+def get_last_successful_day(config: CrawlerConfig) -> Optional[date]:
     state = _get_state(config)
     return state.last_successful_day

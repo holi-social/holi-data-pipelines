@@ -4,6 +4,7 @@ import asyncio
 import functools
 from asyncio import Queue
 from typing import Any, Awaitable, Callable, Coroutine, Dict, Optional, cast
+from datetime import date
 
 import prefect
 from prefect import task, flow
@@ -24,6 +25,7 @@ from src.common.monitoring.metrics import report_number_of_processed_entities
 from src.common.variables import variable_value_as
 from src.pipelines.crawlers.crawler_common_code import (
     bigquery_sink,
+    get_last_successful_day,
     has_run_successfully_for_day,
     is_cleanup_needed,
     source_to_sink,
@@ -130,7 +132,9 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
     on_failure=on_failure_hooks,
     on_completion=on_completion_hooks,
 )
-def crawl_betterplace(force_run: bool = False, wait_for_bq: bool = True) -> None:
+def crawl_betterplace(force_run: bool = False, wait_for_bq: bool = True) -> Optional[tuple[Optional[date], date]]:
+    old_partition_date = get_last_successful_day(config())
+
     # only run for days that have not been successfully crawled yet, or when forced
     if not has_run_successfully_for_day(config()) or force_run:
         logger.info("Crawling did not run successfully for today, starting run.")
@@ -141,8 +145,7 @@ def crawl_betterplace(force_run: bool = False, wait_for_bq: bool = True) -> None
                 logger.info("Unfinished run happened for today, clearing today's partition.")
                 delete_partition(table_name, partition=config().partition_date)
             else:
-                logger.warning("Unfinished run happened for today, but streaming buffer is not empty. Aborting flow.")
-                return
+                raise Exception("Unfinished run happened for today, but streaming buffer is not empty. Aborting flow.")
 
         update_last_run_day(config())
         processed_entities_count = asyncio.run(source_to_sink(crawl(), bigquery_sink(config(), _STOP_DOC)))
@@ -150,8 +153,9 @@ def crawl_betterplace(force_run: bool = False, wait_for_bq: bool = True) -> None
         report_number_of_processed_entities(processed_entities_count)
         if wait_for_bq:
             wait_for_bigquery_data_to_be_accessible(table_name)
+        return (old_partition_date, config().partition_date)
     else:
-        logger.info("Crawling already ran successfully for today, skipping run.")
+        raise Exception("Crawling already ran successfully for today, skipping run.")
 
 
 if __name__ == "__main__":

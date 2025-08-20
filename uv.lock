@@ -1787,7 +1787,6 @@ dependencies = [
     { name = "functions-framework" },
     { name = "google-cloud-logging" },
     { name = "pyfarmhash" },
-    { name = "semver" },
     { name = "shared" },
 ]
 
@@ -1805,7 +1804,6 @@ requires-dist = [
     { name = "functions-framework", specifier = "==3.8.3" },
     { name = "google-cloud-logging", specifier = "==3.12.1" },
     { name = "pyfarmhash", specifier = "==0.4.0" },
-    { name = "semver", specifier = "==3.0.4" },
     { name = "shared", virtual = "shared" },
 ]
 
@@ -2313,6 +2311,7 @@ dependencies = [
     { name = "beautifulsoup4" },
     { name = "google-cloud-aiplatform" },
     { name = "ratelimit" },
+    { name = "semver" },
     { name = "tenacity" },
     { name = "typesense" },
 ]
@@ -2332,6 +2331,7 @@ requires-dist = [
     { name = "beautifulsoup4", specifier = "==4.13.4" },
     { name = "google-cloud-aiplatform", specifier = "==1.97.0" },
     { name = "ratelimit", specifier = "==2.2.1" },
+    { name = "semver", specifier = "==3.0.4" },
     { name = "tenacity", specifier = "==9.1.2" },
     { name = "typesense", specifier = "==0.21.0" },
 ]
