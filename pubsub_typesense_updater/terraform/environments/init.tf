@@ -25,6 +25,15 @@ data "terraform_remote_state" "pubsub_typesense_updater_common_state" {
   }
 }
 
+data "terraform_remote_state" "data_pipelines_common_state" {
+  backend   = "gcs"
+  workspace = terraform.workspace
+  config = {
+    bucket = "holi-shared-terraform-state"
+    prefix = "data-pipeline-common"
+  }
+}
+
 data "terraform_remote_state" "data_pipelines_environment_state" {
   backend   = "gcs"
   workspace = terraform.workspace

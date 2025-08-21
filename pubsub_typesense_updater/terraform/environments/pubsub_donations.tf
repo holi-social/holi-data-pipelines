@@ -1,7 +1,7 @@
 resource "google_pubsub_subscription" "pubsub-typesense-updater-donations-sub" {
   project = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
   name    = random_id.pubsub_typesense_updater.hex
-  topic   = local.environment_name == "production" ? data.terraform_remote_state.data_pipelines_environment_state.outputs.google_pubsub_topic_donations_production_name : data.terraform_remote_state.data_pipelines_environment_state.outputs.google_pubsub_topic_donations_staging_name
+  topic   = local.environment_name == "production" ? data.terraform_remote_state.data_pipelines_common_state.outputs.google_pubsub_topic_donations_production_name : data.terraform_remote_state.data_pipelines_common_state.outputs.google_pubsub_topic_donations_staging_name
 
   enable_message_ordering = true
 
