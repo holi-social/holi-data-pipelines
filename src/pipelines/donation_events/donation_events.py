@@ -12,7 +12,13 @@ from src.common.monitoring.flow import (
     on_failure_hooks,
     on_completion_hooks,
 )
-from shared.events.event import Event, Donation, DonationCreatedEvent, DonationUpdatedEvent, DonationDeletedEvent
+from shared.events.event import (
+    Event,
+    Donation,
+    DonationCreatedEvent,
+    DonationUpdatedEvent,
+    DonationDeletedEvent,
+)
 from src.common.logging.PipelineLogger import PipelineLogger
 from src.common.pubsub_client import PubSubClient
 from src.common.variables import variable_value_as
@@ -90,7 +96,7 @@ def extract_changes_from_bigquery(
     return [(record["change_type"], Donation(**record)) for record in changes]
 
 
-def create_event(change_type: ChangeType, change: Donation) -> Event:
+def create_event(change_type: ChangeType, change: Donation) -> Event[Donation]:
     match change_type:
         case "created":
             return DonationCreatedEvent(change)
@@ -113,7 +119,7 @@ def donation_events_flow(old_partition_date: Optional[date], new_partition_date:
     Automation graph to emit donation updated, created and deleted events to pubsub.
     """
     topic_name = variable_value_as(str, "google_cloud_pubsub_donations_topic_name")
-    pubsub_client = PubSubClient(topic_name)
+    pubsub_client = PubSubClient(topic_name, ordering_key="donations")
     changes = extract_changes_from_bigquery(old_partition_date, new_partition_date)
 
     counts = {"created": 0, "updated": 0, "deleted": 0}

@@ -110,13 +110,15 @@ class Donation(BaseModel):
     matching_events: List[DonationMatchingEvent] = []
     categories: List[DonationCategory] = []
 
+
 SemverVersion = Annotated[
     Version,
     PlainValidator(lambda v: Version.parse(v) if isinstance(v, str) else v),
     PlainSerializer(str, return_type=str),
 ]
 
-EventPayloadT = TypeVar('EventPayloadT', bound=BaseModel)
+EventPayloadT = TypeVar("EventPayloadT", bound=BaseModel)
+
 
 class Event(Generic[EventPayloadT], BaseModel):
     event_type: str

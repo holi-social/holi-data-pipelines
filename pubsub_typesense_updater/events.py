@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from typing import Dict, Any, Optional, Literal, List, TypedDict, Protocol
 from datetime import datetime, date
 from semver import Version
-from pydantic import BaseModel
 
 # noinspection PyPackageRequirements
 from cloudevents.http.event import CloudEvent

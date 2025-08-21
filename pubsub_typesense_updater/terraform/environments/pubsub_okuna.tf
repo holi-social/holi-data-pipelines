@@ -19,9 +19,9 @@ resource "google_pubsub_subscription" "pubsub-typesense-updater-okuna-sub" {
   }
 }
 
-resource "google_monitoring_alert_policy" "pubsub_unacked_messages" {
+resource "google_monitoring_alert_policy" "pubsub_unacked_messages_okuna" {
   project      = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
-  display_name = "TOFU: PubSub Unacked Messages Alert (${local.environment_name}) / subscription_id='${google_pubsub_subscription.pubsub-typesense-updater-okuna-sub.name}'"
+  display_name = "TOFU: PubSub Unacked Messages Alert (${local.environment_name} - okuna) / subscription_id='${google_pubsub_subscription.pubsub-typesense-updater-okuna-sub.name}'"
   combiner     = "OR"
   conditions {
     display_name = "Unacked messages condition"
