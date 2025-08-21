@@ -9,9 +9,6 @@ from cloudevents.http.event import CloudEvent
 from event_processor_logger import EventProcessorLogger
 from events import (
     DomainEvent,
-    DonationCreatedEvent,
-    DonationUpdatedEvent,
-    DonationDeletedEvent,
     SpaceCreatedEvent,
     SpaceDeletedEvent,
     SpaceUpdatedEvent,
@@ -22,9 +19,12 @@ from events import (
     UserUpdatedEvent,
     get_event_type,
     get_event_version,
+    parse_donation_created_event,
+    parse_donation_updated_event,
+    parse_donation_deleted_event,
 )
-
 from shared.classifiers.task_classification_input import TaskClassificationInput
+from shared.events.event import DonationCreatedEvent, DonationUpdatedEvent, DonationDeletedEvent
 from task_classifier import TaskClassifier
 
 from typesense_client import TypesenseClient
@@ -152,17 +152,17 @@ def process_task_deleted_event(ts_client: TypesenseClient, id: str) -> None:
 
 
 def process_donation_created_event(ts_client: TypesenseClient, event: DonationCreatedEvent) -> None:
-    logger.debug(f"[id={event.donation.id}] Processing DonationCreated event")
+    logger.debug(f"[id={event.data.id}] Processing DonationCreated event")
     # TODO implement me
 
 
 def process_donation_updated_event(ts_client: TypesenseClient, event: DonationUpdatedEvent) -> None:
-    logger.debug(f"[id={event.donation.id}] Processing DonationUpdated event")
+    logger.debug(f"[id={event.data.id}] Processing DonationUpdated event")
     # TODO implement me
 
 
 def process_donation_deleted_event(ts_client: TypesenseClient, event: DonationDeletedEvent) -> None:
-    logger.debug(f"[id={event.donation.id}] Processing DonationDeleted event")
+    logger.debug(f"[id={event.data.id}] Processing DonationDeleted event")
     # TODO implement me
 
 
@@ -216,15 +216,15 @@ def process_event(ts_client: TypesenseClient, cloud_event: CloudEvent) -> None:
         add_logging_context(task_deleted_event)
         return process_task_deleted_event(ts_client, task_deleted_event.task.id)
     elif event_type == "DonationCreated":
-        donation_created_event = DonationCreatedEvent(cloud_event)
+        donation_created_event = parse_donation_created_event(cloud_event)
         add_logging_context(donation_created_event)
         return process_donation_created_event(ts_client, donation_created_event)
     elif event_type == "DonationUpdated":
-        donation_updated_event = DonationUpdatedEvent(cloud_event)
+        donation_updated_event = parse_donation_updated_event(cloud_event)
         add_logging_context(donation_updated_event)
         return process_donation_updated_event(ts_client, donation_updated_event)
     elif event_type == "DonationDeleted":
-        donation_deleted_event = DonationDeletedEvent(cloud_event)
+        donation_deleted_event = parse_donation_deleted_event(cloud_event)
         add_logging_context(donation_deleted_event)
         return process_donation_deleted_event(ts_client, donation_deleted_event)
     else:

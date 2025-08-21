@@ -11,7 +11,7 @@ from cloudevents.http.event import CloudEvent
 
 from farm_fingerprint import farm_fingerprint
 from shared.classifiers.classifier import ClassificationResult
-from shared.events.event import Donation
+from shared.events.event import Donation, DonationCreatedEvent, DonationUpdatedEvent, DonationDeletedEvent
 from shared.mappings.task_mappings import (
     map_task_location_type_to_typesense_location_type,
     map_task_regularity_to_commitment_label,
@@ -334,30 +334,22 @@ class TaskDeletedEvent(TaskEvent):
         super().__init__(cloud_event)
 
 
-class DonationEvent(BaseModel):
-    def __init__(self, cloud_event: CloudEvent):
-        self.event_type = get_event_type(cloud_event)
-        self.event_version = get_event_version(cloud_event)
-        self.donation = Donation.model_validate_json(cloud_event.data["message"]["data"])
-        super().__init__()
+def parse_donation_created_event(cloud_event: CloudEvent) -> DonationCreatedEvent:
+    _validate_event_type(cloud_event, "DonationCreated")
+    _validate_event_version(cloud_event, Version(1, 0, 0), Version(2, 0, 0))
+    donation = Donation.model_validate_json(cloud_event.data["message"]["data"])
+    return DonationCreatedEvent(donation)
 
 
-class DonationCreatedEvent(DonationEvent):
-    def __init__(self, cloud_event: CloudEvent):
-        _validate_event_type(cloud_event, "DonationCreated")
-        _validate_event_version(cloud_event, Version(1, 0, 0), Version(2, 0, 0))
-        super().__init__(cloud_event)
+def parse_donation_updated_event(cloud_event: CloudEvent) -> DonationUpdatedEvent:
+    _validate_event_type(cloud_event, "DonationUpdated")
+    _validate_event_version(cloud_event, Version(1, 0, 0), Version(2, 0, 0))
+    donation = Donation.model_validate_json(cloud_event.data["message"]["data"])
+    return DonationUpdatedEvent(donation)
 
 
-class DonationUpdatedEvent(DonationEvent):
-    def __init__(self, cloud_event: CloudEvent):
-        _validate_event_type(cloud_event, "DonationUpdated")
-        _validate_event_version(cloud_event, Version(1, 0, 0), Version(2, 0, 0))
-        super().__init__(cloud_event)
-
-
-class DonationDeletedEvent(DonationEvent):
-    def __init__(self, cloud_event: CloudEvent):
-        _validate_event_type(cloud_event, "DonationDeleted")
-        _validate_event_version(cloud_event, Version(1, 0, 0), Version(2, 0, 0))
-        super().__init__(cloud_event)
+def parse_donation_deleted_event(cloud_event: CloudEvent) -> DonationDeletedEvent:
+    _validate_event_type(cloud_event, "DonationDeleted")
+    _validate_event_version(cloud_event, Version(1, 0, 0), Version(2, 0, 0))
+    donation = Donation.model_validate_json(cloud_event.data["message"]["data"])
+    return DonationDeletedEvent(donation)

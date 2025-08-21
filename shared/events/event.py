@@ -1,20 +1,8 @@
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Generic, TypeVar
 from semver import Version
 from pydantic import BaseModel, ConfigDict, PlainValidator, PlainSerializer
 from typing_extensions import Annotated
-
-SemverVersion = Annotated[
-    Version,
-    PlainValidator(lambda v: Version.parse(v) if isinstance(v, str) else v),
-    PlainSerializer(str, return_type=str),
-]
-
-
-class Event(BaseModel):
-    event_type: str
-    event_version: SemverVersion
-    data: BaseModel
 
 
 class DonationLink(BaseModel):
@@ -122,17 +110,30 @@ class Donation(BaseModel):
     matching_events: List[DonationMatchingEvent] = []
     categories: List[DonationCategory] = []
 
+SemverVersion = Annotated[
+    Version,
+    PlainValidator(lambda v: Version.parse(v) if isinstance(v, str) else v),
+    PlainSerializer(str, return_type=str),
+]
 
-class DonationCreatedEvent(Event):
+EventPayloadT = TypeVar('EventPayloadT', bound=BaseModel)
+
+class Event(Generic[EventPayloadT], BaseModel):
+    event_type: str
+    event_version: SemverVersion
+    data: EventPayloadT
+
+
+class DonationCreatedEvent(Event[Donation]):
     def __init__(self, donation: Donation):
         super().__init__(event_type="DonationCreated", event_version=Version(1, 0, 0), data=donation)
 
 
-class DonationUpdatedEvent(Event):
+class DonationUpdatedEvent(Event[Donation]):
     def __init__(self, donation: Donation):
         super().__init__(event_type="DonationUpdated", event_version=Version(1, 0, 0), data=donation)
 
 
-class DonationDeletedEvent(Event):
+class DonationDeletedEvent(Event[Donation]):
     def __init__(self, donation: Donation):
         super().__init__(event_type="DonationDeleted", event_version=Version(1, 0, 0), data=donation)
