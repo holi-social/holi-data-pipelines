@@ -4,12 +4,14 @@ from dataclasses import dataclass
 from typing import Dict, Any, Optional, Literal, List, TypedDict, Protocol
 from datetime import datetime, date
 from semver import Version
+from pydantic import BaseModel
 
 # noinspection PyPackageRequirements
 from cloudevents.http.event import CloudEvent
 
 from farm_fingerprint import farm_fingerprint
 from shared.classifiers.classifier import ClassificationResult
+from shared.events.event import Donation
 from shared.mappings.task_mappings import (
     map_task_location_type_to_typesense_location_type,
     map_task_regularity_to_commitment_label,
@@ -328,5 +330,34 @@ class TaskUpdatedEvent(TaskEvent):
 class TaskDeletedEvent(TaskEvent):
     def __init__(self, cloud_event: CloudEvent):
         _validate_event_type(cloud_event, "TaskDeleted")
+        _validate_event_version(cloud_event, Version(1, 0, 0), Version(2, 0, 0))
+        super().__init__(cloud_event)
+
+
+class DonationEvent(BaseModel):
+    def __init__(self, cloud_event: CloudEvent):
+        self.event_type = get_event_type(cloud_event)
+        self.event_version = get_event_version(cloud_event)
+        self.donation = Donation.model_validate_json(cloud_event.data["message"]["data"])
+        super().__init__()
+
+
+class DonationCreatedEvent(DonationEvent):
+    def __init__(self, cloud_event: CloudEvent):
+        _validate_event_type(cloud_event, "DonationCreated")
+        _validate_event_version(cloud_event, Version(1, 0, 0), Version(2, 0, 0))
+        super().__init__(cloud_event)
+
+
+class DonationUpdatedEvent(DonationEvent):
+    def __init__(self, cloud_event: CloudEvent):
+        _validate_event_type(cloud_event, "DonationUpdated")
+        _validate_event_version(cloud_event, Version(1, 0, 0), Version(2, 0, 0))
+        super().__init__(cloud_event)
+
+
+class DonationDeletedEvent(DonationEvent):
+    def __init__(self, cloud_event: CloudEvent):
+        _validate_event_type(cloud_event, "DonationDeleted")
         _validate_event_version(cloud_event, Version(1, 0, 0), Version(2, 0, 0))
         super().__init__(cloud_event)

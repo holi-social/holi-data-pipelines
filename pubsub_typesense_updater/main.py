@@ -9,6 +9,9 @@ from cloudevents.http.event import CloudEvent
 from event_processor_logger import EventProcessorLogger
 from events import (
     DomainEvent,
+    DonationCreatedEvent,
+    DonationUpdatedEvent,
+    DonationDeletedEvent,
     SpaceCreatedEvent,
     SpaceDeletedEvent,
     SpaceUpdatedEvent,
@@ -148,6 +151,21 @@ def process_task_deleted_event(ts_client: TypesenseClient, id: str) -> None:
     _delete_task(ts_client, id)
 
 
+def process_donation_created_event(ts_client: TypesenseClient, event: DonationCreatedEvent) -> None:
+    logger.debug(f"[id={event.donation.id}] Processing DonationCreated event")
+    # TODO implement me
+
+
+def process_donation_updated_event(ts_client: TypesenseClient, event: DonationUpdatedEvent) -> None:
+    logger.debug(f"[id={event.donation.id}] Processing DonationUpdated event")
+    # TODO implement me
+
+
+def process_donation_deleted_event(ts_client: TypesenseClient, event: DonationDeletedEvent) -> None:
+    logger.debug(f"[id={event.donation.id}] Processing DonationDeleted event")
+    # TODO implement me
+
+
 def process_event(ts_client: TypesenseClient, cloud_event: CloudEvent) -> None:
     def add_logging_context(event: DomainEvent) -> None:
         if isinstance(logger, EventProcessorLogger):
@@ -197,6 +215,18 @@ def process_event(ts_client: TypesenseClient, cloud_event: CloudEvent) -> None:
         task_deleted_event = TaskDeletedEvent(cloud_event)
         add_logging_context(task_deleted_event)
         return process_task_deleted_event(ts_client, task_deleted_event.task.id)
+    elif event_type == "DonationCreated":
+        donation_created_event = DonationCreatedEvent(cloud_event)
+        add_logging_context(donation_created_event)
+        return process_donation_created_event(ts_client, donation_created_event)
+    elif event_type == "DonationUpdated":
+        donation_updated_event = DonationUpdatedEvent(cloud_event)
+        add_logging_context(donation_updated_event)
+        return process_donation_updated_event(ts_client, donation_updated_event)
+    elif event_type == "DonationDeleted":
+        donation_deleted_event = DonationDeletedEvent(cloud_event)
+        add_logging_context(donation_deleted_event)
+        return process_donation_deleted_event(ts_client, donation_deleted_event)
     else:
         # other events than handled above are assumed to (currently) not be of interest in search
         logger.debug(f"Ignoring {event_type} (v{event_version}) event.")

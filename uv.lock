@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.13.3"
 
 [manifest]
@@ -1794,6 +1794,7 @@ dependencies = [
 dev = [
     { name = "faker" },
     { name = "pre-commit" },
+    { name = "pydantic" },
     { name = "pytest" },
     { name = "ruff" },
     { name = "types-pyfarmhash" },
@@ -1811,6 +1812,7 @@ requires-dist = [
 dev = [
     { name = "faker", specifier = "==37.4.0" },
     { name = "pre-commit", specifier = "==4.2.0" },
+    { name = "pydantic", specifier = "==2.11.7" },
     { name = "pytest", specifier = "==8.4.1" },
     { name = "ruff", specifier = "==0.12.1" },
     { name = "types-pyfarmhash", specifier = "==0.4.0.20240902" },
