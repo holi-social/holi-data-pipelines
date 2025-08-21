@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional, List, Generic, TypeVar
 from semver import Version
-from pydantic import BaseModel, ConfigDict, PlainValidator, PlainSerializer
+from pydantic import BaseModel, ConfigDict, PlainValidator, PlainSerializer, Field
 from typing_extensions import Annotated
 
 
@@ -120,9 +120,9 @@ SemverVersion = Annotated[
 EventPayloadT = TypeVar("EventPayloadT", bound=BaseModel)
 
 
-class Event(Generic[EventPayloadT], BaseModel):
-    event_type: str
-    event_version: SemverVersion
+class Event(BaseModel, Generic[EventPayloadT]):
+    event_type: str = Field(serialization_alias="eventType")
+    event_version: SemverVersion = Field(serialization_alias="eventVersion")
     data: EventPayloadT
 
 

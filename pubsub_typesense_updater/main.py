@@ -54,7 +54,7 @@ def bigquery_table_name_classifications() -> str:
 
 
 def process_user_updated_event(ts_client: TypesenseClient, event: UserUpdatedEvent) -> None:
-    logger.debug(f"[id={event.user.id}] Processing event")
+    logger.debug(f"[id={event.user.id}] Processing UserUpdated event")
     if event.user.name is None or event.user.name.strip() == "":
         try:
             ts_client.delete(f"profile_{event.user.id}")
@@ -67,7 +67,7 @@ def process_user_updated_event(ts_client: TypesenseClient, event: UserUpdatedEve
 
 
 def process_user_deleted_event(ts_client: TypesenseClient, event: UserDeletedEvent) -> None:
-    logger.debug(f"[id={event.user.id}] Processing event")
+    logger.debug(f"[id={event.user.id}] Processing UserDeleted event")
     try:
         ts_client.delete(f"profile_{event.user.id}")
     except ObjectNotFound:
@@ -78,13 +78,13 @@ def process_user_deleted_event(ts_client: TypesenseClient, event: UserDeletedEve
 def process_space_upserting_event(
     ts_client: TypesenseClient, event: Union[SpaceCreatedEvent, SpaceUpdatedEvent]
 ) -> None:
-    logger.debug(f"[id={event.space.id}] Processing event")
+    logger.debug(f"[id={event.space.id}] Processing space upserting event")
     ts_client.upsert(event.as_typesense_document())
     logger.info(f"[id={event.space.id}] Upserted space {event.space.id} in Typesense")
 
 
 def process_space_deleted_event(ts_client: TypesenseClient, event: SpaceDeletedEvent) -> None:
-    logger.debug(f"[id={event.space.id}] Processing event")
+    logger.debug(f"[id={event.space.id}] Processing SpaceDeleted event")
     try:
         ts_client.delete(f"space_{event.space.id}")
     except ObjectNotFound:
@@ -147,7 +147,7 @@ def _delete_task(ts_client: TypesenseClient, id: str) -> None:
 
 
 def process_task_deleted_event(ts_client: TypesenseClient, id: str) -> None:
-    logger.debug(f"[id={id}] Processing event")
+    logger.debug(f"[id={id}] Processing TaskDeleted event")
     _delete_task(ts_client, id)
 
 
@@ -216,14 +216,17 @@ def process_event(ts_client: TypesenseClient, cloud_event: CloudEvent) -> None:
         add_logging_context(task_deleted_event)
         return process_task_deleted_event(ts_client, task_deleted_event.task.id)
     elif event_type == "DonationCreated":
+        logger.debug(f"Parsing DonationCreated event {cloud_event}")
         donation_created_event = parse_donation_created_event(cloud_event)
         add_logging_context(donation_created_event)
         return process_donation_created_event(ts_client, donation_created_event)
     elif event_type == "DonationUpdated":
+        logger.debug(f"Parsing DonationUpdated event {cloud_event}")
         donation_updated_event = parse_donation_updated_event(cloud_event)
         add_logging_context(donation_updated_event)
         return process_donation_updated_event(ts_client, donation_updated_event)
     elif event_type == "DonationDeleted":
+        logger.debug(f"Parsing DonationDeleted event {cloud_event}")
         donation_deleted_event = parse_donation_deleted_event(cloud_event)
         add_logging_context(donation_deleted_event)
         return process_donation_deleted_event(ts_client, donation_deleted_event)
