@@ -19,7 +19,7 @@ resource "google_pubsub_subscription" "pubsub-typesense-updater-donations-sub" {
   }
 }
 
-resource "google_monitoring_alert_policy" "pubsub_unacked_messages" {
+resource "google_monitoring_alert_policy" "pubsub_unacked_messages_donations" {
   project      = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
   display_name = "TOFU: PubSub Unacked Messages Alert (${local.environment_name} - donations) / subscription_id='${google_pubsub_subscription.pubsub-typesense-updater-donations-sub.name}'"
   combiner     = "OR"
