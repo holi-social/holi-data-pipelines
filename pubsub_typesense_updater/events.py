@@ -336,19 +336,19 @@ class TaskDeletedEvent(TaskEvent):
 def parse_donation_created_event(cloud_event: CloudEvent) -> DonationCreatedEvent:
     _validate_event_type(cloud_event, "DonationCreated")
     _validate_event_version(cloud_event, Version(1, 0, 0), Version(2, 0, 0))
-    donation = Donation.model_validate_json(cloud_event.data["message"]["data"])
+    donation = Donation.model_validate_json(base64.b64decode(cloud_event.data["message"]["data"]))
     return DonationCreatedEvent(donation)
 
 
 def parse_donation_updated_event(cloud_event: CloudEvent) -> DonationUpdatedEvent:
     _validate_event_type(cloud_event, "DonationUpdated")
     _validate_event_version(cloud_event, Version(1, 0, 0), Version(2, 0, 0))
-    donation = Donation.model_validate_json(cloud_event.data["message"]["data"])
+    donation = Donation.model_validate_json(base64.b64decode(cloud_event.data["message"]["data"]))
     return DonationUpdatedEvent(donation)
 
 
 def parse_donation_deleted_event(cloud_event: CloudEvent) -> DonationDeletedEvent:
     _validate_event_type(cloud_event, "DonationDeleted")
     _validate_event_version(cloud_event, Version(1, 0, 0), Version(2, 0, 0))
-    donation = Donation.model_validate_json(cloud_event.data["message"]["data"])
+    donation = Donation.model_validate_json(base64.b64decode(cloud_event.data["message"]["data"]))
     return DonationDeletedEvent(donation)

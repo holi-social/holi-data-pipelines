@@ -17,5 +17,11 @@ class PubSubClient:
         self.ordering_key = ordering_key
 
     def publish(self, event: Event[EventPayloadT]) -> pubsub_v1.publisher.futures.Future:
-        data = event.model_dump_json().encode("utf-8")
-        return self.publisher.publish(self.topic_name, data, ordering_key=self.ordering_key)
+        data = event.data.model_dump_json().encode("utf-8")
+        return self.publisher.publish(
+            self.topic_name,
+            data=data,
+            ordering_key=self.ordering_key,
+            eventType=event.event_type,
+            eventVersion=str(event.event_version),
+        )

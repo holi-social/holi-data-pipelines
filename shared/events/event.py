@@ -1,8 +1,8 @@
+import dataclasses
 from datetime import datetime
 from typing import Optional, List, Generic, TypeVar
 from semver import Version
-from pydantic import BaseModel, ConfigDict, PlainValidator, PlainSerializer, Field
-from typing_extensions import Annotated
+from pydantic import BaseModel, ConfigDict
 
 
 class DonationLink(BaseModel):
@@ -111,18 +111,13 @@ class Donation(BaseModel):
     categories: List[DonationCategory] = []
 
 
-SemverVersion = Annotated[
-    Version,
-    PlainValidator(lambda v: Version.parse(v) if isinstance(v, str) else v),
-    PlainSerializer(str, return_type=str),
-]
-
 EventPayloadT = TypeVar("EventPayloadT", bound=BaseModel)
 
 
-class Event(BaseModel, Generic[EventPayloadT]):
-    event_type: str = Field(serialization_alias="eventType")
-    event_version: SemverVersion = Field(serialization_alias="eventVersion")
+@dataclasses.dataclass
+class Event(Generic[EventPayloadT]):
+    event_type: str
+    event_version: Version
     data: EventPayloadT
 
 
