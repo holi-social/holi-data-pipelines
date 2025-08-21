@@ -3,6 +3,20 @@ resource "random_id" "pubsub-typesense-updater-donations-sub-id" {
   prefix      = "pubsub-typesense-updater-donations-sub-${local.environment_name}-"
 }
 
+# Dead letter topic for donations subscription
+resource "google_pubsub_topic" "pubsub-typesense-updater-donations-dead-letter" {
+  project = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
+  name    = "pubsub-typesense-updater-donations-dead-letter-${local.environment_name}"
+}
+
+# Grant the Cloud Pub/Sub service account subscriber role to the dead letter topic
+resource "google_pubsub_topic_iam_member" "dead_letter_subscriber" {
+  project = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
+  topic   = google_pubsub_topic.pubsub-typesense-updater-donations-dead-letter.name
+  role    = "roles/pubsub.subscriber"
+  member  = "serviceAccount:service-${data.terraform_remote_state.holi_infra_state.outputs.shared_project_number}@gcp-sa-pubsub.iam.gserviceaccount.com"
+}
+
 resource "google_pubsub_subscription" "pubsub-typesense-updater-donations-sub" {
   project = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
   name    = random_id.pubsub-typesense-updater-donations-sub-id.hex
@@ -13,6 +27,11 @@ resource "google_pubsub_subscription" "pubsub-typesense-updater-donations-sub" {
   ack_deadline_seconds = 10 * 60 # 10 minutes, max. value TODO validate if required
   expiration_policy {
     ttl = "" # never expire
+  }
+
+  dead_letter_policy {
+    dead_letter_topic     = google_pubsub_topic.pubsub-typesense-updater-donations-dead-letter.id
+    max_delivery_attempts = 5
   }
 
   push_config {
