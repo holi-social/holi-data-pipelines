@@ -1,11 +1,11 @@
 from src.common.events.VolunteeringDeletedEvent import VolunteeringDeletedEvent
 from src.common.logging.PipelineLogger import PipelineLogger
-from src.common.pubsub_client import PubSubClient
+from src.common.external_data_pubsub_client import ExternalDataPubSubClient
 
 logger = PipelineLogger(__name__)
 
 
-def publish_volunteering_deletion(pubsub_client: PubSubClient, deleted_record_ids: list[str]) -> bool:
+def publish_volunteering_deletion(pubsub_client: ExternalDataPubSubClient, deleted_record_ids: list[str]) -> bool:
     try:
         publish_futures = []
 

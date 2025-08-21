@@ -15,7 +15,7 @@ from src.common.extractors.bq_extractor import (
 from src.common.loaders.typesense_loader import upsert_typesense_documents
 from src.common.logging.PipelineLogger import PipelineLogger
 from src.common.typesense_client import TypesenseClient
-from src.common.pubsub_client import PubSubClient
+from src.common.external_data_pubsub_client import ExternalDataPubSubClient
 from src.common.variables import variable_value
 from src.pipelines.constants import LAST_INGESTION_TIMESTAMP_KEY, VOLUNTEERING_STATE_VARIABLE
 from src.pipelines.volunteering_to_typesense.typesense_doc_id import TypesenseDocId
@@ -153,7 +153,7 @@ def diff_ingest(
     last_complete_ingestion_timestamp: Optional[datetime],
     latest_partition_timestamp: date,
     typesense_client: TypesenseClient,
-    pubsub_client: PubSubClient,
+    pubsub_client: ExternalDataPubSubClient,
     typesense_collection_name: str,
 ) -> Tuple[bool, bool, int]:
     """
