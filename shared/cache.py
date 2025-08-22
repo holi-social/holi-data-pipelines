@@ -121,14 +121,35 @@ def _generate_cache_key(func: Callable[..., Any], args: Tuple[Any, ...], kwargs:
             # Last resort fallback
             func_body = f"{func.__module__}.{func.__name__}"
 
-    # Serialize args and kwargs for hashing
-    try:
-        serialized_args = pickle.dumps(args)
-        serialized_kwargs = pickle.dumps(sorted(kwargs.items()))
-    except (pickle.PicklingError, TypeError):
-        # Fallback to string representation if pickling fails
-        serialized_args = str(args).encode("utf-8")
-        serialized_kwargs = str(sorted(kwargs.items())).encode("utf-8")
+    # Serialize args and kwargs for hashing using deterministic approach
+    def _serialize_deterministically(obj: Any) -> bytes:
+        """Serialize objects deterministically for consistent cache keys."""
+        try:
+            # Try to use the object's dict representation if it has one (works for most objects)
+            if hasattr(obj, "__dict__"):
+                # Sort dict items to ensure consistent ordering
+                obj_dict = dict(sorted(obj.__dict__.items()))
+                return str(obj_dict).encode("utf-8")
+            # For objects with model_dump method (like Pydantic models)
+            elif hasattr(obj, "model_dump"):
+                # Use model_dump for consistent serialization
+                dumped = obj.model_dump()
+                return str(sorted(dumped.items()) if isinstance(dumped, dict) else dumped).encode("utf-8")
+            # For basic types, use string representation
+            else:
+                return str(obj).encode("utf-8")
+        except Exception:
+            # Final fallback to string representation
+            return str(obj).encode("utf-8")
+
+    # Serialize each argument individually for better determinism
+    serialized_args = b""
+    for arg in args:
+        serialized_args += _serialize_deterministically(arg)
+
+    serialized_kwargs = b""
+    for key in sorted(kwargs.keys()):
+        serialized_kwargs += key.encode("utf-8") + _serialize_deterministically(kwargs[key])
 
     # Generate SHA256 hash from function body and parameters
     hasher = hashlib.sha256()
@@ -136,18 +157,14 @@ def _generate_cache_key(func: Callable[..., Any], args: Tuple[Any, ...], kwargs:
     # Hash function body (most important for cache invalidation)
     hasher.update(func_body.encode("utf-8"))
 
-    # Hash function parameters
-    if isinstance(serialized_args, bytes):
-        hasher.update(serialized_args)
-    else:
-        hasher.update(str(serialized_args).encode("utf-8"))
+    # Hash function parameters (serialized_args and serialized_kwargs are now always bytes)
+    hasher.update(serialized_args)
+    hasher.update(serialized_kwargs)
 
-    if isinstance(serialized_kwargs, bytes):
-        hasher.update(serialized_kwargs)
-    else:
-        hasher.update(str(serialized_kwargs).encode("utf-8"))
+    hexdigest = hasher.hexdigest()
 
-    return hasher.hexdigest()
+    print("Cache key:", hexdigest)  # TODO eventually remove
+    return hexdigest
 
 
 def cache(persistence: Optional[CachePersistence] = None, ignore_args: Optional[List[str]] = None) -> Callable[[F], F]:

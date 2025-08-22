@@ -1,13 +1,17 @@
 from pubsub_typesense_updater.main import parse_donation_created_event
-from shared.cache import cache
+from shared.cache import cache, RedisCachePersistence
 from shared.events.event import Donation
 from cloudevents.http.event import CloudEvent
 import json
+from redis import Redis
+
+redis_client = Redis.from_url("redis://@localhost:6379/0")  # TODO from env var
+cache_persistence = RedisCachePersistence(redis_client)
 
 
-@cache()
-def enrich(donation: Donation):
-    print("cache miss")
+@cache(cache_persistence)
+def enrich(donation: Donation, bla: str = "bla") -> str:
+    print("cache missing")
     return "foobar"
 
 
@@ -18,4 +22,4 @@ if __name__ == "__main__":
     event = CloudEvent.create(event_json["attributes"], event_json["data"])
     donation = parse_donation_created_event(event)
     result1 = enrich(donation)
-    result2 = enrich(donation)
+    result2 = enrich(donation, "blub")
