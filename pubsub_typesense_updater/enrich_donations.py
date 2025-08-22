@@ -5,11 +5,15 @@ from pubsub_typesense_updater.similarity_embedding import (
     normalize_text,
     logger as similarity_embedding_logger,
 )
+from langchain_core.prompts import PromptTemplate
+from pubsub_typesense_updater.topics_skills_embedding import create_topics_skills_v2_embedding
 from shared.events.event import Donation
 from cloudevents.http.event import CloudEvent
 import json
 import logging
-from typing import Optional
+from typing import Optional, Any
+
+from src.pipelines.volunteering_classification.voltastics_topics_skills_classifier_v2 import topic_v2_titles
 
 
 def create_text_input_for_similarity_embedding_from_donation(donation: Donation) -> str:
@@ -29,9 +33,22 @@ def create_similarity_embedding_for_donation(donation: Donation) -> SimilarityEm
     return create_similarity_embedding(input)
 
 
-def enrich(donation: Donation) -> tuple[Donation, SimilarityEmbedding]:
+def create_topics_skills_v2_embedding_for_donation(donation: Donation):
+    input = donation.model_dump()
+    topic_titles_list = "\n".join(map(lambda topic_title: f"- {topic_title}", topic_v2_titles))
+    input["topic_titles"] = topic_titles_list
+
+    prompt_template = PromptTemplate.from_template(
+        "Here is a donation project with title '{title}' and decription '{description}'. Estimate the similarity of the project to the given topics between -1 and 1 (-1 for not similar, 1 for similar): {topic_titles}"
+    )
+
+    return create_topics_skills_v2_embedding(prompt_template, input)
+
+
+def enrich(donation: Donation) -> tuple[Donation, Any]:
     similarity_embedding = create_similarity_embedding_for_donation(donation)
-    return [donation, similarity_embedding]
+    topics_skills_embedding = create_topics_skills_v2_embedding_for_donation(donation)
+    return [donation, topics_skills_embedding]
 
 
 if __name__ == "__main__":
