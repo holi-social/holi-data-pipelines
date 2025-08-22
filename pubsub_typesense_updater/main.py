@@ -1,4 +1,5 @@
 import os
+import json
 import logging
 from typing import Union
 
@@ -216,17 +217,17 @@ def process_event(ts_client: TypesenseClient, cloud_event: CloudEvent) -> None:
         add_logging_context(task_deleted_event)
         return process_task_deleted_event(ts_client, task_deleted_event.task.id)
     elif event_type == "DonationCreated":
-        logger.debug(f"Parsing DonationCreated event {cloud_event}")
+        logger.debug(f"Parsing DonationCreated event {json.dumps(cloud_event)}")
         donation_created_event = parse_donation_created_event(cloud_event)
         add_logging_context(donation_created_event)
         return process_donation_created_event(ts_client, donation_created_event)
     elif event_type == "DonationUpdated":
-        logger.debug(f"Parsing DonationUpdated event {cloud_event}")
+        logger.debug(f"Parsing DonationUpdated event {json.dumps(cloud_event)}")
         donation_updated_event = parse_donation_updated_event(cloud_event)
         add_logging_context(donation_updated_event)
         return process_donation_updated_event(ts_client, donation_updated_event)
     elif event_type == "DonationDeleted":
-        logger.debug(f"Parsing DonationDeleted event {cloud_event}")
+        logger.debug(f"Parsing DonationDeleted event {json.dumps(cloud_event)}")
         donation_deleted_event = parse_donation_deleted_event(cloud_event)
         add_logging_context(donation_deleted_event)
         return process_donation_deleted_event(ts_client, donation_deleted_event)
