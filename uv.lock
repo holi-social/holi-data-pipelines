@@ -202,6 +202,31 @@ wheels = [
 ]
 
 [[package]]
+name = "bottleneck"
+version = "1.5.0"
+source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
+dependencies = [
+    { name = "numpy" },
+]
+sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/bottleneck/bottleneck-1.5.0.tar.gz", hash = "sha256:c860242cf20e69d5aab2ec3c5d6c8c2a15f19e4b25b28b8fca2c2a12cefae9d8" }
+wheels = [
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/bottleneck/bottleneck-1.5.0-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:97285cfedf3545d9a010b2db2123f9750bf920081e29364cc465052973bd0b5a" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/bottleneck/bottleneck-1.5.0-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:1043d95674566063f638582cc8700c24c4427f532f86b9e7cfc9f9ec84abc1ff" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/bottleneck/bottleneck-1.5.0-cp313-cp313-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:abc6a24a41f55765215005cec97dd69f41ac747ed0f4d446caa508531957eeda" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/bottleneck/bottleneck-1.5.0-cp313-cp313-musllinux_1_2_aarch64.whl", hash = "sha256:7967e0189defe9f49025bd6469ff0fe22af5463926af55c7ba1e4592051d8ef8" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/bottleneck/bottleneck-1.5.0-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:27e38e829497ca0a5eebdb79d3293aaa424f3c31c13806e5c607fd414536b7c3" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/bottleneck/bottleneck-1.5.0-cp313-cp313-win32.whl", hash = "sha256:1214a2bf3b36c66e3898aab821ad8366a3062db6f83a8f083e2f799d202e86ea" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/bottleneck/bottleneck-1.5.0-cp313-cp313-win_amd64.whl", hash = "sha256:436a402f0d60a9d6541d7adb0929501225a151ad03b96b756e0b607db6a106f1" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/bottleneck/bottleneck-1.5.0-cp313-cp313t-macosx_11_0_arm64.whl", hash = "sha256:fc0c0b661005b059fcb09988f8b5e2cd5e9c702e1bed24819ed38f85145140b5" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/bottleneck/bottleneck-1.5.0-cp313-cp313t-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:48c2657102f3288e178cc341f000475a32f49a3cd8b7067e091d5446fa899383" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/bottleneck/bottleneck-1.5.0-cp313-cp313t-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:5c4c94cfcba46adfe71894c63c4b186c847965e73727dbaf5fd9ade41ef38e6e" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/bottleneck/bottleneck-1.5.0-cp313-cp313t-musllinux_1_2_aarch64.whl", hash = "sha256:3f3e308416886e29441a0b71bce8f3eb4c7a4943be541fd918244aaf25534d36" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/bottleneck/bottleneck-1.5.0-cp313-cp313t-musllinux_1_2_x86_64.whl", hash = "sha256:bda7c475d4a7e271dbd0b1d4bbce29065edc8891361857105b7212fe383c9a36" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/bottleneck/bottleneck-1.5.0-cp313-cp313t-win32.whl", hash = "sha256:a107ed8b5f998918c24a1e476dbd2dfc3514ab0082df7132c460b01e6ffd8cf4" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/bottleneck/bottleneck-1.5.0-cp313-cp313t-win_amd64.whl", hash = "sha256:816c910c5d1fb53adb32581c52a513b206f503ae253ace70cb32d1fe4e45af1d" },
+]
+
+[[package]]
 name = "cachetools"
 version = "5.5.2"
 source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
@@ -471,6 +496,15 @@ wheels = [
 ]
 
 [[package]]
+name = "filetype"
+version = "1.2.0"
+source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
+sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/filetype/filetype-1.2.0.tar.gz", hash = "sha256:66b56cd6474bf41d8c54660347d37afcc3f7d1970648de365c102ef77548aadb" }
+wheels = [
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/filetype/filetype-1.2.0-py2.py3-none-any.whl", hash = "sha256:7ce71b6880181241cf7ac8697a2f1eb6a8bd9b429f7ad6d27b8db9ba5f1c2d25" },
+]
+
+[[package]]
 name = "flask"
 version = "3.1.1"
 source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
@@ -554,6 +588,21 @@ dependencies = [
 sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/functions-framework/functions_framework-3.8.3.tar.gz", hash = "sha256:95827698469e3979518d52e32def2f11230465877fef32afd49045013b2a469c" }
 wheels = [
     { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/functions-framework/functions_framework-3.8.3-py3-none-any.whl", hash = "sha256:fd352272c02ee08b4a3445e234213e43fbdd350365d98e2cce13e1575490bffe" },
+]
+
+[[package]]
+name = "google-ai-generativelanguage"
+version = "0.6.18"
+source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
+dependencies = [
+    { name = "google-api-core", extra = ["grpc"] },
+    { name = "google-auth" },
+    { name = "proto-plus" },
+    { name = "protobuf" },
+]
+sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/google-ai-generativelanguage/google_ai_generativelanguage-0.6.18.tar.gz", hash = "sha256:274ba9fcf69466ff64e971d565884434388e523300afd468fc8e3033cd8e606e" }
+wheels = [
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/google-ai-generativelanguage/google_ai_generativelanguage-0.6.18-py3-none-any.whl", hash = "sha256:13d8174fea90b633f520789d32df7b422058fd5883b022989c349f1017db7fcf" },
 ]
 
 [[package]]
@@ -1084,6 +1133,15 @@ http2 = [
 ]
 
 [[package]]
+name = "httpx-sse"
+version = "0.4.1"
+source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
+sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/httpx-sse/httpx_sse-0.4.1.tar.gz", hash = "sha256:8f44d34414bc7b21bf3602713005c5df4917884f76072479b21f68befa4ea26e" }
+wheels = [
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/httpx-sse/httpx_sse-0.4.1-py3-none-any.whl", hash = "sha256:cba42174344c3a5b06f255ce65b350880f962d99ead85e776f23c6618a377a37" },
+]
+
+[[package]]
 name = "humanize"
 version = "4.12.3"
 source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
@@ -1223,6 +1281,90 @@ wheels = [
 ]
 
 [[package]]
+name = "langchain"
+version = "0.3.27"
+source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
+dependencies = [
+    { name = "langchain-core" },
+    { name = "langchain-text-splitters" },
+    { name = "langsmith" },
+    { name = "pydantic" },
+    { name = "pyyaml" },
+    { name = "requests" },
+    { name = "sqlalchemy" },
+]
+sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/langchain/langchain-0.3.27.tar.gz", hash = "sha256:aa6f1e6274ff055d0fd36254176770f356ed0a8994297d1df47df341953cec62" }
+wheels = [
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/langchain/langchain-0.3.27-py3-none-any.whl", hash = "sha256:7b20c4f338826acb148d885b20a73a16e410ede9ee4f19bb02011852d5f98798" },
+]
+
+[[package]]
+name = "langchain-core"
+version = "0.3.74"
+source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
+dependencies = [
+    { name = "jsonpatch" },
+    { name = "langsmith" },
+    { name = "packaging" },
+    { name = "pydantic" },
+    { name = "pyyaml" },
+    { name = "tenacity" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/langchain-core/langchain_core-0.3.74.tar.gz", hash = "sha256:ff604441aeade942fbcc0a3860a592daba7671345230c2078ba2eb5f82b6ba76" }
+wheels = [
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/langchain-core/langchain_core-0.3.74-py3-none-any.whl", hash = "sha256:088338b5bc2f6a66892f9afc777992c24ee3188f41cbc603d09181e34a228ce7" },
+]
+
+[[package]]
+name = "langchain-google-genai"
+version = "2.1.9"
+source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
+dependencies = [
+    { name = "filetype" },
+    { name = "google-ai-generativelanguage" },
+    { name = "langchain-core" },
+    { name = "pydantic" },
+]
+sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/langchain-google-genai/langchain_google_genai-2.1.9.tar.gz", hash = "sha256:cd5d6f644b8dac3e312e30101bb97541aab240e82678e87a4df039ee1dc77531" }
+wheels = [
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/langchain-google-genai/langchain_google_genai-2.1.9-py3-none-any.whl", hash = "sha256:8d3aab59706b8f8920a22bcfd63c5000ce430fe61db6ecdec262977d1a0be5b8" },
+]
+
+[[package]]
+name = "langchain-google-vertexai"
+version = "2.0.28"
+source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
+dependencies = [
+    { name = "bottleneck" },
+    { name = "google-cloud-aiplatform" },
+    { name = "google-cloud-storage" },
+    { name = "httpx" },
+    { name = "httpx-sse" },
+    { name = "langchain-core" },
+    { name = "numexpr" },
+    { name = "pyarrow" },
+    { name = "pydantic" },
+    { name = "validators" },
+]
+sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/langchain-google-vertexai/langchain_google_vertexai-2.0.28.tar.gz", hash = "sha256:35fcd366752b6a5b8fa490c80816b9e8d372edc39fb5b3ad177b1d4f269781f2" }
+wheels = [
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/langchain-google-vertexai/langchain_google_vertexai-2.0.28-py3-none-any.whl", hash = "sha256:8dc7a5cfb50b19fa455a284bed9f4f330e0eb462f3251773576b207780eb7709" },
+]
+
+[[package]]
+name = "langchain-text-splitters"
+version = "0.3.9"
+source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
+dependencies = [
+    { name = "langchain-core" },
+]
+sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/langchain-text-splitters/langchain_text_splitters-0.3.9.tar.gz", hash = "sha256:7cd1e5a3aaf609979583eeca2eb34177622570b8fa8f586a605c6b1c34e7ebdb" }
+wheels = [
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/langchain-text-splitters/langchain_text_splitters-0.3.9-py3-none-any.whl", hash = "sha256:cee0bb816211584ea79cc79927317c358543f40404bcfdd69e69ba3ccde54401" },
+]
+
+[[package]]
 name = "langdetect"
 version = "1.0.9"
 source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
@@ -1230,6 +1372,24 @@ dependencies = [
     { name = "six" },
 ]
 sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/langdetect/langdetect-1.0.9.tar.gz", hash = "sha256:cbc1fef89f8d062739774bd51eda3da3274006b3661d199c2655f6b3f6d605a0" }
+
+[[package]]
+name = "langsmith"
+version = "0.4.15"
+source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
+dependencies = [
+    { name = "httpx" },
+    { name = "orjson", marker = "platform_python_implementation != 'PyPy'" },
+    { name = "packaging" },
+    { name = "pydantic" },
+    { name = "requests" },
+    { name = "requests-toolbelt" },
+    { name = "zstandard" },
+]
+sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/langsmith/langsmith-0.4.15.tar.gz", hash = "sha256:c9a4ec4b7b0f5f70e7be204ee9c5b17db872cc3015cd04851e2703a0966b9ff1" }
+wheels = [
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/langsmith/langsmith-0.4.15-py3-none-any.whl", hash = "sha256:633719f9fdafe4297459b0ab442f536d6c0734b36c186ded67343d335e5ea0b3" },
+]
 
 [[package]]
 name = "mako"
@@ -1378,6 +1538,29 @@ source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-rem
 sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/nodeenv/nodeenv-1.9.1.tar.gz", hash = "sha256:6ec12890a2dab7946721edbfbcd91f3319c6ccc9aec47be7c7e6b7011ee6645f" }
 wheels = [
     { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/nodeenv/nodeenv-1.9.1-py2.py3-none-any.whl", hash = "sha256:ba11c9782d29c27c70ffbdda2d7415098754709be8a7056d79a737cd901155c9" },
+]
+
+[[package]]
+name = "numexpr"
+version = "2.11.0"
+source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
+dependencies = [
+    { name = "numpy" },
+]
+sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/numexpr/numexpr-2.11.0.tar.gz", hash = "sha256:75b2c01a4eda2e7c357bc67a3f5c3dd76506c15b5fd4dc42845ef2e182181bad" }
+wheels = [
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/numexpr/numexpr-2.11.0-cp313-cp313-macosx_10_13_x86_64.whl", hash = "sha256:eb766218abad05c7c3ddad5367d0ec702d6152cb4a48d9fd56a6cef6abade70c" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/numexpr/numexpr-2.11.0-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:2036be213a6a1b5ce49acf60de99b911a0f9d174aab7679dde1fae315134f826" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/numexpr/numexpr-2.11.0-cp313-cp313-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:096ec768bee2ef14ac757b4178e3c5f05e5f1cb6cae83b2eea9b4ba3ec1a86dd" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/numexpr/numexpr-2.11.0-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:a1719788a787808c15c9bb98b6ff0c97d64a0e59c1a6ebe36d4ae4d7c5c09b95" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/numexpr/numexpr-2.11.0-cp313-cp313-win32.whl", hash = "sha256:6b5fdfc86cbf5373ea67d554cc6f08863825ea8e928416bed8d5285e387420c6" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/numexpr/numexpr-2.11.0-cp313-cp313-win_amd64.whl", hash = "sha256:5ff337b36db141a1a0b49f01282783744f49f0d401cc83a512fc5596eb7db5c6" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/numexpr/numexpr-2.11.0-cp313-cp313t-macosx_10_13_x86_64.whl", hash = "sha256:b9854fa70edbe93242b8bb4840e58d1128c45766d9a70710f05b4f67eb0feb6e" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/numexpr/numexpr-2.11.0-cp313-cp313t-macosx_11_0_arm64.whl", hash = "sha256:321736cb98f090ce864b58cc5c37661cb5548e394e0fe24d5f2c7892a89070c3" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/numexpr/numexpr-2.11.0-cp313-cp313t-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:b5cc434eb4a4df2fe442bcc50df114e82ff7aa234657baf873b2c9cf3f851e8e" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/numexpr/numexpr-2.11.0-cp313-cp313t-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:238d19465a272ada3967600fada55e4c6900485aefb42122a78dfcaf2efca65f" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/numexpr/numexpr-2.11.0-cp313-cp313t-win32.whl", hash = "sha256:0db4c2dcad09f9594b45fce794f4b903345195a8c216e252de2aa92884fd81a8" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/numexpr/numexpr-2.11.0-cp313-cp313t-win_amd64.whl", hash = "sha256:a69b5c02014448a412012752dc46091902d28932c3be0c6e02e73cecceffb700" },
 ]
 
 [[package]]
@@ -1786,6 +1969,10 @@ source = { virtual = "pubsub_typesense_updater" }
 dependencies = [
     { name = "functions-framework" },
     { name = "google-cloud-logging" },
+    { name = "langchain" },
+    { name = "langchain-core" },
+    { name = "langchain-google-genai" },
+    { name = "langchain-google-vertexai" },
     { name = "pyfarmhash" },
     { name = "shared" },
 ]
@@ -1804,6 +1991,10 @@ dev = [
 requires-dist = [
     { name = "functions-framework", specifier = "==3.8.3" },
     { name = "google-cloud-logging", specifier = "==3.12.1" },
+    { name = "langchain", specifier = ">=0.3.27" },
+    { name = "langchain-core", specifier = ">=0.3.74" },
+    { name = "langchain-google-genai", specifier = ">=2.1.9" },
+    { name = "langchain-google-vertexai", specifier = ">=2.0.28" },
     { name = "pyfarmhash", specifier = "==0.4.0" },
     { name = "shared", virtual = "shared" },
 ]
@@ -1820,28 +2011,23 @@ dev = [
 
 [[package]]
 name = "pyarrow"
-version = "20.0.0"
+version = "19.0.1"
 source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
-sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/pyarrow/pyarrow-20.0.0.tar.gz", hash = "sha256:febc4a913592573c8d5805091a6c2b5064c8bd6e002131f01061797d91c783c1" }
+sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/pyarrow/pyarrow-19.0.1.tar.gz", hash = "sha256:3bf266b485df66a400f282ac0b6d1b500b9d2ae73314a153dbe97d6d5cc8a99e" }
 wheels = [
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/pyarrow/pyarrow-20.0.0-cp313-cp313-macosx_12_0_arm64.whl", hash = "sha256:a15532e77b94c61efadde86d10957950392999503b3616b2ffcef7621a002893" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/pyarrow/pyarrow-20.0.0-cp313-cp313-macosx_12_0_x86_64.whl", hash = "sha256:dd43f58037443af715f34f1322c782ec463a3c8a94a85fdb2d987ceb5658e061" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/pyarrow/pyarrow-20.0.0-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:aa0d288143a8585806e3cc7c39566407aab646fb9ece164609dac1cfff45f6ae" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/pyarrow/pyarrow-20.0.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b6953f0114f8d6f3d905d98e987d0924dabce59c3cda380bdfaa25a6201563b4" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/pyarrow/pyarrow-20.0.0-cp313-cp313-manylinux_2_28_aarch64.whl", hash = "sha256:991f85b48a8a5e839b2128590ce07611fae48a904cae6cab1f089c5955b57eb5" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/pyarrow/pyarrow-20.0.0-cp313-cp313-manylinux_2_28_x86_64.whl", hash = "sha256:97c8dc984ed09cb07d618d57d8d4b67a5100a30c3818c2fb0b04599f0da2de7b" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/pyarrow/pyarrow-20.0.0-cp313-cp313-musllinux_1_2_aarch64.whl", hash = "sha256:9b71daf534f4745818f96c214dbc1e6124d7daf059167330b610fc69b6f3d3e3" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/pyarrow/pyarrow-20.0.0-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:e8b88758f9303fa5a83d6c90e176714b2fd3852e776fc2d7e42a22dd6c2fb368" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/pyarrow/pyarrow-20.0.0-cp313-cp313-win_amd64.whl", hash = "sha256:30b3051b7975801c1e1d387e17c588d8ab05ced9b1e14eec57915f79869b5031" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/pyarrow/pyarrow-20.0.0-cp313-cp313t-macosx_12_0_arm64.whl", hash = "sha256:ca151afa4f9b7bc45bcc791eb9a89e90a9eb2772767d0b1e5389609c7d03db63" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/pyarrow/pyarrow-20.0.0-cp313-cp313t-macosx_12_0_x86_64.whl", hash = "sha256:4680f01ecd86e0dd63e39eb5cd59ef9ff24a9d166db328679e36c108dc993d4c" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/pyarrow/pyarrow-20.0.0-cp313-cp313t-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:7f4c8534e2ff059765647aa69b75d6543f9fef59e2cd4c6d18015192565d2b70" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/pyarrow/pyarrow-20.0.0-cp313-cp313t-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:3e1f8a47f4b4ae4c69c4d702cfbdfe4d41e18e5c7ef6f1bb1c50918c1e81c57b" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/pyarrow/pyarrow-20.0.0-cp313-cp313t-manylinux_2_28_aarch64.whl", hash = "sha256:a1f60dc14658efaa927f8214734f6a01a806d7690be4b3232ba526836d216122" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/pyarrow/pyarrow-20.0.0-cp313-cp313t-manylinux_2_28_x86_64.whl", hash = "sha256:204a846dca751428991346976b914d6d2a82ae5b8316a6ed99789ebf976551e6" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/pyarrow/pyarrow-20.0.0-cp313-cp313t-musllinux_1_2_aarch64.whl", hash = "sha256:f3b117b922af5e4c6b9a9115825726cac7d8b1421c37c2b5e24fbacc8930612c" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/pyarrow/pyarrow-20.0.0-cp313-cp313t-musllinux_1_2_x86_64.whl", hash = "sha256:e724a3fd23ae5b9c010e7be857f4405ed5e679db5c93e66204db1a69f733936a" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/pyarrow/pyarrow-20.0.0-cp313-cp313t-win_amd64.whl", hash = "sha256:82f1ee5133bd8f49d31be1299dc07f585136679666b502540db854968576faf9" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/pyarrow/pyarrow-19.0.1-cp313-cp313-macosx_12_0_arm64.whl", hash = "sha256:e45274b20e524ae5c39d7fc1ca2aa923aab494776d2d4b316b49ec7572ca324c" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/pyarrow/pyarrow-19.0.1-cp313-cp313-macosx_12_0_x86_64.whl", hash = "sha256:d9dedeaf19097a143ed6da37f04f4051aba353c95ef507764d344229b2b740ae" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/pyarrow/pyarrow-19.0.1-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:6ebfb5171bb5f4a52319344ebbbecc731af3f021e49318c74f33d520d31ae0c4" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/pyarrow/pyarrow-19.0.1-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f2a21d39fbdb948857f67eacb5bbaaf36802de044ec36fbef7a1c8f0dd3a4ab2" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/pyarrow/pyarrow-19.0.1-cp313-cp313-manylinux_2_28_aarch64.whl", hash = "sha256:99bc1bec6d234359743b01e70d4310d0ab240c3d6b0da7e2a93663b0158616f6" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/pyarrow/pyarrow-19.0.1-cp313-cp313-manylinux_2_28_x86_64.whl", hash = "sha256:1b93ef2c93e77c442c979b0d596af45e4665d8b96da598db145b0fec014b9136" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/pyarrow/pyarrow-19.0.1-cp313-cp313-win_amd64.whl", hash = "sha256:d9d46e06846a41ba906ab25302cf0fd522f81aa2a85a71021826f34639ad31ef" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/pyarrow/pyarrow-19.0.1-cp313-cp313t-macosx_12_0_arm64.whl", hash = "sha256:c0fe3dbbf054a00d1f162fda94ce236a899ca01123a798c561ba307ca38af5f0" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/pyarrow/pyarrow-19.0.1-cp313-cp313t-macosx_12_0_x86_64.whl", hash = "sha256:96606c3ba57944d128e8a8399da4812f56c7f61de8c647e3470b417f795d0ef9" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/pyarrow/pyarrow-19.0.1-cp313-cp313t-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:8f04d49a6b64cf24719c080b3c2029a3a5b16417fd5fd7c4041f94233af732f3" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/pyarrow/pyarrow-19.0.1-cp313-cp313t-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:5a9137cf7e1640dce4c190551ee69d478f7121b5c6f323553b319cac936395f6" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/pyarrow/pyarrow-19.0.1-cp313-cp313t-manylinux_2_28_aarch64.whl", hash = "sha256:7c1bca1897c28013db5e4c83944a2ab53231f541b9e0c3f4791206d0c0de389a" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/pyarrow/pyarrow-19.0.1-cp313-cp313t-manylinux_2_28_x86_64.whl", hash = "sha256:58d9397b2e273ef76264b45531e9d552d8ec8a6688b7390b5be44c02a37aade8" },
 ]
 
 [[package]]
@@ -2148,6 +2334,18 @@ dependencies = [
 sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/requests-oauthlib/requests-oauthlib-2.0.0.tar.gz", hash = "sha256:b3dffaebd884d8cd778494369603a9e7b58d29111bf6b41bdc2dcd87203af4e9" }
 wheels = [
     { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/requests-oauthlib/requests_oauthlib-2.0.0-py2.py3-none-any.whl", hash = "sha256:7dd8a5c40426b779b0868c404bdef9768deccf22749cde15852df527e6269b36" },
+]
+
+[[package]]
+name = "requests-toolbelt"
+version = "1.0.0"
+source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
+dependencies = [
+    { name = "requests" },
+]
+sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/requests-toolbelt/requests-toolbelt-1.0.0.tar.gz", hash = "sha256:7681a0a3d047012b5bdc0ee37d7f8f07ebe76ab08caeccfc3921ce23c88d5bc6" }
+wheels = [
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/requests-toolbelt/requests_toolbelt-1.0.0-py2.py3-none-any.whl", hash = "sha256:cccfdd665f0a24fcf4726e690f65639d272bb0637b9b92dfd91a5568ccf6bd06" },
 ]
 
 [[package]]
@@ -2719,6 +2917,15 @@ wheels = [
 ]
 
 [[package]]
+name = "validators"
+version = "0.35.0"
+source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
+sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/validators/validators-0.35.0.tar.gz", hash = "sha256:992d6c48a4e77c81f1b4daba10d16c3a9bb0dbb79b3a19ea847ff0928e70497a" }
+wheels = [
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/validators/validators-0.35.0-py3-none-any.whl", hash = "sha256:e8c947097eae7892cb3d26868d637f79f47b4a0554bc6b80065dfe5aac3705dd" },
+]
+
+[[package]]
 name = "virtualenv"
 version = "20.31.2"
 source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
@@ -2865,4 +3072,44 @@ source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-rem
 sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/zipp/zipp-3.23.0.tar.gz", hash = "sha256:a07157588a12518c9d4034df3fbbee09c814741a33ff63c05fa29d26a2404166" }
 wheels = [
     { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/zipp/zipp-3.23.0-py3-none-any.whl", hash = "sha256:071652d6115ed432f5ce1d34c336c0adfd6a884660d1e9712a256d3d3bd4b14e" },
+]
+
+[[package]]
+name = "zstandard"
+version = "0.24.0"
+source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
+sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/zstandard/zstandard-0.24.0.tar.gz", hash = "sha256:fe3198b81c00032326342d973e526803f183f97aa9e9a98e3f897ebafe21178f" }
+wheels = [
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/zstandard/zstandard-0.24.0-cp313-cp313-macosx_10_13_x86_64.whl", hash = "sha256:e4ebb000c0fe24a6d0f3534b6256844d9dbf042fdf003efe5cf40690cf4e0f3e" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/zstandard/zstandard-0.24.0-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:498f88f5109666c19531f0243a90d2fdd2252839cd6c8cc6e9213a3446670fa8" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/zstandard/zstandard-0.24.0-cp313-cp313-manylinux2010_i686.manylinux2014_i686.manylinux_2_12_i686.manylinux_2_17_i686.whl", hash = "sha256:0a9e95ceb180ccd12a8b3437bac7e8a8a089c9094e39522900a8917745542184" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/zstandard/zstandard-0.24.0-cp313-cp313-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:bcf69e0bcddbf2adcfafc1a7e864edcc204dd8171756d3a8f3340f6f6cc87b7b" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/zstandard/zstandard-0.24.0-cp313-cp313-manylinux2014_ppc64le.manylinux_2_17_ppc64le.whl", hash = "sha256:10e284748a7e7fbe2815ca62a9d6e84497d34cfdd0143fa9e8e208efa808d7c4" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/zstandard/zstandard-0.24.0-cp313-cp313-manylinux2014_s390x.manylinux_2_17_s390x.whl", hash = "sha256:1bda8a85e5b9d5e73af2e61b23609a8cc1598c1b3b2473969912979205a1ff25" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/zstandard/zstandard-0.24.0-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:1b14bc92af065d0534856bf1b30fc48753163ea673da98857ea4932be62079b1" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/zstandard/zstandard-0.24.0-cp313-cp313-musllinux_1_1_aarch64.whl", hash = "sha256:b4f20417a4f511c656762b001ec827500cbee54d1810253c6ca2df2c0a307a5f" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/zstandard/zstandard-0.24.0-cp313-cp313-musllinux_1_1_x86_64.whl", hash = "sha256:337572a7340e1d92fd7fb5248c8300d0e91071002d92e0b8cabe8d9ae7b58159" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/zstandard/zstandard-0.24.0-cp313-cp313-musllinux_1_2_aarch64.whl", hash = "sha256:df4be1cf6e8f0f2bbe2a3eabfff163ef592c84a40e1a20a8d7db7f27cfe08fc2" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/zstandard/zstandard-0.24.0-cp313-cp313-musllinux_1_2_i686.whl", hash = "sha256:6885ae4b33aee8835dbdb4249d3dfec09af55e705d74d9b660bfb9da51baaa8b" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/zstandard/zstandard-0.24.0-cp313-cp313-musllinux_1_2_ppc64le.whl", hash = "sha256:663848a8bac4fdbba27feea2926049fdf7b55ec545d5b9aea096ef21e7f0b079" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/zstandard/zstandard-0.24.0-cp313-cp313-musllinux_1_2_s390x.whl", hash = "sha256:05d27c953f2e0a3ecc8edbe91d6827736acc4c04d0479672e0400ccdb23d818c" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/zstandard/zstandard-0.24.0-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:77b8b7b98893eaf47da03d262816f01f251c2aa059c063ed8a45c50eada123a5" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/zstandard/zstandard-0.24.0-cp313-cp313-win32.whl", hash = "sha256:cf7fbb4e54136e9a03c7ed7691843c4df6d2ecc854a2541f840665f4f2bb2edd" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/zstandard/zstandard-0.24.0-cp313-cp313-win_amd64.whl", hash = "sha256:d64899cc0f33a8f446f1e60bffc21fa88b99f0e8208750d9144ea717610a80ce" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/zstandard/zstandard-0.24.0-cp313-cp313-win_arm64.whl", hash = "sha256:57be3abb4313e0dd625596376bbb607f40059d801d51c1a1da94d7477e63b255" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/zstandard/zstandard-0.24.0-cp314-cp314-macosx_10_13_x86_64.whl", hash = "sha256:b7fa260dd2731afd0dfa47881c30239f422d00faee4b8b341d3e597cface1483" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/zstandard/zstandard-0.24.0-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:e05d66239d14a04b4717998b736a25494372b1b2409339b04bf42aa4663bf251" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/zstandard/zstandard-0.24.0-cp314-cp314-manylinux2010_i686.manylinux2014_i686.manylinux_2_12_i686.manylinux_2_17_i686.whl", hash = "sha256:622e1e04bd8a085994e02313ba06fbcf4f9ed9a488c6a77a8dbc0692abab6a38" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/zstandard/zstandard-0.24.0-cp314-cp314-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:55872e818598319f065e8192ebefecd6ac05f62a43f055ed71884b0a26218f41" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/zstandard/zstandard-0.24.0-cp314-cp314-manylinux2014_ppc64le.manylinux_2_17_ppc64le.whl", hash = "sha256:bb2446a55b3a0fd8aa02aa7194bd64740015464a2daaf160d2025204e1d7c282" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/zstandard/zstandard-0.24.0-cp314-cp314-manylinux2014_s390x.manylinux_2_17_s390x.whl", hash = "sha256:2825a3951f945fb2613ded0f517d402b1e5a68e87e0ee65f5bd224a8333a9a46" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/zstandard/zstandard-0.24.0-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:09887301001e7a81a3618156bc1759e48588de24bddfdd5b7a4364da9a8fbc20" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/zstandard/zstandard-0.24.0-cp314-cp314-musllinux_1_2_aarch64.whl", hash = "sha256:98ca91dc9602cf351497d5600aa66e6d011a38c085a8237b370433fcb53e3409" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/zstandard/zstandard-0.24.0-cp314-cp314-musllinux_1_2_i686.whl", hash = "sha256:e69f8e534b4e254f523e2f9d4732cf9c169c327ca1ce0922682aac9a5ee01155" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/zstandard/zstandard-0.24.0-cp314-cp314-musllinux_1_2_ppc64le.whl", hash = "sha256:444633b487a711e34f4bccc46a0c5dfbe1aee82c1a511e58cdc16f6bd66f187c" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/zstandard/zstandard-0.24.0-cp314-cp314-musllinux_1_2_s390x.whl", hash = "sha256:f7d3fe9e1483171e9183ffdb1fab07c5fef80a9c3840374a38ec2ab869ebae20" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/zstandard/zstandard-0.24.0-cp314-cp314-musllinux_1_2_x86_64.whl", hash = "sha256:27b6fa72b57824a3f7901fc9cc4ce1c1c834b28f3a43d1d4254c64c8f11149d4" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/zstandard/zstandard-0.24.0-cp314-cp314-win32.whl", hash = "sha256:fdc7a52a4cdaf7293e10813fd6a3abc0c7753660db12a3b864ab1fb5a0c60c16" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/zstandard/zstandard-0.24.0-cp314-cp314-win_amd64.whl", hash = "sha256:656ed895b28c7e42dd5b40dfcea3217cfc166b6b7eef88c3da2f5fc62484035b" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/zstandard/zstandard-0.24.0-cp314-cp314-win_arm64.whl", hash = "sha256:0101f835da7de08375f380192ff75135527e46e3f79bef224e3c49cb640fef6a" },
 ]
