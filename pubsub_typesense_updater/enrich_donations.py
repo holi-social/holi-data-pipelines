@@ -45,7 +45,9 @@ def create_topics_v2_embedding_for_donation(donation: Donation) -> TopicEmbeddin
     prompt = langfuse.get_prompt("donations_topics_v2_embedding_prompt", fallback=fallback_prompt)
     prompt_template = PromptTemplate.from_template(prompt.get_langchain_prompt())
     return TopicEmbeddingJson.model_validate(
-        create_topics_skills_v2_embedding(prompt_template, input, TopicEmbeddingJson.model_json_schema())
+        create_topics_skills_v2_embedding(
+            prompt_template, input, output_json_schema=TopicEmbeddingJson.model_json_schema()
+        )
     )
 
 
@@ -56,7 +58,11 @@ def create_skills_v2_embedding_for_donation(donation: Donation):
     Estimate the similarity of the project to the given skills between -1 and 1 (-1 for not similar, 1 for similar)"""
     prompt = langfuse.get_prompt("donations_skills_v2_embedding_prompt", fallback=fallback_prompt)
     prompt_template = PromptTemplate.from_template(prompt.get_langchain_prompt())
-    return create_topics_skills_v2_embedding(prompt_template, input, SkillEmbeddingJson)
+    return SkillEmbeddingJson.model_validate(
+        create_topics_skills_v2_embedding(
+            prompt_template, input, output_json_schema=SkillEmbeddingJson.model_json_schema()
+        )
+    )
 
 
 def enrich(donation: Donation) -> tuple[Donation, Any, Any, Any]:

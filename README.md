@@ -158,7 +158,7 @@ For LLM usage login with `gcloud`:
 gcloud auth application-default login
 ```
 
-To start the a tunnel for redis cache:
+To start the a tunnel for redis cache (IP might change, checkout GCloud Memory Store Connections Primary Endpoint):
 
 ```sh
 gcloud compute ssh --zone europe-north1-a nginx-proxy-old-domains-and-okuna-blue --tunnel-through-iap --project holi-shared -- -L6379:10.104.0.11:6379
