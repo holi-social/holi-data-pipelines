@@ -5,6 +5,8 @@ from pubsub_typesense_updater.similarity_embedding import (
     normalize_text,
     logger as similarity_embedding_logger,
 )
+from langfuse import get_client
+from langchain.globals import set_debug
 from langchain_core.prompts import PromptTemplate
 from pubsub_typesense_updater.topics_skills_embedding import create_topics_skills_v2_embedding
 from shared.events.event import Donation
@@ -22,7 +24,7 @@ def create_text_input_for_similarity_embedding_from_donation(donation: Donation)
         donation.description,
         donation.summary,
         donation.city,
-        donation.carrier.name,
+        donation.carrier.name if donation.carrier else None,
         " ".join([category.name or "" for category in donation.categories]),
     ]
     return " ".join([normalize_text(text or "") for text in text_parts])
@@ -38,9 +40,11 @@ def create_topics_skills_v2_embedding_for_donation(donation: Donation):
     topic_titles_list = "\n".join(map(lambda topic_title: f"- {topic_title}", topic_v2_titles))
     input["topic_titles"] = topic_titles_list
 
-    prompt_template = PromptTemplate.from_template(
-        "Here is a donation project with title '{title}' and decription '{description}'. Estimate the similarity of the project to the given topics between -1 and 1 (-1 for not similar, 1 for similar)"
-    )
+    langfuse = get_client()
+    fallback_prompt = """Here is a donation project with title '{{title}}' and decription '{{description}}'.
+    Estimate the similarity of the project to the given topics between -1 and 1 (-1 for not similar, 1 for similar)"""
+    prompt = langfuse.get_prompt("donations_topics_skills_v2_embedding_prompt", fallback=fallback_prompt)
+    prompt_template = PromptTemplate.from_template(prompt.get_langchain_prompt())
 
     return create_topics_skills_v2_embedding(prompt_template, input)
 
@@ -48,10 +52,11 @@ def create_topics_skills_v2_embedding_for_donation(donation: Donation):
 def enrich(donation: Donation) -> tuple[Donation, Any, Any]:
     similarity_embedding = create_similarity_embedding_for_donation(donation)
     topics_skills_embedding = create_topics_skills_v2_embedding_for_donation(donation)
-    return [donation, similarity_embedding, topics_skills_embedding]
+    return (donation, similarity_embedding, topics_skills_embedding)
 
 
 if __name__ == "__main__":
+    set_debug(True)
     # TODO(SF) debug logging not visible
     logging.getLogger(__name__).setLevel(logging.DEBUG)
     logging.getLogger(name=similarity_embedding_logger.name).setLevel(logging.DEBUG)
@@ -65,3 +70,4 @@ if __name__ == "__main__":
     result1 = enrich(donation.data)
     result2 = enrich(donation.data)
     print(result1[1])  # noqa: T201
+    print(result1[2])  # noqa: T201
