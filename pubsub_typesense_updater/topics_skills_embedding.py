@@ -1,4 +1,5 @@
 from pydantic import BaseModel, Field
+from langfuse.langchain import CallbackHandler
 from langchain_core.prompts import PromptTemplate
 from typing import Dict, Any
 from langchain_google_vertexai import ChatVertexAI
@@ -137,12 +138,14 @@ def create_topics_skills_v2_embedding(
     input: Dict[Any, Any],
     model_name: str = MODEL_NAME,
 ):
+    langfuse_handler = CallbackHandler()
     llm = ChatVertexAI(
         model_name=model_name,
         project="holi-shared",
         location="europe-north1",
         temperature=0.7,
         max_retries=0,
+        callbacks=[langfuse_handler],
     )
     model_with_structure = llm.with_structured_output(TopicEmbeddingJson)
     response = prompt_template.invoke(input)
