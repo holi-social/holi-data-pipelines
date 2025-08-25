@@ -51,9 +51,8 @@ resource "google_cloudfunctions2_function" "pubsub_typesense_updater" {
       REDIS_PORT                          = local.environment_name == "production" ? data.terraform_remote_state.holi_infra_state.outputs.redis_port_cmek_production : data.terraform_remote_state.holi_infra_state.outputs.redis_port_cmek_development
       REDIS_DB                            = local.environment_name == "production" ? 14 : 6
       LANGFUSE_HOST                       = "https://cloud.langfuse.com"
+      CACHE_DEBUG                         = "False"
     }
-
-
 
     vpc_connector                  = data.terraform_remote_state.holi_infra_state.outputs.vpc_access_connector_name
     vpc_connector_egress_settings  = "PRIVATE_RANGES_ONLY"

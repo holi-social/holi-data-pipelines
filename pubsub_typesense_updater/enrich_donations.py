@@ -8,7 +8,7 @@ from pubsub_typesense_updater.similarity_embedding import (
 from langfuse import get_client
 from langchain.globals import set_debug
 from langchain_core.prompts import PromptTemplate
-from pubsub_typesense_updater.topics_skills_embedding import create_topics_skills_v2_embedding
+from pubsub_typesense_updater.topics_skills_embedding import create_topics_skills_v2_embedding, TopicEmbeddingJson
 from shared.events.event import Donation
 from cloudevents.http.event import CloudEvent
 import json
@@ -37,16 +37,12 @@ def create_similarity_embedding_for_donation(donation: Donation) -> SimilarityEm
 
 def create_topics_skills_v2_embedding_for_donation(donation: Donation):
     input = donation.model_dump()
-    topic_titles_list = "\n".join(map(lambda topic_title: f"- {topic_title}", topic_v2_titles))
-    input["topic_titles"] = topic_titles_list
-
     langfuse = get_client()
     fallback_prompt = """Here is a donation project with title '{{title}}' and decription '{{description}}'.
     Estimate the similarity of the project to the given topics between -1 and 1 (-1 for not similar, 1 for similar)"""
     prompt = langfuse.get_prompt("donations_topics_skills_v2_embedding_prompt", fallback=fallback_prompt)
     prompt_template = PromptTemplate.from_template(prompt.get_langchain_prompt())
-
-    return create_topics_skills_v2_embedding(prompt_template, input)
+    return create_topics_skills_v2_embedding(prompt_template, input, TopicEmbeddingJson)
 
 
 def enrich(donation: Donation) -> tuple[Donation, Any, Any]:
