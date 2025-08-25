@@ -11,6 +11,9 @@ dependencies = [
     "google-cloud-logging==3.12.1",
     "shared",
     "pyfarmhash==0.4.0",
+    "langchain-core>=0.3.74",
+    "langchain>=0.3.27",
+    "langchain-google-vertexai>=2.0.28",
 ]
 
 [dependency-groups]

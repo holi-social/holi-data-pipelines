@@ -47,7 +47,12 @@ resource "google_cloudfunctions2_function" "pubsub_typesense_updater" {
       GCLOUD_PROJECT_ID                   = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
       GCLOUD_LOCATION                     = local.default_region
       BIGQUERY_TABLE_NAME_CLASSIFICATIONS = data.terraform_remote_state.data_pipelines_environment_state.outputs.bigquery_table_name_classifications
+      REDIS_HOST                          = local.environment_name == "production" ? data.terraform_remote_state.holi_infra_state.outputs.redis_host_cmek_production : data.terraform_remote_state.holi_infra_state.outputs.redis_host_cmek_development
+      REDIS_PORT                          = local.environment_name == "production" ? data.terraform_remote_state.holi_infra_state.outputs.redis_port_cmek_production : data.terraform_remote_state.holi_infra_state.outputs.redis_port_cmek_development
+      REDIS_DB                            = local.environment_name == "production" ? 14 : 6
     }
+
+
 
     vpc_connector                  = data.terraform_remote_state.holi_infra_state.outputs.vpc_access_connector_name
     vpc_connector_egress_settings  = "PRIVATE_RANGES_ONLY"
@@ -61,7 +66,15 @@ resource "google_cloudfunctions2_function" "pubsub_typesense_updater" {
       secret     = local.environment_name == "production" ? "TYPESENSE_CLOUD_ADMIN_API_KEY_PRODUCTION" : "TYPESENSE_CLOUD_ADMIN_API_KEY_STAGING"
       version    = "latest"
     }
+
+    secret_environment_variables {
+      key        = "REDIS_PASSWORD"
+      project_id = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
+      secret     = "REDIS_CMEK_PASSWORD"
+      version    = "latest"
+    }
   }
+
 
   labels = {
     "environment_type" = local.environment_type
