@@ -24,7 +24,6 @@ def create_similarity_embedding(
     text_embedding_model_name: str = TEXT_EMBEDDING_MODEL_NAME,
     embedding_dimensionality: int = EMBEDDING_DIMENSIONALITY,
 ) -> SimilarityEmbedding:
-    print("cache miss similarity embedding")
     model = TextEmbeddingModel.from_pretrained(text_embedding_model_name)
     text_input = TextEmbeddingInput(text=input, task_type=TEXT_EMBEDDING_TASK_TYPE)
     logger.debug(f'Calculating similarity embedding for input: "{input}"')

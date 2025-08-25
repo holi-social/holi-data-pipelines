@@ -39,16 +39,16 @@ def create_topics_skills_v2_embedding_for_donation(donation: Donation):
     input["topic_titles"] = topic_titles_list
 
     prompt_template = PromptTemplate.from_template(
-        "Here is a donation project with title '{title}' and decription '{description}'. Estimate the similarity of the project to the given topics between -1 and 1 (-1 for not similar, 1 for similar): {topic_titles}"
+        "Here is a donation project with title '{title}' and decription '{description}'. Estimate the similarity of the project to the given topics between -1 and 1 (-1 for not similar, 1 for similar)"
     )
 
     return create_topics_skills_v2_embedding(prompt_template, input)
 
 
-def enrich(donation: Donation) -> tuple[Donation, Any]:
+def enrich(donation: Donation) -> tuple[Donation, Any, Any]:
     similarity_embedding = create_similarity_embedding_for_donation(donation)
     topics_skills_embedding = create_topics_skills_v2_embedding_for_donation(donation)
-    return [donation, topics_skills_embedding]
+    return [donation, similarity_embedding, topics_skills_embedding]
 
 
 if __name__ == "__main__":
@@ -61,6 +61,7 @@ if __name__ == "__main__":
     )
     event = CloudEvent.create(event_json["attributes"], event_json["data"])
     donation = parse_donation_created_event(event)
+    print(donation)  # noqa: T201
     result1 = enrich(donation.data)
     result2 = enrich(donation.data)
-    print(result1[1])
+    print(result1[1])  # noqa: T201

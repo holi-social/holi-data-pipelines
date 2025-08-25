@@ -1,15 +1,11 @@
 from pydantic import BaseModel, Field
 from langchain_core.prompts import PromptTemplate
 from typing import Dict, Any
-from langchain.chat_models import init_chat_model
-from langchain.globals import set_debug
 from langchain_google_vertexai import ChatVertexAI
 
 from shared.cache import cache
 from pubsub_typesense_updater.redis_cache import cache_persistence
 
-
-set_debug(True)
 
 MODEL_NAME = "gemini-2.5-flash"
 
@@ -144,15 +140,13 @@ def create_topics_skills_v2_embedding(
     llm = ChatVertexAI(
         model_name=MODEL_NAME,
         project="holi-shared",
-        location="europe-north1-a",
+        location="europe-north1",
         temperature=0.7,
         max_retries=0,
         timeout=30,
     )
     model_with_structure = llm.with_structured_output(TopicEmbeddingJson)
     response = prompt_template.invoke(input)
-    print("response", response)
     structured_output = model_with_structure.invoke(response)
-    print("structured_output", structured_output)
 
     return structured_output

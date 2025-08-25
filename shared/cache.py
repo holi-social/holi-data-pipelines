@@ -163,7 +163,7 @@ def _generate_cache_key(func: Callable[..., Any], args: Tuple[Any, ...], kwargs:
 
     hexdigest = hasher.hexdigest()
 
-    print("Cache key:", hexdigest)  # TODO eventually remove
+    print("Cache key:", hexdigest)  # noqa: T201 TODO eventually remove
     return hexdigest
 
 

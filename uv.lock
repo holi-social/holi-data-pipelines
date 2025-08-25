@@ -496,15 +496,6 @@ wheels = [
 ]
 
 [[package]]
-name = "filetype"
-version = "1.2.0"
-source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
-sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/filetype/filetype-1.2.0.tar.gz", hash = "sha256:66b56cd6474bf41d8c54660347d37afcc3f7d1970648de365c102ef77548aadb" }
-wheels = [
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/filetype/filetype-1.2.0-py2.py3-none-any.whl", hash = "sha256:7ce71b6880181241cf7ac8697a2f1eb6a8bd9b429f7ad6d27b8db9ba5f1c2d25" },
-]
-
-[[package]]
 name = "flask"
 version = "3.1.1"
 source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
@@ -588,21 +579,6 @@ dependencies = [
 sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/functions-framework/functions_framework-3.8.3.tar.gz", hash = "sha256:95827698469e3979518d52e32def2f11230465877fef32afd49045013b2a469c" }
 wheels = [
     { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/functions-framework/functions_framework-3.8.3-py3-none-any.whl", hash = "sha256:fd352272c02ee08b4a3445e234213e43fbdd350365d98e2cce13e1575490bffe" },
-]
-
-[[package]]
-name = "google-ai-generativelanguage"
-version = "0.6.18"
-source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
-dependencies = [
-    { name = "google-api-core", extra = ["grpc"] },
-    { name = "google-auth" },
-    { name = "proto-plus" },
-    { name = "protobuf" },
-]
-sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/google-ai-generativelanguage/google_ai_generativelanguage-0.6.18.tar.gz", hash = "sha256:274ba9fcf69466ff64e971d565884434388e523300afd468fc8e3033cd8e606e" }
-wheels = [
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/google-ai-generativelanguage/google_ai_generativelanguage-0.6.18-py3-none-any.whl", hash = "sha256:13d8174fea90b633f520789d32df7b422058fd5883b022989c349f1017db7fcf" },
 ]
 
 [[package]]
@@ -1317,21 +1293,6 @@ wheels = [
 ]
 
 [[package]]
-name = "langchain-google-genai"
-version = "2.1.9"
-source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
-dependencies = [
-    { name = "filetype" },
-    { name = "google-ai-generativelanguage" },
-    { name = "langchain-core" },
-    { name = "pydantic" },
-]
-sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/langchain-google-genai/langchain_google_genai-2.1.9.tar.gz", hash = "sha256:cd5d6f644b8dac3e312e30101bb97541aab240e82678e87a4df039ee1dc77531" }
-wheels = [
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/langchain-google-genai/langchain_google_genai-2.1.9-py3-none-any.whl", hash = "sha256:8d3aab59706b8f8920a22bcfd63c5000ce430fe61db6ecdec262977d1a0be5b8" },
-]
-
-[[package]]
 name = "langchain-google-vertexai"
 version = "2.0.28"
 source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
@@ -1971,7 +1932,6 @@ dependencies = [
     { name = "google-cloud-logging" },
     { name = "langchain" },
     { name = "langchain-core" },
-    { name = "langchain-google-genai" },
     { name = "langchain-google-vertexai" },
     { name = "pyfarmhash" },
     { name = "shared" },
@@ -1993,7 +1953,6 @@ requires-dist = [
     { name = "google-cloud-logging", specifier = "==3.12.1" },
     { name = "langchain", specifier = ">=0.3.27" },
     { name = "langchain-core", specifier = ">=0.3.74" },
-    { name = "langchain-google-genai", specifier = ">=2.1.9" },
     { name = "langchain-google-vertexai", specifier = ">=2.0.28" },
     { name = "pyfarmhash", specifier = "==0.4.0" },
     { name = "shared", virtual = "shared" },
