@@ -189,6 +189,18 @@
       "type": "object[]",
       "optional": true,
       "index": false
+    },
+    {
+      "name": "donation_progress_percentage",
+      "type": "int32",
+      "optional": true,
+      "index": false
+    },
+    {
+      "name": "donation_open_amount_in_cents",
+      "type": "int32",
+      "optional": true,
+      "index": false
     }
   ]
 }
