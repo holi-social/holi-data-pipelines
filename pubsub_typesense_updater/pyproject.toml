@@ -14,6 +14,7 @@ dependencies = [
     "langchain-core>=0.3.74",
     "langchain>=0.3.27",
     "langchain-google-vertexai>=2.0.28",
+    "langfuse>=3.3.0",
 ]
 
 [dependency-groups]
