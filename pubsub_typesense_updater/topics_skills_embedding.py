@@ -138,12 +138,11 @@ def create_topics_skills_v2_embedding(
     model_name: str = MODEL_NAME,
 ):
     llm = ChatVertexAI(
-        model_name=MODEL_NAME,
+        model_name=model_name,
         project="holi-shared",
         location="europe-north1",
         temperature=0.7,
         max_retries=0,
-        timeout=30,
     )
     model_with_structure = llm.with_structured_output(TopicEmbeddingJson)
     response = prompt_template.invoke(input)

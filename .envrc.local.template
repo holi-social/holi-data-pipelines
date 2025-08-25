@@ -118,3 +118,6 @@ if [ $ENVIRONMENT = "production" ]; then
   draw_multiline_box "RUNNING AGAINST PRODUCTION (!)"
   echo
 fi
+
+export LANGFUSE_PUBLIC_KEY=''
+export LANGFUSE_SECRET_KEY=''

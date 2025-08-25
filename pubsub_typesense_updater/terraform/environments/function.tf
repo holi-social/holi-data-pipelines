@@ -50,6 +50,7 @@ resource "google_cloudfunctions2_function" "pubsub_typesense_updater" {
       REDIS_HOST                          = local.environment_name == "production" ? data.terraform_remote_state.holi_infra_state.outputs.redis_host_cmek_production : data.terraform_remote_state.holi_infra_state.outputs.redis_host_cmek_development
       REDIS_PORT                          = local.environment_name == "production" ? data.terraform_remote_state.holi_infra_state.outputs.redis_port_cmek_production : data.terraform_remote_state.holi_infra_state.outputs.redis_port_cmek_development
       REDIS_DB                            = local.environment_name == "production" ? 14 : 6
+      LANGFUSE_HOST                       = "https://cloud.langfuse.com"
     }
 
 
@@ -71,6 +72,20 @@ resource "google_cloudfunctions2_function" "pubsub_typesense_updater" {
       key        = "REDIS_PASSWORD"
       project_id = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
       secret     = "REDIS_CMEK_PASSWORD"
+      version    = "latest"
+    }
+
+    secret_environment_variables {
+      key        = "LANGFUSE_SECRET_KEY"
+      project_id = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
+      secret     = "LANGFUSE_SECRET_KEY"
+      version    = "latest"
+    }
+
+    secret_environment_variables {
+      key        = "LANGFUSE_PUBLIC_KEY"
+      project_id = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
+      secret     = "LANGFUSE_PUBLIC_KEY"
       version    = "latest"
     }
   }
