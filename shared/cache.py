@@ -12,6 +12,7 @@ F = TypeVar("F", bound=Callable[..., Any])
 
 CACHE_DEBUG = os.environ.get("CACHE_DEBUG", "false").lower() in ["true", "1"]
 
+
 class CachedFunction(Protocol):
     """Protocol for cached functions with cache management methods."""
 
@@ -212,13 +213,13 @@ def cache(persistence: Optional[CachePersistence] = None, ignore_args: Optional[
             cached_result = persistence.get(cache_key)
             if cached_result is not None:
                 if CACHE_DEBUG:
-                    print("Cache hit for key: ", cache_key)
+                    print("Cache hit for key: ", cache_key)  # noqa: T201
                 return cached_result
 
             # Execute function and cache result
-            result = func(*args, **kwargs)
             if CACHE_DEBUG:
-                print("Cache miss for key: ", cache_key)
+                print("Cache miss for key: ", cache_key)  # noqa: T201
+            result = func(*args, **kwargs)
             persistence.set(cache_key, result)
 
             return result

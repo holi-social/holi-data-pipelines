@@ -15,8 +15,6 @@ import json
 import logging
 from typing import Optional, Any
 
-from src.pipelines.volunteering_classification.voltastics_topics_skills_classifier_v2 import topic_v2_titles
-
 
 def create_text_input_for_similarity_embedding_from_donation(donation: Donation) -> str:
     text_parts: list[Optional[str]] = [
@@ -35,18 +33,22 @@ def create_similarity_embedding_for_donation(donation: Donation) -> SimilarityEm
     return create_similarity_embedding(input)
 
 
-def create_topics_skills_v2_embedding_for_donation(donation: Donation):
+def create_topics_skills_v2_embedding_for_donation(donation: Donation) -> TopicEmbeddingJson:
     input = donation.model_dump()
     langfuse = get_client()
     fallback_prompt = """Here is a donation project with title '{{title}}' and decription '{{description}}'.
     Estimate the similarity of the project to the given topics between -1 and 1 (-1 for not similar, 1 for similar)"""
-    prompt = langfuse.get_prompt("donations_topics_skills_v2_embedding_prompt", fallback=fallback_prompt)
+    prompt = langfuse.get_prompt("donations_topics_v2_embedding_prompt", fallback=fallback_prompt)
     prompt_template = PromptTemplate.from_template(prompt.get_langchain_prompt())
-    return create_topics_skills_v2_embedding(prompt_template, input, TopicEmbeddingJson)
+    return TopicEmbeddingJson.model_validate(
+        create_topics_skills_v2_embedding(prompt_template, input, TopicEmbeddingJson.model_json_schema())
+    )
 
 
 def enrich(donation: Donation) -> tuple[Donation, Any, Any]:
+    print("************* Similarity Embeddings **************")  # noqa: T201 TODO remove
     similarity_embedding = create_similarity_embedding_for_donation(donation)
+    print("************* Topics Skills Embeddings **************")  # noqa: T201 TODO remove
     topics_skills_embedding = create_topics_skills_v2_embedding_for_donation(donation)
     return (donation, similarity_embedding, topics_skills_embedding)
 
@@ -64,6 +66,5 @@ if __name__ == "__main__":
     donation = parse_donation_created_event(event)
     print(donation)  # noqa: T201
     result1 = enrich(donation.data)
-    result2 = enrich(donation.data)
     print(result1[1])  # noqa: T201
     print(result1[2])  # noqa: T201
