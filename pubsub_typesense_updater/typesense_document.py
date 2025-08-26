@@ -40,39 +40,34 @@ class ContactInfo(BaseModel):
     label: Optional[str]
 
 
-class TypesenseDocument(BaseModel):
-    # Required fields
-    id: str = Field(..., description="Unique identifier for the document")
-    type: str = Field(..., description="Type of document (facetable)")
+class TypesenseDocumentType(str, Enum):
+    volunteering = "volunteering"
+    task = "task"
+    space = "space"
+    profile = "profile"
+    donation = "donation"
 
-    # Multilingual text fields
+
+class TypesenseDocument(BaseModel):
+    id: str = Field(..., description="Unique identifier for the document")
+    type: TypesenseDocumentType
     title_de: Optional[str] = Field(None)
     title_en: Optional[str] = Field(None)
     description_de: Optional[str] = Field(None)
     description_en: Optional[str] = Field(None)
-
-    # Location fields
     location: Optional[str] = Field(None, description="Location name")
     location_type: Optional[LocationType] = Field(None)
     location_lat_lng: Optional[List[float]] = Field(None, description="Geographical coordinates [lat, lng]")
-
-    # Media and links
     image_url: Optional[str] = Field(None, description="URL to associated image")
     link_locators: Optional[Dict[str, Any]] = Field(
         None, description="Locators for volunteering and other links, e.g., {'volunteering': '1234'}"
     )
-
-    # User information
     user_full_name: Optional[str] = Field(
         None, description="Full name of associated user (searchable with infix and stemming, sortable)"
     )
-
-    # Embeddings for search
     embedding: Optional[List[float]] = Field(
         None, description="Main embedding vector generated from title, description, and location fields"
     )
-
-    # Topics and skills
     topics_v2: Optional[List[str]] = Field(None)
     skills_v2: Optional[List[str]] = Field(None)
     topics_skills_embedding_v2: Optional[List[float]] = Field(
@@ -81,17 +76,11 @@ class TypesenseDocument(BaseModel):
     similarity_embedding: Optional[List[float]] = Field(
         None, description="256-dimensional embedding for similarity matching"
     )
-
-    # Organizer information
     organizer_name: Optional[str] = Field(None, description="Name of the organizer")
     organizer_image_url: Optional[str] = Field(None, description="URL to organizer's image")
     organizer_url: Optional[str] = Field(None, description="URL to organizer's profile or website")
-
-    # External references
     external_url: Optional[str] = Field(None, description="External URL reference")
     source: Optional[str] = Field(None, description="Source of the content")
-
-    # Commitment information
     commitment_label: Optional[CommitmentLabel] = Field(
         None, description="Label describing commitment level (facetable)"
     )
@@ -102,16 +91,13 @@ class TypesenseDocument(BaseModel):
     commitment_duration_ai_reasoning: Optional[str] = Field(
         None, description="AI reasoning for commitment duration derivation"
     )
-
-    # Space and contact
     # TODO(SF) probably remove?
     space_id: Optional[str] = Field(None, description="Identifier for associated space")
     contact: Optional[List[ContactInfo]] = Field(None, description="List of contact information")
-
-    # Donation fields
     donation_progress_percentage: Optional[int] = Field(
         None, description="Percentage of donation goal achieved", ge=0, le=100
     )
     donation_open_amount_in_cents: Optional[int] = Field(
         None, description="Remaining donation amount needed in cents", ge=0
     )
+    donation_summary: Optional[str]

@@ -16,6 +16,7 @@ from pubsub_typesense_updater.topics_skills_embedding import (
     TopicEmbeddingJson,
     SkillEmbeddingJson,
 )
+from pubsub_typesense_updater.typesense_document import TypesenseDocument, TypesenseDocumentType
 from shared.events import Donation
 from cloudevents.http.event import CloudEvent
 import json
@@ -82,6 +83,50 @@ def enrich(donation: Donation) -> EnrichedDonation:
     return EnrichedDonation(similarity_embedding, topics_embedding, skills_embedding, donation)
 
 
+def to_typesense_doc(enriched: EnrichedDonation) -> TypesenseDocument:
+    d = enriched.donation
+    image_url = (
+        d.profile_picture.links[0].href
+        if d.profile_picture and d.profile_picture.links and len(d.profile_picture.links) > 0
+        else None
+    )  # TODO use logic from holi-app-donations
+    return TypesenseDocument(
+        id=f"donation_{d.id}",
+        type=TypesenseDocumentType("donation"),
+        title_de=d.title,
+        title_en=None,  # TODO use english version
+        description_de=d.description,
+        description_en=None,  # TODO use english version
+        location=d.city,
+        location_type=None,
+        location_lat_lng=[d.latitude, d.longitude] if d.latitude and d.longitude else None,
+        image_url=image_url,
+        link_locators={
+            "donation": d.id,
+        },
+        user_full_name=None,
+        embedding=None,
+        topics_v2=enriched.topics_v2(),
+        skills_v2=enriched.skills_v2(),
+        topics_skills_embedding_v2=enriched.topics_skills_embedding_v2(),
+        similarity_embedding=enriched.similarity_embedding,
+        organizer_name=None,
+        organizer_image_url=None,
+        organizer_url=None,
+        external_url=None,
+        source=None,
+        commitment_label=None,
+        commitment_duration=None,
+        commitment_duration_ai_derived=None,
+        commitment_duration_ai_reasoning=None,
+        space_id=None,
+        contact=None,
+        donation_progress_percentage=d.progress_percentage,
+        donation_open_amount_in_cents=d.open_amount_in_cents,
+        donation_summary=d.summary,
+    )
+
+
 if __name__ == "__main__":
     set_debug(True)
     # TODO(SF) debug logging not visible
@@ -93,6 +138,10 @@ if __name__ == "__main__":
     )
     event = CloudEvent.create(event_json["attributes"], event_json["data"])
     donation = parse_donation_created_event(event)
+    print()  # noqa: T201
     print(donation)  # noqa: T201
-    result1 = enrich(donation.data)
-    print(result1)  # noqa: T201
+    enriched = enrich(donation.data)
+    print(enriched)  # noqa: T201
+    print()  # noqa: T201
+    typesense_doc = to_typesense_doc(enriched)
+    print(typesense_doc.model_dump_json(indent=True))  # noqa: T201

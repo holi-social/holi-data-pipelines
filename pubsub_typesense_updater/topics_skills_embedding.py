@@ -11,6 +11,7 @@ from pubsub_typesense_updater.redis_cache import cache_persistence
 MODEL_NAME = "gemini-2.5-flash"
 
 
+# TODO verify / guarantee values to be between -1 and 1 (?)
 class TopicEmbeddingJson(BaseModel):
     animal_welfare: float = Field(serialization_alias="animal-welfare", description="Animal Welfare")
     arts_culture: float = Field(serialization_alias="arts-culture", description="Arts & Culture")
@@ -51,6 +52,7 @@ class TopicEmbeddingJson(BaseModel):
         populate_by_name = True  # Allows using both field names and aliases for parsing
 
 
+# TODO verify / guarantee values to be between -1 and 1 (?)
 class SkillEmbeddingJson(BaseModel):
     administration: float = Field(serialization_alias="administration", description="Administration")
     animal_care: float = Field(serialization_alias="animal-care", description="Animal Care")
