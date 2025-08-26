@@ -1,5 +1,4 @@
 import os
-import json
 import logging
 from typing import Union
 
@@ -157,14 +156,14 @@ def process_donation_created_event(ts_client: TypesenseClient, event: DonationCr
     logger.debug(f"[id={event.data.id}] Processing DonationCreated event")
     enriched = enrich_donation(event.data)
     typesense_doc = enriched_donation_to_typesense_doc(enriched)
-    ts_client.upsert(typesense_doc)
+    ts_client.upsert(typesense_doc.model_dump_json())
 
 
 def process_donation_updated_event(ts_client: TypesenseClient, event: DonationUpdatedEvent) -> None:
     logger.debug(f"[id={event.data.id}] Processing DonationUpdated event")
     enriched = enrich_donation(event.data)
     typesense_doc = enriched_donation_to_typesense_doc(enriched)
-    ts_client.upsert(typesense_doc)
+    ts_client.upsert(typesense_doc.model_dump_json())
 
 
 def _delete_donation(ts_client: TypesenseClient, id: str) -> None:
@@ -230,17 +229,17 @@ def process_event(ts_client: TypesenseClient, cloud_event: CloudEvent) -> None:
         add_logging_context(task_deleted_event)
         return process_task_deleted_event(ts_client, task_deleted_event.task.id)
     elif event_type == "DonationCreated":
-        logger.debug(f"Parsing DonationCreated event {json.dumps(cloud_event)}")
+        logger.debug("Parsing DonationCreated event")
         donation_created_event = parse_donation_created_event(cloud_event)
         add_logging_context(donation_created_event)
         return process_donation_created_event(ts_client, donation_created_event)
     elif event_type == "DonationUpdated":
-        logger.debug(f"Parsing DonationUpdated event {json.dumps(cloud_event)}")
+        logger.debug("Parsing DonationUpdated event")
         donation_updated_event = parse_donation_updated_event(cloud_event)
         add_logging_context(donation_updated_event)
         return process_donation_updated_event(ts_client, donation_updated_event)
     elif event_type == "DonationDeleted":
-        logger.debug(f"Parsing DonationDeleted event {json.dumps(cloud_event)}")
+        logger.debug("Parsing DonationDeleted event")
         donation_deleted_event = parse_donation_deleted_event(cloud_event)
         add_logging_context(donation_deleted_event)
         return process_donation_deleted_event(ts_client, donation_deleted_event)
