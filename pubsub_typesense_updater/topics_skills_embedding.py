@@ -1,3 +1,5 @@
+import os
+
 from pydantic import BaseModel, Field
 from langfuse.langchain import CallbackHandler
 from langchain_core.prompts import PromptTemplate
@@ -108,6 +110,10 @@ def invoke_llm_with_structured_output_cached(
     """
     Invokes an LLM and returns structured output. Caches the result based on parameter values and this methods' body.
 
+    Relies on JSON schema because of 2 reasons:
+    1. LLMs then use controlled genetration to generate the response rather than function calling (faster).
+    2. Passing the model class is not (easily) serializable, so it can't be used for cache key generation.
+
     :param prompt_template:
     :param input: a dict containing values to be rendered inside the prompt template
     :param output_json_schema:
@@ -117,13 +123,12 @@ def invoke_llm_with_structured_output_cached(
     langfuse_handler = CallbackHandler()
     llm = ChatVertexAI(
         model_name=model_name,
-        project="holi-shared",  # TODO take from env
-        location="europe-north1",  # TODO take from env
-        temperature=0.7,  # TODO ???
-        max_retries=0,  # TODO increase to ???
+        project=os.getenv("VERTEX_AI_PROJECT"),
+        location=os.getenv("VERTEX_AI_LOCATION"),
+        max_retries=int(os.getenv("VERTEX_AI_RETRIES", 2)),
         callbacks=[langfuse_handler],
     )
-    model_with_structure = llm.with_structured_output(output_json_schema)
+    model_with_structure = llm.with_structured_output(output_json_schema, method="json_mode")
     response = prompt_template.invoke(input)
     structured_output = model_with_structure.invoke(response)
 

@@ -52,6 +52,9 @@ resource "google_cloudfunctions2_function" "pubsub_typesense_updater" {
       REDIS_DB                            = local.environment_name == "production" ? 14 : 6
       LANGFUSE_HOST                       = "https://cloud.langfuse.com"
       CACHE_DEBUG                         = "False"
+      VERTEX_AI_PROJECT                   = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
+      VERTEX_AI_LOCATION                  = local.default_region
+      VERTEX_AI_RETRIES                   = "2"
     }
 
     vpc_connector                  = data.terraform_remote_state.holi_infra_state.outputs.vpc_access_connector_name
