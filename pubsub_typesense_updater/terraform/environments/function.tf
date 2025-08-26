@@ -33,7 +33,7 @@ resource "google_cloudfunctions2_function" "pubsub_typesense_updater" {
   service_config {
     max_instance_count               = 1
     min_instance_count               = 0
-    available_memory                 = "512Mi"
+    available_memory                 = "1024Mi"
     timeout_seconds                  = 120
     available_cpu                    = 1
     max_instance_request_concurrency = 5
