@@ -35,7 +35,7 @@ class Enrichments:
             return [
                 topic_serialization_alias(field_name)
                 for field_name, field_confidence in dump.items()
-                if dump[field_name] > CONFIDENCE_THRESHOLD
+                if dump[field_name] >= CONFIDENCE_THRESHOLD
             ]
 
     def skills_v2(self) -> Optional[list[str]]:
@@ -47,7 +47,7 @@ class Enrichments:
             return [
                 skill_serialization_alias(field_name)
                 for field_name, field_confidence in dump.items()
-                if dump[field_name] > CONFIDENCE_THRESHOLD
+                if dump[field_name] >= CONFIDENCE_THRESHOLD
             ]
 
     def topics_skills_embedding_v2(self) -> Optional[list[float]]:
