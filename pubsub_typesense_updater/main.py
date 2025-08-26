@@ -25,7 +25,7 @@ from events import (
     parse_donation_deleted_event,
 )
 from shared.classifiers.task_classification_input import TaskClassificationInput
-from shared.events.event import DonationCreatedEvent, DonationUpdatedEvent, DonationDeletedEvent
+from shared.events import DonationCreatedEvent, DonationUpdatedEvent, DonationDeletedEvent
 from task_classifier import TaskClassifier
 
 from typesense_client import TypesenseClient

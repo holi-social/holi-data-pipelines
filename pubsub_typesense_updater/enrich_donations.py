@@ -13,7 +13,7 @@ from pubsub_typesense_updater.topics_skills_embedding import (
     TopicEmbeddingJson,
     SkillEmbeddingJson,
 )
-from shared.events.event import Donation
+from shared.event import Donation
 from cloudevents.http.event import CloudEvent
 import json
 import logging

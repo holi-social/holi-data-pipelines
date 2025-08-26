@@ -10,7 +10,7 @@ from cloudevents.http.event import CloudEvent
 
 from farm_fingerprint import farm_fingerprint
 from shared.classifiers.classifier import ClassificationResult
-from shared.events.event import Donation, DonationCreatedEvent, DonationUpdatedEvent, DonationDeletedEvent
+from shared.events import Donation, DonationCreatedEvent, DonationUpdatedEvent, DonationDeletedEvent
 from shared.mappings.task_mappings import (
     map_task_location_type_to_typesense_location_type,
     map_task_regularity_to_commitment_label,
