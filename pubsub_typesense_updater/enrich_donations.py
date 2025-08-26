@@ -1,21 +1,21 @@
-from pubsub_typesense_updater.main import parse_donation_created_event
+import dataclasses
+
+from pubsub_typesense_updater.enrichments import Enrichments
 from pubsub_typesense_updater.similarity_embedding import (
     SimilarityEmbedding,
     create_similarity_embedding,
     normalize_text,
-    logger as similarity_embedding_logger,
 )
 from langfuse import get_client
-from langchain.globals import set_debug
 from langchain_core.prompts import PromptTemplate
-from pubsub_typesense_updater.topics_skills_embedding import create_topics_skills_v2_embedding
-from shared.events.event import Donation
-from cloudevents.http.event import CloudEvent
-import json
-import logging
-from typing import Optional, Any
-
-from src.pipelines.volunteering_classification.voltastics_topics_skills_classifier_v2 import topic_v2_titles
+from pubsub_typesense_updater.topics_skills_embedding import (
+    invoke_llm_with_structured_output_cached,
+    TopicEmbeddingJson,
+    SkillEmbeddingJson,
+)
+from pubsub_typesense_updater.typesense_document import TypesenseDocument, TypesenseDocumentType
+from shared.events import Donation, DonationLink, DonationPicture
+from typing import Optional, List
 
 
 def create_text_input_for_similarity_embedding_from_donation(donation: Donation) -> str:
@@ -35,39 +35,98 @@ def create_similarity_embedding_for_donation(donation: Donation) -> SimilarityEm
     return create_similarity_embedding(input)
 
 
-def create_topics_skills_v2_embedding_for_donation(donation: Donation):
+def create_topics_v2_embedding_for_donation(donation: Donation) -> TopicEmbeddingJson:
     input = donation.model_dump()
-    topic_titles_list = "\n".join(map(lambda topic_title: f"- {topic_title}", topic_v2_titles))
-    input["topic_titles"] = topic_titles_list
-
     langfuse = get_client()
     fallback_prompt = """Here is a donation project with title '{{title}}' and decription '{{description}}'.
     Estimate the similarity of the project to the given topics between -1 and 1 (-1 for not similar, 1 for similar)"""
-    prompt = langfuse.get_prompt("donations_topics_skills_v2_embedding_prompt", fallback=fallback_prompt)
+    prompt = langfuse.get_prompt("donations_topics_v2_embedding_prompt", fallback=fallback_prompt)
     prompt_template = PromptTemplate.from_template(prompt.get_langchain_prompt())
-
-    return create_topics_skills_v2_embedding(prompt_template, input)
-
-
-def enrich(donation: Donation) -> tuple[Donation, Any, Any]:
-    similarity_embedding = create_similarity_embedding_for_donation(donation)
-    topics_skills_embedding = create_topics_skills_v2_embedding_for_donation(donation)
-    return (donation, similarity_embedding, topics_skills_embedding)
-
-
-if __name__ == "__main__":
-    set_debug(True)
-    # TODO(SF) debug logging not visible
-    logging.getLogger(__name__).setLevel(logging.DEBUG)
-    logging.getLogger(name=similarity_embedding_logger.name).setLevel(logging.DEBUG)
-
-    event_json = json.loads(
-        '{"attributes": {"id": "15657351798383557", "time": "2025-08-21T12:16:29.334Z", "specversion": "1.0", "datacontenttype": "application/json", "type": "google.cloud.pubsub.topic.v1.messagePublished", "source": "//pubsub.googleapis.com/"}, "data": {"message": {"@type": "type.googleapis.com/google.pubsub.v1.PubsubMessage", "data": "eyJsaW5rcyI6W3sidGVtcGxhdGVkIjpudWxsLCJocmVmIjoiaHR0cHM6Ly9hcGkuYmV0dGVycGxhY2Uub3JnL2RlL2FwaV92NC9wcm9qZWN0cy8xNDQ3NTcuanNvbiIsInJlbCI6InNlbGYifSx7InRlbXBsYXRlZCI6bnVsbCwiaHJlZiI6Imh0dHBzOi8vd3d3LmJldHRlcnBsYWNlLm9yZy9kZS9wcm9qZWN0cy8xNDQ3NTctaW50ZWdyYXRpdmUtc29tbWVyZnJlaXplaXQtZnVlci1qdWdlbmRsaWNoZS1uYWNoLWRhZW5lbWFyayIsInJlbCI6InBsYXRmb3JtIn0seyJ0ZW1wbGF0ZWQiOm51bGwsImhyZWYiOiJodHRwczovL2FwaS5iZXR0ZXJwbGFjZS5vcmcvZGUvYXBpX3Y0L3Byb2plY3RzLzE0NDc1Ny9vcGluaW9ucy5qc29uIiwicmVsIjoib3BpbmlvbnMifSx7InRlbXBsYXRlZCI6bnVsbCwiaHJlZiI6Imh0dHBzOi8vYXBpLmJldHRlcnBsYWNlLm9yZy9kZS9hcGlfdjQvcHJvamVjdHMvMTQ0NzU3L3BpY3R1cmVzLmpzb24iLCJyZWwiOiJwaWN0dXJlcyJ9LHsidGVtcGxhdGVkIjpudWxsLCJocmVmIjoiaHR0cHM6Ly9hcGkuYmV0dGVycGxhY2Uub3JnL2RlL2FwaV92NC9wcm9qZWN0cy8xNDQ3NTcvbmVlZHMuanNvbiIsInJlbCI6Im5lZWRzIn0seyJ0ZW1wbGF0ZWQiOm51bGwsImhyZWYiOiJodHRwczovL2FwaS5iZXR0ZXJwbGFjZS5vcmcvZGUvYXBpX3Y0L3Byb2plY3RzLzE0NDc1Ny9ibG9nX3Bvc3RzLmpzb24iLCJyZWwiOiJibG9nX3Bvc3RzIn0seyJ0ZW1wbGF0ZWQiOm51bGwsImhyZWYiOiJodHRwczovL2FwaS5iZXR0ZXJwbGFjZS5vcmcvZGUvYXBpX3Y0L3Byb2plY3RzLzE0NDc1Ny9jYXRlZ29yaWVzLmpzb24iLCJyZWwiOiJjYXRlZ29yaWVzIn0seyJ0ZW1wbGF0ZWQiOnRydWUsImhyZWYiOiJodHRwczovL3d3dy5iZXR0ZXJwbGFjZS5vcmcvZGUvZG9uYXRlLyU3QmNsaWVudF9pZCU3RC9wcm9qZWN0cy8xNDQ3NTciLCJyZWwiOiJuZXdfY2xpZW50X2RvbmF0aW9uIn0seyJ0ZW1wbGF0ZWQiOm51bGwsImhyZWYiOiJodHRwczovL3d3dy5iZXR0ZXJwbGFjZS5vcmcvZGUvZG9uYXRlL3BsYXRmb3JtL3Byb2plY3RzLzE0NDc1NyIsInJlbCI6Im5ld19kb25hdGlvbiJ9XSwicHJvZmlsZV9waWN0dXJlIjp7ImZhbGxiYWNrIjpudWxsLCJsaW5rcyI6W3sidGVtcGxhdGVkIjpudWxsLCJocmVmIjoiaHR0cHM6Ly9iZXR0ZXJwbGFjZS1hc3NldHMuYmV0dGVycGxhY2Uub3JnL3VwbG9hZHMvcHJvamVjdC9wcm9maWxlX3BpY3R1cmUvMDAwLzE0NC83NTcvZmlsbF85NjB4NTAwXzZlODU2ZTI3LTMzOTEtNGU2NS05MzQyLWI4YTFhMjFjYTI2Zi5qcGciLCJyZWwiOiJmaWxsXzk2MHg1MDAifSx7InRlbXBsYXRlZCI6bnVsbCwiaHJlZiI6Imh0dHBzOi8vYmV0dGVycGxhY2UtYXNzZXRzLmJldHRlcnBsYWNlLm9yZy91cGxvYWRzL3Byb2plY3QvcHJvZmlsZV9waWN0dXJlLzAwMC8xNDQvNzU3L2ZpbGxfNzMweDM4MF82ZTg1NmUyNy0zMzkxLTRlNjUtOTM0Mi1iOGExYTIxY2EyNmYuanBnIiwicmVsIjoiZmlsbF83MzB4MzgwIn0seyJ0ZW1wbGF0ZWQiOm51bGwsImhyZWYiOiJodHRwczovL2JldHRlcnBsYWNlLWFzc2V0cy5iZXR0ZXJwbGFjZS5vcmcvdXBsb2Fkcy9wcm9qZWN0L3Byb2ZpbGVfcGljdHVyZS8wMDAvMTQ0Lzc1Ny9maWxsXzYxOHgzMjJfNmU4NTZlMjctMzM5MS00ZTY1LTkzNDItYjhhMWEyMWNhMjZmLmpwZyIsInJlbCI6ImZpbGxfNjE4eDMyMiJ9LHsidGVtcGxhdGVkIjpudWxsLCJocmVmIjoiaHR0cHM6Ly9iZXR0ZXJwbGFjZS1hc3NldHMuYmV0dGVycGxhY2Uub3JnL3VwbG9hZHMvcHJvamVjdC9wcm9maWxlX3BpY3R1cmUvMDAwLzE0NC83NTcvZmlsbF80MTB4MjE0XzZlODU2ZTI3LTMzOTEtNGU2NS05MzQyLWI4YTFhMjFjYTI2Zi5qcGciLCJyZWwiOiJmaWxsXzQxMHgyMTQifSx7InRlbXBsYXRlZCI6bnVsbCwiaHJlZiI6Imh0dHBzOi8vYmV0dGVycGxhY2UtYXNzZXRzLmJldHRlcnBsYWNlLm9yZy91cGxvYWRzL3Byb2plY3QvcHJvZmlsZV9waWN0dXJlLzAwMC8xNDQvNzU3L2ZpbGxfMjcweDE0MV82ZTg1NmUyNy0zMzkxLTRlNjUtOTM0Mi1iOGExYTIxY2EyNmYuanBnIiwicmVsIjoiZmlsbF8yNzB4MTQxIn0seyJ0ZW1wbGF0ZWQiOm51bGwsImhyZWYiOiJodHRwczovL2JldHRlcnBsYWNlLWFzc2V0cy5iZXR0ZXJwbGFjZS5vcmcvdXBsb2Fkcy9wcm9qZWN0L3Byb2ZpbGVfcGljdHVyZS8wMDAvMTQ0Lzc1Ny9jcm9wX29yaWdpbmFsXzZlODU2ZTI3LTMzOTEtNGU2NS05MzQyLWI4YTFhMjFjYTI2Zi5qcGciLCJyZWwiOiJvcmlnaW5hbCJ9LHsidGVtcGxhdGVkIjpudWxsLCJocmVmIjoiaHR0cHM6Ly9iZXR0ZXJwbGFjZS1hc3NldHMuYmV0dGVycGxhY2Uub3JnL3VwbG9hZHMvcHJvamVjdC9wcm9maWxlX3BpY3R1cmUvMDAwLzE0NC83NTcvbGltaXRfMTI0MHg2NDZfNmU4NTZlMjctMzM5MS00ZTY1LTkzNDItYjhhMWEyMWNhMjZmLmpwZyIsInJlbCI6ImxpbWl0XzEyNDB4NjQ2In0seyJ0ZW1wbGF0ZWQiOm51bGwsImhyZWYiOiJodHRwczovL2JldHRlcnBsYWNlLWFzc2V0cy5iZXR0ZXJwbGFjZS5vcmcvdXBsb2Fkcy9wcm9qZWN0L3Byb2ZpbGVfcGljdHVyZS8wMDAvMTQ0Lzc1Ny9saW1pdF80NTB4MjM1XzZlODU2ZTI3LTMzOTEtNGU2NS05MzQyLWI4YTFhMjFjYTI2Zi5qcGciLCJyZWwiOiJsaW1pdF80NTB4MjM1In1dfSwiY29udGFjdCI6eyJsaW5rcyI6W3sidGVtcGxhdGVkIjpudWxsLCJocmVmIjoiaHR0cHM6Ly93d3cuYmV0dGVycGxhY2Uub3JnL2RlL3VzZXJzLzYzMzY0OCIsInJlbCI6InBsYXRmb3JtIn0seyJ0ZW1wbGF0ZWQiOm51bGwsImhyZWYiOiJodHRwczovL2FwaS5iZXR0ZXJwbGFjZS5vcmcvZGUvYXBpX3Y0L3VzZXJzLzYzMzY0OC9jb250YWN0X2RhdGEuanNvbiIsInJlbCI6ImNvbnRhY3RfZGF0YSJ9XSwicGljdHVyZSI6eyJsaW5rcyI6W3sidGVtcGxhdGVkIjpudWxsLCJocmVmIjoiaHR0cHM6Ly9iZXR0ZXJwbGFjZS1hc3NldHMuYmV0dGVycGxhY2Uub3JnL2Fzc2V0cy9kZWZhdWx0L3VzZXJfcHJvZmlsZV9waWN0dXJlL2RlZmF1bHQtMmFhMWY1Y2MzZDhhYjY1ODg3MDU4N2ZiNmVkOWU4NTNlNjFjMDFmMTE4MTQ4MTE3YzI4ZGI2YTBmNTQ1NjFiZC5zdmciLCJyZWwiOiJmaWxsXzEwMHgxMDAifSx7InRlbXBsYXRlZCI6bnVsbCwiaHJlZiI6Imh0dHBzOi8vYmV0dGVycGxhY2UtYXNzZXRzLmJldHRlcnBsYWNlLm9yZy9hc3NldHMvZGVmYXVsdC91c2VyX3Byb2ZpbGVfcGljdHVyZS9kZWZhdWx0LTJhYTFmNWNjM2Q4YWI2NTg4NzA1ODdmYjZlZDllODUzZTYxYzAxZjExODE0ODExN2MyOGRiNmEwZjU0NTYxYmQuc3ZnIiwicmVsIjoib3JpZ2luYWwifV0sImZhbGxiYWNrIjp0cnVlfSwibmFtZSI6IkFua2UgTWVuemVsIiwiaWQiOjYzMzY0OH0sImNvbXBsZXRlZF9uZWVkX2NvdW50IjowLCJjb21tZW50c19jb3VudCI6MCwiZG9ub3JfY291bnQiOjMsImRvbmF0aW9uc19jb3VudCI6MywibmVnYXRpdmVfb3BpbmlvbnNfY291bnQiOjAsInBvc2l0aXZlX29waW5pb25zX2NvdW50IjozLCJibG9nX3Bvc3RfY291bnQiOjAsIm5ld3NsZXR0ZXJfc3Vic2NyaXB0aW9uc19jb3VudCI6MywiaW5jb21wbGV0ZV9uZWVkX2NvdW50IjoxLCJjYXJyaWVyIjp7ImxpbmtzIjpbeyJ0ZW1wbGF0ZWQiOm51bGwsImhyZWYiOiJodHRwczovL2FwaS5iZXR0ZXJwbGFjZS5vcmcvZGUvYXBpX3Y0L29yZ2FuaXNhdGlvbnMvNTM1MjIuanNvbiIsInJlbCI6InNlbGYifV0sImNvdW50cnkiOiJEZXV0c2NobGFuZCIsInBpY3R1cmUiOnsibGlua3MiOlt7InRlbXBsYXRlZCI6bnVsbCwiaHJlZiI6Imh0dHBzOi8vYmV0dGVycGxhY2UtYXNzZXRzLmJldHRlcnBsYWNlLm9yZy91cGxvYWRzL29yZ2FuaXNhdGlvbi9wcm9maWxlX3BpY3R1cmUvMDAwLzA1My81MjIvZmlsbF8xMDB4MTAwX2JwMTY2OTMwNTA4M19TdC5GYW0udS5HLVouTG9nb19rb21wbGV0dF8yMDE1XzExX1JHQi5qcGciLCJyZWwiOiJmaWxsXzEwMHgxMDAifSx7InRlbXBsYXRlZCI6bnVsbCwiaHJlZiI6Imh0dHBzOi8vYmV0dGVycGxhY2UtYXNzZXRzLmJldHRlcnBsYWNlLm9yZy91cGxvYWRzL29yZ2FuaXNhdGlvbi9wcm9maWxlX3BpY3R1cmUvMDAwLzA1My81MjIvY3JvcF9vcmlnaW5hbF9icDE2NjkzMDUwODNfU3QuRmFtLnUuRy1aLkxvZ29fa29tcGxldHRfMjAxNV8xMV9SR0IuanBnIiwicmVsIjoib3JpZ2luYWwifV0sImZhbGxiYWNrIjpudWxsfSwiaWQiOjUzNTIyLCJjaXR5IjoiSGFuYXUiLCJuYW1lIjoiRXZhbmdlbGlzY2hlIEtpcmNoZW5nZW1laW5kZSBTdGVpbmhlaW0vTWFpbiJ9LCJpZCI6MTQ0NzU3LCJ0aXRsZSI6IkludGVncmF0aXZlIFNvbW1lcmZyZWl6ZWl0IGbDvHIgSnVnZW5kbGljaGUgbmFjaCBEw6RuZW1hcmsiLCJkZXNjcmlwdGlvbiI6IjxkaXY+RGllIFNlaG5zdWNodCBiZWkgSnVnZW5kbGljaGVuIG5hY2ggdW5iZXNjaHdlcnRlbiBUYWdlbiBpc3Qgc2VociBncm/Dny4gRGllIFNvbW1lcmZyZWl6ZWl0IGltIEp1bGkgMjAyNSBzb2xsIHNvbGNoZSBUYWdlIGVybcO2Z2xpY2hlbi4gSnVnZW5kbGljaGUgYXVzIHVudGVyc2NoaWVkbGljaGVuIHNvemlhbGVuIFp1c2FtbWVuaMOkbmdlbiB1bmQgbWl0IGlocmVuIGplIGVpZ2VuZW4gVm9yc3RlbGx1bmdlbiB2b20gTGViZW4gdmVyYnJpbmdlbiAxNCBUYWdlIGFuIGRlciBPc3RzZWVrw7xzdGUgdm9uIETDpG5lbWFyayBlaW5lIGVybGVibmlzcmVpY2hlIFplaXQgbWl0ZWluYW5kZXIuIFNpZSBrb2NoZW4gZsO8cmVpbmFuZGVyLCBvcmdhbmlzaWVyZW4gZ2VtZWluc2FtIGRlbiBBYndhc2NoIHVuZCBkaWUgUmVpbmlndW5nIGRlciBnZW1laW5zYW0gZ2VudXR6dGVuIFLDpHVtZSwgd2llIGF1Y2ggZGllIGdlbWVpbnNhbWVuIEZyZWl6ZWl0YWt0aXZpdMOkdGVuLiBTaWUgd2VyZGVuIHZvbiBlaW5lbSA2IGJpcyA4IGvDtnBmaWdlbiBUZWFtIGF1cyBlaHJlbmFtdGxpY2hlbiBqdW5nZW4gRXJ3YWNoc2VuZW4gaW0gQWx0ZXIgendpc2NoZW4gMjAgYmlzIDMwIEphaHJlbiB1bmQgZGVtIFNvemlhbHDDpGRhZ29nZW4gZGVyIEtpcmNoZW5nZW1laW5kZSBiZWdsZWl0ZXQuIERpZSBKdWdlbmRsaWNoZW4ga29tbWVuIGRhbWl0IHp1Z2xlaWNoIG1pdCB1bnRlcnNjaGllZGxpY2hlbiBMZWJlbnNlbnR3w7xyZmVuIHVuZCBQZXJzcGVrdGl2ZW4gaW4gS29udGFrdCwgZGllIEFucmVndW5nIHVuZCBWb3JiaWxkIGbDvHIgaWhyIGVpZ2VuZXMgTGViZW4gc2VpbiBrw7ZubmVuLjxicj48YnI+U296aWFsZSBLb21wZXRlbnplbiB3ZXJkZW4gaW4gZGllc2VtIOKAnkF1ZmVpbmFuZGVyLWFuZ2V3aWVzZW4tc2VpbuKAnCBpbnRlbnNpdiBlcndvcmJlbiwgYXVmIGRpZSBQcm9iZSBnZXN0ZWxsdCB1bmQgZXJ3ZWl0ZXJ0LiBXYXMgc2ljaCBoaWVyIGluIDE0IFRhZ2VuIGVudHdpY2tlbHQsIGRhdWVydCBhdWYgYW5kZXJlIFdlaXNlIG9mdCBKYWhyZS4gRXMgd2VyZGVuIGF1Y2ggbmljaHQgenVsZXR6dCBLb25mbGlrdGzDtnN1bmdlbiBlaW5nZcO8YnQsIGdlbWVpbnNhbWUgU3RyYXRlZ2llbiBlbnR3aWNrZWx0IHVuZCBLb21wcm9taXNzZsOkaGlna2VpdCBlcmxlcm50LiBJbnRlZ3JhdGlvbiBiZWRldXRldCBoaWVyIGVpbiBMZXJuZW4gYXVmIEF1Z2VuaMO2aGUgZsO8ciBhbGxlLiBVbnNlcmUgU29tbWVyZnJlaXplaXQgaXN0IGVpbiBPcnQgdm9uIEJpbGR1bmcsIEJlZ2VnbnVuZywgUGFydGl6aXBhdGlvbiB1bmQgc296aWFsZW0gTGVybmVuLCBiaWV0ZXQgRXJob2x1bmcgdW5kIGbDtnJkZXJ0IHNvIGRpZSBwc3ljaGlzY2hlIFdpZGVyc3RhbmRza3JhZnQgdW5kIHZlcm1pdHRlbHQgTWV0aG9kZW4genVyIFN0cmVzc3JlZ3VsaWVydW5nLjxicj5EYW1pdCBkaWVzZSB1bmJlc2Nod2VydGVuIFRhZ2UgZsO8ciBhbGxlIEp1Z2VuZGxpY2hlbiBtw7ZnbGljaCB3ZXJkZW4sIGdsZWljaCB3ZWxjaGVyIEhlcmt1bmZ0IG9kZXIgaW4gd2VsY2ggc2Nod2llcmlnZW4gTGFnZW4gc2ljaCBKdWdlbmRsaWNoZSB1bmQgaWhyZSBGYW1pbGllbiBiZWZpbmRlbiwgYnJhdWNodCBlcyBmaW5hbnppZWxsZSBVbnRlcnN0w7x0enVuZy4gTWl0IGVpbmVyIFNwZW5kZSBrw7ZubmVuIFNpZSBqdW5nZW4gTWVuc2NoZW4gZGllc2UgbmFjaGhhbHRpZyBwcsOkZ2VuZGVuIEVyZmFocnVuZ2VuIHVuZCBFcmxlYm5pc3NlbiBlaW5lciBKdWdlbmRmcmVpemVpdCBlcm3DtmdsaWNoZW4uJm5ic3A7PGJyPjxicj48L2Rpdj4iLCJzdW1tYXJ5IjoiRnJlaXplaXRlbiBzaW5kIGbDvHIganVuZ2UgTWVuc2NoZW4gZWluZSBndXRlIE3DtmdsaWNoa2VpdCwgbWl0IEdsZWljaGFsdHJpZ2VuIGdlbWVpbnNhbSBlaW5lIGVybGVibmlzcmVpY2hlIHVuZCB6dWdsZWljaCBlbnRzcGFubnRlIFplaXQgenUgZXJsZWJlbi4gU29sY2hlIEVyZmFocnVuZ2VuIHN0w6Rya2VuIGRpZSBKdWdlbmRsaWNoZSBpbiBoZXJhdXNmb3JkZXJuZGVuIFplaXRlbiB1bmQgc2Nod2llcmlnZW4gTGViZW5zcGhhc2VuLiIsImhhc2giOm51bGwsIm9wZW5fYW1vdW50X2luX2NlbnRzIjoxOTA1MDAsImRvbmF0ZWRfYW1vdW50X2luX2NlbnRzIjo5NTAwLCJ0YXhfZGVkdWN0aWJsZSI6dHJ1ZSwiZG9uYXRpb25zX3Byb2hpYml0ZWQiOmZhbHNlLCJwcm9ncmVzc19wZXJjZW50YWdlIjo0LCJzdHJlZXQiOiJGcnlkZW5ib3JndmVqIDQwIiwiY2l0eSI6IlNkci4gU3RlbmRlcnVwIiwiemlwIjoiNjA5MiIsImNvdW50cnkiOiJEw6RuZW1hcmsiLCJsYXRpdHVkZSI6NTUuNDU1NjUzNzAwMDAwMDEsImxvbmdpdHVkZSI6OS42ODczMTk4LCJjcmVhdGVkX2F0IjoiMjAyNC0xMS0wN1QxNDowMTozOFoiLCJ1cGRhdGVkX2F0IjoiMjAyNS0wOC0xMVQwMDoxNzo0NVoiLCJjb250ZW50X3VwZGF0ZWRfYXQiOiIyMDI0LTExLTA4VDA5OjM2OjU3WiIsImFjdGl2YXRlZF9hdCI6IjIwMjQtMTEtMDhUMDk6MzY6NTdaIiwiY29tcGxldGVkX2F0IjpudWxsLCJjbG9zZWRfYXQiOm51bGwsImFjdGl2ZV9tYXRjaGluZ19mdW5kIjpudWxsLCJtYXRjaGluZ19ldmVudHMiOltdLCJjYXRlZ29yaWVzIjpbeyJzbHVnIjoiYmlsZHVuZyIsIm5hbWUiOiJCaWxkdW5nIiwiaWQiOjN9LHsic2x1ZyI6ImludGVncmF0aW9uICIsIm5hbWUiOiJJbnRlZ3JhdGlvbiIsImlkIjoxOH0seyJzbHVnIjoia2luZGVyIiwibmFtZSI6IktpbmRlciB1bmQgSnVnZW5kIiwiaWQiOjJ9XX0=", "attributes": {"eventType": "DonationCreated", "eventVersion": "1.0.0"}, "messageId": "15657351798383557", "publishTime": "2025-08-21T12:16:29.334Z"}}}'
+    return TopicEmbeddingJson.model_validate(
+        invoke_llm_with_structured_output_cached(
+            prompt_template, input, output_json_schema=TopicEmbeddingJson.model_json_schema()
+        )
     )
-    event = CloudEvent.create(event_json["attributes"], event_json["data"])
-    donation = parse_donation_created_event(event)
-    print(donation)  # noqa: T201
-    result1 = enrich(donation.data)
-    result2 = enrich(donation.data)
-    print(result1[1])  # noqa: T201
-    print(result1[2])  # noqa: T201
+
+
+def create_skills_v2_embedding_for_donation(donation: Donation):
+    input = donation.model_dump()
+    langfuse = get_client()
+    fallback_prompt = """Here is a donation project with title '{{title}}' and decription '{{description}}'.
+    Estimate the similarity of the project to the given skills between -1 and 1 (-1 for not similar, 1 for similar)"""
+    prompt = langfuse.get_prompt("donations_skills_v2_embedding_prompt", fallback=fallback_prompt)
+    prompt_template = PromptTemplate.from_template(prompt.get_langchain_prompt())
+    return SkillEmbeddingJson.model_validate(
+        invoke_llm_with_structured_output_cached(
+            prompt_template, input, output_json_schema=SkillEmbeddingJson.model_json_schema()
+        )
+    )
+
+
+@dataclasses.dataclass
+class EnrichedDonation(Enrichments):
+    donation: Donation
+
+
+def enrich_donation(donation: Donation) -> EnrichedDonation:
+    similarity_embedding = create_similarity_embedding_for_donation(donation)
+    topics_embedding = create_topics_v2_embedding_for_donation(donation)
+    skills_embedding = create_skills_v2_embedding_for_donation(donation)
+    return EnrichedDonation(similarity_embedding, topics_embedding, skills_embedding, donation)
+
+
+def get_link_with_relation(links: Optional[List[DonationLink]], relation: str) -> Optional[str]:
+    if not links or len(links) == 0:
+        return None
+    links_for_ref = [link for link in links if link.rel == relation]
+    if len(links_for_ref) > 0:
+        return links_for_ref[0].href
+    return None
+
+
+def get_image_url_from_links(picture: Optional[DonationPicture]) -> Optional[str]:
+    if not picture:
+        return None
+    picture_links = picture.links
+    if not picture_links or len(picture_links) == 0:
+        return None
+    original = get_link_with_relation(picture_links, "original")
+    return original or picture_links[0].href
+
+
+def enriched_donation_to_typesense_doc(enriched: EnrichedDonation) -> TypesenseDocument:
+    d = enriched.donation
+    return TypesenseDocument(
+        id=f"donation_{d.id}",
+        type=TypesenseDocumentType("donation"),
+        title_de=d.title,
+        title_en=None,  # TODO use english version
+        description_de=d.description,
+        description_en=None,  # TODO use english version
+        location=d.city,
+        location_type=None,
+        location_lat_lng=[d.latitude, d.longitude] if d.latitude and d.longitude else None,
+        image_url=get_image_url_from_links(d.profile_picture),
+        link_locators={
+            "donation": d.id,
+        },
+        user_full_name=None,
+        topics_v2=enriched.topics_v2(),
+        skills_v2=enriched.skills_v2(),
+        topics_skills_embedding_v2=enriched.topics_skills_embedding_v2(),
+        similarity_embedding=enriched.similarity_embedding,
+        organizer_name=d.carrier.name,
+        organizer_image_url=get_image_url_from_links(d.carrier.picture),
+        organizer_url=get_link_with_relation(d.carrier.links, "self"),
+        external_url=get_link_with_relation(d.links, "new_donation"),
+        source="Betterplace",
+        commitment_label=None,
+        commitment_duration=None,
+        commitment_duration_ai_derived=None,
+        commitment_duration_ai_reasoning=None,
+        space_id=None,
+        contact=None,
+        donation_progress_percentage=d.progress_percentage,
+        donation_open_amount_in_cents=d.open_amount_in_cents,
+        summary=d.summary,
+    )

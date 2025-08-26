@@ -1,4 +1,3 @@
-import os
 from logging import getLogger
 from typing import Any
 
@@ -13,21 +12,23 @@ class TypesenseClient(object):
     """
 
     client: Client
+    collection_name: str
 
-    def __init__(self) -> None:
+    def __init__(self, host: str, port: str, protocol: str, api_key: str, collection_name: str) -> None:
         self.client = Client(
             {
-                "api_key": (os.getenv("TYPESENSE_ADMIN_API_KEY")),
+                "api_key": api_key,
                 "nodes": [
                     {
-                        "host": (os.getenv("TYPESENSE_HOST")),
-                        "port": (os.getenv("TYPESENSE_PORT")),
-                        "protocol": (os.getenv("TYPESENSE_PROTOCOL")),
+                        "host": host,
+                        "port": port,
+                        "protocol": protocol,
                     }
                 ],
                 "connection_timeout_seconds": 60 * 60,
             }
         )
+        self.collection_name = collection_name
 
     def upsert(self, document: Any, params: Any | None = None) -> object:
         """
@@ -38,7 +39,7 @@ class TypesenseClient(object):
         :return: deserialized JSON document
         """
         try:
-            return self.client.collections[os.getenv("TYPESENSE_COLLECTION_NAME")].documents.upsert(document, params)
+            return self.client.collections[self.collection_name].documents.upsert(document, params)
         except Exception as e:
             # typesense at this point should only contain public data so it is fine to log documents (no PII)
             # if PII should be added later, this must be handled in the documents __str__ function
@@ -52,4 +53,4 @@ class TypesenseClient(object):
         :param id: the id of the document to delete
         :return: deserialized JSON document
         """
-        return self.client.collections[os.getenv("TYPESENSE_COLLECTION_NAME")].documents[id].delete()
+        return self.client.collections[self.collection_name].documents[id].delete()

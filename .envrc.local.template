@@ -119,5 +119,14 @@ if [ $ENVIRONMENT = "production" ]; then
   echo
 fi
 
-export LANGFUSE_PUBLIC_KEY=''
-export LANGFUSE_SECRET_KEY=''
+export LANGFUSE_PUBLIC_KEY=
+export LANGFUSE_SECRET_KEY=
+
+export REDIS_HOST=
+export REDIS_PORT=
+export REDIS_DB=
+export REDIS_PASSWORD=
+
+export VERTEX_AI_PROJECT="holi-shared"
+export VERTEX_AI_LOCATION="europe-north1"
+export VERTEX_AI_RETRIES=2

@@ -24,8 +24,9 @@ from events import (
     parse_donation_updated_event,
     parse_donation_deleted_event,
 )
+from pubsub_typesense_updater.enrich_donations import enrich_donation, enriched_donation_to_typesense_doc
 from shared.classifiers.task_classification_input import TaskClassificationInput
-from shared.events.event import DonationCreatedEvent, DonationUpdatedEvent, DonationDeletedEvent
+from shared.events import DonationCreatedEvent, DonationUpdatedEvent, DonationDeletedEvent
 from task_classifier import TaskClassifier
 
 from typesense_client import TypesenseClient
@@ -154,17 +155,29 @@ def process_task_deleted_event(ts_client: TypesenseClient, id: str) -> None:
 
 def process_donation_created_event(ts_client: TypesenseClient, event: DonationCreatedEvent) -> None:
     logger.debug(f"[id={event.data.id}] Processing DonationCreated event")
-    # TODO implement me
+    enriched = enrich_donation(event.data)
+    typesense_doc = enriched_donation_to_typesense_doc(enriched)
+    ts_client.upsert(typesense_doc)
 
 
 def process_donation_updated_event(ts_client: TypesenseClient, event: DonationUpdatedEvent) -> None:
     logger.debug(f"[id={event.data.id}] Processing DonationUpdated event")
-    # TODO implement me
+    enriched = enrich_donation(event.data)
+    typesense_doc = enriched_donation_to_typesense_doc(enriched)
+    ts_client.upsert(typesense_doc)
+
+
+def _delete_donation(ts_client: TypesenseClient, id: str) -> None:
+    try:
+        ts_client.delete(f"donation_{id}")
+    except ObjectNotFound:
+        pass
+    logger.info(f"[id={id}] Deleted donation in Typesense")
 
 
 def process_donation_deleted_event(ts_client: TypesenseClient, event: DonationDeletedEvent) -> None:
     logger.debug(f"[id={event.data.id}] Processing DonationDeleted event")
-    # TODO implement me
+    _delete_donation(ts_client, str(event.data.id))
 
 
 def process_event(ts_client: TypesenseClient, cloud_event: CloudEvent) -> None:
@@ -239,7 +252,13 @@ def process_event(ts_client: TypesenseClient, cloud_event: CloudEvent) -> None:
 
 @functions_framework.cloud_event
 def process_message(event: CloudEvent) -> None:
-    ts_client = TypesenseClient()
+    ts_client = TypesenseClient(
+        api_key=os.getenv("TYPESENSE_ADMIN_API_KEY"),
+        host=os.getenv("TYPESENSE_HOST"),
+        port=os.getenv("TYPESENSE_PORT", "443"),
+        protocol=os.getenv("TYPESENSE_PROTOCOL"),
+        collection_name=os.getenv("TYPESENSE_COLLECTION_NAME"),
+    )
     if isinstance(logger, EventProcessorLogger):
         logger.cloud_event = event
     try:

@@ -12,7 +12,7 @@ from src.common.monitoring.flow import (
     on_failure_hooks,
     on_completion_hooks,
 )
-from shared.events.event import (
+from shared.events import (
     Event,
     Donation,
     DonationCreatedEvent,

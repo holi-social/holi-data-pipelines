@@ -2,7 +2,7 @@ from typing import Optional
 from google.cloud import pubsub_v1  # type: ignore[attr-defined]
 from google.cloud.pubsub_v1.types import PublisherOptions  # type: ignore
 
-from shared.events.event import Event, EventPayloadT
+from shared.events import Event, EventPayloadT
 from src.common.variables import variable_value_as
 
 

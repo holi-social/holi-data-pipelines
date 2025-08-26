@@ -84,7 +84,7 @@ class Donation(BaseModel):
     newsletter_subscriptions_count: Optional[int] = None
     incomplete_need_count: Optional[int] = None
     carrier: Optional[DonationCarrier] = None
-    id: Optional[int] = None
+    id: int
     title: Optional[str] = None
     description: Optional[str] = None
     summary: Optional[str] = None
