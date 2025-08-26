@@ -76,10 +76,8 @@ class EnrichedDonation(Enrichments):
     donation: Donation
 
 
-def enrich(donation: Donation) -> EnrichedDonation:
-    print("************* Similarity Embeddings **************")  # noqa: T201 TODO remove
+def enrich_donation(donation: Donation) -> EnrichedDonation:
     similarity_embedding = create_similarity_embedding_for_donation(donation)
-    print("************* Topics Skills Embeddings **************")  # noqa: T201 TODO remove
     topics_embedding = create_topics_v2_embedding_for_donation(donation)
     skills_embedding = create_skills_v2_embedding_for_donation(donation)
     return EnrichedDonation(similarity_embedding, topics_embedding, skills_embedding, donation)
@@ -104,7 +102,7 @@ def get_image_url_from_links(picture: Optional[DonationPicture]) -> Optional[str
     return original or picture_links[0].href
 
 
-def to_typesense_doc(enriched: EnrichedDonation) -> TypesenseDocument:
+def enriched_donation_to_typesense_doc(enriched: EnrichedDonation) -> TypesenseDocument:
     d = enriched.donation
     return TypesenseDocument(
         id=f"donation_{d.id}",
@@ -155,10 +153,10 @@ if __name__ == "__main__":
     donation = parse_donation_created_event(event)
     print()  # noqa: T201
     print(donation)  # noqa: T201
-    enriched = enrich(donation.data)
+    enriched = enrich_donation(donation.data)
     print(enriched)  # noqa: T201
     print()  # noqa: T201
-    typesense_doc = to_typesense_doc(enriched)
+    typesense_doc = enriched_donation_to_typesense_doc(enriched)
     print(typesense_doc.model_dump_json(indent=True))  # noqa: T201
     ts_client = TypesenseClient(
         api_key=json.loads(os.getenv("TYPESENSE_ADMIN_API_KEY")),
