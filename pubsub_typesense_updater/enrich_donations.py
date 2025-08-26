@@ -17,11 +17,11 @@ from pubsub_typesense_updater.topics_skills_embedding import (
     SkillEmbeddingJson,
 )
 from pubsub_typesense_updater.typesense_document import TypesenseDocument, TypesenseDocumentType
-from shared.events import Donation
+from shared.events import Donation, DonationLink, DonationPicture
 from cloudevents.http.event import CloudEvent
 import json
 import logging
-from typing import Optional
+from typing import Optional, List
 
 
 def create_text_input_for_similarity_embedding_from_donation(donation: Donation) -> str:
@@ -83,13 +83,27 @@ def enrich(donation: Donation) -> EnrichedDonation:
     return EnrichedDonation(similarity_embedding, topics_embedding, skills_embedding, donation)
 
 
+def get_link_with_relation(links: Optional[List[DonationLink]], relation: str) -> Optional[str]:
+    if not links or len(links) == 0:
+        return None
+    links_for_ref = [link for link in links if link.rel == relation]
+    if len(links_for_ref) > 0:
+        return links_for_ref[0].href
+    return None
+
+
+def get_image_url_from_links(picture: Optional[DonationPicture]) -> Optional[str]:
+    if not picture:
+        return None
+    picture_links = picture.links
+    if not picture_links or len(picture_links) == 0:
+        return None
+    original = get_link_with_relation(picture_links, "original")
+    return original or picture_links[0].href
+
+
 def to_typesense_doc(enriched: EnrichedDonation) -> TypesenseDocument:
     d = enriched.donation
-    image_url = (
-        d.profile_picture.links[0].href
-        if d.profile_picture and d.profile_picture.links and len(d.profile_picture.links) > 0
-        else None
-    )  # TODO use logic from holi-app-donations
     return TypesenseDocument(
         id=f"donation_{d.id}",
         type=TypesenseDocumentType("donation"),
@@ -100,7 +114,7 @@ def to_typesense_doc(enriched: EnrichedDonation) -> TypesenseDocument:
         location=d.city,
         location_type=None,
         location_lat_lng=[d.latitude, d.longitude] if d.latitude and d.longitude else None,
-        image_url=image_url,
+        image_url=get_image_url_from_links(d.profile_picture),
         link_locators={
             "donation": d.id,
         },
@@ -110,11 +124,11 @@ def to_typesense_doc(enriched: EnrichedDonation) -> TypesenseDocument:
         skills_v2=enriched.skills_v2(),
         topics_skills_embedding_v2=enriched.topics_skills_embedding_v2(),
         similarity_embedding=enriched.similarity_embedding,
-        organizer_name=None,
-        organizer_image_url=None,
-        organizer_url=None,
-        external_url=None,
-        source=None,
+        organizer_name=d.carrier.name,
+        organizer_image_url=get_image_url_from_links(d.carrier.picture),
+        organizer_url=get_link_with_relation(d.carrier.links, "self"),
+        external_url=get_link_with_relation(d.links, "new_donation"),
+        source="Betterplace",
         commitment_label=None,
         commitment_duration=None,
         commitment_duration_ai_derived=None,
