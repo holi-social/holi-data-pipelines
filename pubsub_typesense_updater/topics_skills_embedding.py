@@ -97,12 +97,21 @@ class SkillEmbeddingJson(BaseModel):
 
 
 @cache(cache_persistence)
-def create_topics_skills_v2_embedding(
+def invoke_llm_with_structured_output_cached(
     prompt_template: PromptTemplate,
-    input: Dict[Any, Any],
-    output_json_schema: Dict[Any, Any],
+    input: Dict[str, Any],
+    output_json_schema: Dict[str, Any],
     model_name: str = MODEL_NAME,
-):
+) -> dict[str, Any]:
+    """
+    Invokes an LLM and returns structured output. Caches the result based on parameter values and this methods' body.
+
+    :param prompt_template:
+    :param input: a dict containing values to be rendered inside the prompt template
+    :param output_json_schema:
+    :param model_name: the LLM models name
+    :return: a dict conforming to the output schema
+    """
     langfuse_handler = CallbackHandler()
     llm = ChatVertexAI(
         model_name=model_name,

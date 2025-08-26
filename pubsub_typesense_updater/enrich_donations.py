@@ -1,4 +1,7 @@
+import dataclasses
+
 from pubsub_typesense_updater.main import parse_donation_created_event
+from pubsub_typesense_updater.enrichments import Enrichments
 from pubsub_typesense_updater.similarity_embedding import (
     SimilarityEmbedding,
     create_similarity_embedding,
@@ -9,15 +12,15 @@ from langfuse import get_client
 from langchain.globals import set_debug
 from langchain_core.prompts import PromptTemplate
 from pubsub_typesense_updater.topics_skills_embedding import (
-    create_topics_skills_v2_embedding,
+    invoke_llm_with_structured_output_cached,
     TopicEmbeddingJson,
     SkillEmbeddingJson,
 )
-from shared.event import Donation
+from shared.events import Donation
 from cloudevents.http.event import CloudEvent
 import json
 import logging
-from typing import Optional, Any
+from typing import Optional
 
 
 def create_text_input_for_similarity_embedding_from_donation(donation: Donation) -> str:
@@ -45,7 +48,7 @@ def create_topics_v2_embedding_for_donation(donation: Donation) -> TopicEmbeddin
     prompt = langfuse.get_prompt("donations_topics_v2_embedding_prompt", fallback=fallback_prompt)
     prompt_template = PromptTemplate.from_template(prompt.get_langchain_prompt())
     return TopicEmbeddingJson.model_validate(
-        create_topics_skills_v2_embedding(
+        invoke_llm_with_structured_output_cached(
             prompt_template, input, output_json_schema=TopicEmbeddingJson.model_json_schema()
         )
     )
@@ -59,19 +62,24 @@ def create_skills_v2_embedding_for_donation(donation: Donation):
     prompt = langfuse.get_prompt("donations_skills_v2_embedding_prompt", fallback=fallback_prompt)
     prompt_template = PromptTemplate.from_template(prompt.get_langchain_prompt())
     return SkillEmbeddingJson.model_validate(
-        create_topics_skills_v2_embedding(
+        invoke_llm_with_structured_output_cached(
             prompt_template, input, output_json_schema=SkillEmbeddingJson.model_json_schema()
         )
     )
 
 
-def enrich(donation: Donation) -> tuple[Donation, Any, Any, Any]:
+@dataclasses.dataclass
+class EnrichedDonation(Enrichments):
+    donation: Donation
+
+
+def enrich(donation: Donation) -> EnrichedDonation:
     print("************* Similarity Embeddings **************")  # noqa: T201 TODO remove
     similarity_embedding = create_similarity_embedding_for_donation(donation)
     print("************* Topics Skills Embeddings **************")  # noqa: T201 TODO remove
     topics_embedding = create_topics_v2_embedding_for_donation(donation)
     skills_embedding = create_skills_v2_embedding_for_donation(donation)
-    return (donation, similarity_embedding, topics_embedding, skills_embedding)
+    return EnrichedDonation(similarity_embedding, topics_embedding, skills_embedding, donation)
 
 
 if __name__ == "__main__":
@@ -87,6 +95,4 @@ if __name__ == "__main__":
     donation = parse_donation_created_event(event)
     print(donation)  # noqa: T201
     result1 = enrich(donation.data)
-    print(result1[1])  # noqa: T201
-    print(result1[2])  # noqa: T201
-    print(result1[3])  # noqa: T201
+    print(result1)  # noqa: T201
