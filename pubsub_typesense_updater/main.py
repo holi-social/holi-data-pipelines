@@ -24,7 +24,7 @@ from events import (
     parse_donation_updated_event,
     parse_donation_deleted_event,
 )
-from pubsub_typesense_updater.enrich_donations import enrich_donation, enriched_donation_to_typesense_doc
+from enrich_donations import enrich_donation, enriched_donation_to_typesense_doc
 from shared.classifiers.task_classification_input import TaskClassificationInput
 from shared.events import DonationCreatedEvent, DonationUpdatedEvent, DonationDeletedEvent
 from task_classifier import TaskClassifier

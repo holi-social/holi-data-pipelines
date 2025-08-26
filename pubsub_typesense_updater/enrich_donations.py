@@ -1,19 +1,19 @@
 import dataclasses
 
-from pubsub_typesense_updater.enrichments import Enrichments
-from pubsub_typesense_updater.similarity_embedding import (
+from enrichments import Enrichments
+from similarity_embedding import (
     SimilarityEmbedding,
     create_similarity_embedding,
     normalize_text,
 )
 from langfuse import get_client
 from langchain_core.prompts import PromptTemplate
-from pubsub_typesense_updater.topics_skills_embedding import (
+from topics_skills_embedding import (
     invoke_llm_with_structured_output_cached,
     TopicEmbeddingJson,
     SkillEmbeddingJson,
 )
-from pubsub_typesense_updater.typesense_document import TypesenseDocument, TypesenseDocumentType
+from typesense_document import TypesenseDocument, TypesenseDocumentType
 from shared.events import Donation, DonationLink, DonationPicture
 from typing import Optional, List
 

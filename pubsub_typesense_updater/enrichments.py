@@ -1,7 +1,7 @@
 import dataclasses
 from typing import Optional
-from pubsub_typesense_updater.similarity_embedding import SimilarityEmbedding
-from pubsub_typesense_updater.topics_skills_embedding import TopicEmbeddingJson, SkillEmbeddingJson
+from similarity_embedding import SimilarityEmbedding
+from topics_skills_embedding import TopicEmbeddingJson, SkillEmbeddingJson
 
 CONFIDENCE_THRESHOLD = 0.8
 

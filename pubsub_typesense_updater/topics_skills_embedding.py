@@ -7,7 +7,7 @@ from typing import Dict, Any
 from langchain_google_vertexai import ChatVertexAI
 
 from shared.cache import cache
-from pubsub_typesense_updater.redis_cache import cache_persistence
+from redis_cache import cache_persistence
 
 
 MODEL_NAME = "gemini-2.5-flash"

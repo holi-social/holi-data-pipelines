@@ -5,7 +5,7 @@ from vertexai.language_models import TextEmbeddingInput, TextEmbeddingModel
 from bs4 import BeautifulSoup
 
 from shared.cache import cache
-from pubsub_typesense_updater.redis_cache import cache_persistence
+from redis_cache import cache_persistence
 
 type SimilarityEmbedding = List[float]
 

@@ -1,15 +1,15 @@
 import os
 
-from pubsub_typesense_updater.main import parse_donation_created_event
-from pubsub_typesense_updater.similarity_embedding import (
+from main import parse_donation_created_event
+from similarity_embedding import (
     logger as similarity_embedding_logger,
 )
 from langchain.globals import set_debug
-from pubsub_typesense_updater.typesense_client import TypesenseClient
+from typesense_client import TypesenseClient
 from cloudevents.http.event import CloudEvent
 import json
 import logging
-from pubsub_typesense_updater.enrich_donations import enrich_donation, enriched_donation_to_typesense_doc
+from enrich_donations import enrich_donation, enriched_donation_to_typesense_doc
 
 if __name__ == "__main__":
     set_debug(True)
