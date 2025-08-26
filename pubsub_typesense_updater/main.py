@@ -239,7 +239,13 @@ def process_event(ts_client: TypesenseClient, cloud_event: CloudEvent) -> None:
 
 @functions_framework.cloud_event
 def process_message(event: CloudEvent) -> None:
-    ts_client = TypesenseClient()
+    ts_client = TypesenseClient(
+        api_key=os.getenv("TYPESENSE_ADMIN_API_KEY"),
+        host=os.getenv("TYPESENSE_HOST"),
+        port=os.getenv("TYPESENSE_PORT", "443"),
+        protocol=os.getenv("TYPESENSE_PROTOCOL"),
+        collection_name=os.getenv("TYPESENSE_COLLECTION_NAME"),
+    )
     if isinstance(logger, EventProcessorLogger):
         logger.cloud_event = event
     try:

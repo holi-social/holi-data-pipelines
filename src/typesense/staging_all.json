@@ -201,6 +201,12 @@
       "type": "int32",
       "optional": true,
       "index": false
+    },
+    {
+      "name": "summary",
+      "type": "string",
+      "optional": true,
+      "index": false
     }
   ]
 }

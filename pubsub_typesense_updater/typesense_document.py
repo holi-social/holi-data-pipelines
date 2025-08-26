@@ -65,9 +65,6 @@ class TypesenseDocument(BaseModel):
     user_full_name: Optional[str] = Field(
         None, description="Full name of associated user (searchable with infix and stemming, sortable)"
     )
-    embedding: Optional[List[float]] = Field(
-        None, description="Main embedding vector generated from title, description, and location fields"
-    )
     topics_v2: Optional[List[str]] = Field(None)
     skills_v2: Optional[List[str]] = Field(None)
     topics_skills_embedding_v2: Optional[List[float]] = Field(
@@ -100,4 +97,4 @@ class TypesenseDocument(BaseModel):
     donation_open_amount_in_cents: Optional[int] = Field(
         None, description="Remaining donation amount needed in cents", ge=0
     )
-    donation_summary: Optional[str]
+    summary: Optional[str]

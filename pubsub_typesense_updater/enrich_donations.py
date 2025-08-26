@@ -1,3 +1,4 @@
+import os
 import dataclasses
 
 from pubsub_typesense_updater.main import parse_donation_created_event
@@ -16,6 +17,7 @@ from pubsub_typesense_updater.topics_skills_embedding import (
     TopicEmbeddingJson,
     SkillEmbeddingJson,
 )
+from pubsub_typesense_updater.typesense_client import TypesenseClient
 from pubsub_typesense_updater.typesense_document import TypesenseDocument, TypesenseDocumentType
 from shared.events import Donation, DonationLink, DonationPicture
 from cloudevents.http.event import CloudEvent
@@ -119,7 +121,6 @@ def to_typesense_doc(enriched: EnrichedDonation) -> TypesenseDocument:
             "donation": d.id,
         },
         user_full_name=None,
-        embedding=None,
         topics_v2=enriched.topics_v2(),
         skills_v2=enriched.skills_v2(),
         topics_skills_embedding_v2=enriched.topics_skills_embedding_v2(),
@@ -137,7 +138,7 @@ def to_typesense_doc(enriched: EnrichedDonation) -> TypesenseDocument:
         contact=None,
         donation_progress_percentage=d.progress_percentage,
         donation_open_amount_in_cents=d.open_amount_in_cents,
-        donation_summary=d.summary,
+        summary=d.summary,
     )
 
 
@@ -159,3 +160,11 @@ if __name__ == "__main__":
     print()  # noqa: T201
     typesense_doc = to_typesense_doc(enriched)
     print(typesense_doc.model_dump_json(indent=True))  # noqa: T201
+    ts_client = TypesenseClient(
+        api_key=json.loads(os.getenv("TYPESENSE_ADMIN_API_KEY")),
+        host=json.loads(os.getenv("TYPESENSE_HOST")),
+        port=json.loads(os.getenv("TYPESENSE_PORT", "443")),
+        protocol=json.loads(os.getenv("TYPESENSE_PROTOCOL")),
+        collection_name=json.loads(os.getenv("TYPESENSE_COLLECTION_NAME")),
+    )
+    ts_client.upsert(typesense_doc.model_dump_json())
