@@ -147,7 +147,7 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
             skip_auto_headers=[],
             process_page=add_page_to_queue,
             headers=_HEADERS,
-            parallelism=10,
+            parallelism=5,
             stop_page=_STOP_DOC,
         ).crawl()
         return document_count
