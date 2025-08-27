@@ -561,6 +561,8 @@ resource "google_bigquery_table" "donations_betterplace_raw" {
   deletion_protection = true
 
   lifecycle {
+    # if schema changes would not be ignored, this would force automatic re-creation of the table (thereby losing all
+    # data) which is typically not what we want
     ignore_changes = [encryption_configuration, schema]
   }
 
