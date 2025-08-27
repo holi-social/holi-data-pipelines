@@ -150,7 +150,7 @@ if __name__ == "__main__":
         "--old",
         "-o",
         type=date.fromisoformat,
-        required=True,
+        required=False,
         help="Old partition date in ISO format (e.g., 2024-01-15)",
     )
 
