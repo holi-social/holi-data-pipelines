@@ -79,10 +79,15 @@ class Donation(BaseModel):
     newsletter_subscriptions_count: Optional[int] = None
     incomplete_need_count: Optional[int] = None
     carrier: Optional[DonationCarrier] = None
+    carrier_url: Optional[str] = None
+    carrier_country_en: Optional[str] = None
     id: int
     title: Optional[str] = None
+    title_en: Optional[str] = None
     description: Optional[str] = None
+    description_en: Optional[str] = None
     summary: Optional[str] = None
+    summary_en: Optional[str] = None
     hash: Optional[str] = None
     open_amount_in_cents: Optional[int] = None
     donated_amount_in_cents: Optional[int] = None
@@ -93,6 +98,7 @@ class Donation(BaseModel):
     city: Optional[str] = None
     zip: Optional[str] = None
     country: Optional[str] = None
+    country_en: Optional[str] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     created_at: Optional[datetime] = None

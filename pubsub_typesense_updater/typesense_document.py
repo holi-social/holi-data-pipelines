@@ -51,13 +51,15 @@ class TypesenseDocumentType(str, Enum):
 class TypesenseDocument(BaseModel):
     id: str = Field(..., description="Unique identifier for the document")
     type: TypesenseDocumentType
-    title_de: Optional[str] = Field(None)
-    title_en: Optional[str] = Field(None)
-    description_de: Optional[str] = Field(None)
-    description_en: Optional[str] = Field(None)
+    title_de: Optional[str]
+    title_en: Optional[str]
+    description_de: Optional[str]
+    description_en: Optional[str]
     location: Optional[str] = Field(None, description="Location name")
-    location_type: Optional[LocationType] = Field(None)
+    location_type: Optional[LocationType]
     location_lat_lng: Optional[List[float]] = Field(None, description="Geographical coordinates [lat, lng]")
+    location_country_de: Optional[str]
+    location_country_en: Optional[str]
     image_url: Optional[str] = Field(None, description="URL to associated image")
     link_locators: Optional[Dict[str, Any]] = Field(
         None, description="Locators for volunteering and other links, e.g., {'volunteering': '1234'}"
@@ -65,8 +67,8 @@ class TypesenseDocument(BaseModel):
     user_full_name: Optional[str] = Field(
         None, description="Full name of associated user (searchable with infix and stemming, sortable)"
     )
-    topics_v2: Optional[List[str]] = Field(None)
-    skills_v2: Optional[List[str]] = Field(None)
+    topics_v2: Optional[List[str]]
+    skills_v2: Optional[List[str]]
     topics_skills_embedding_v2: Optional[List[float]] = Field(
         None, description="53-dimensional embedding for topics and skills"
     )
@@ -76,6 +78,9 @@ class TypesenseDocument(BaseModel):
     organizer_name: Optional[str] = Field(None, description="Name of the organizer")
     organizer_image_url: Optional[str] = Field(None, description="URL to organizer's image")
     organizer_url: Optional[str] = Field(None, description="URL to organizer's profile or website")
+    organizer_location: Optional[str]
+    organizer_location_country_de: Optional[str]
+    organizer_location_country_en: Optional[str]
     external_url: Optional[str] = Field(None, description="External URL reference")
     source: Optional[str] = Field(None, description="Source of the content")
     commitment_label: Optional[CommitmentLabel] = Field(
@@ -97,4 +102,5 @@ class TypesenseDocument(BaseModel):
     donation_open_amount_in_cents: Optional[int] = Field(
         None, description="Remaining donation amount needed in cents", ge=0
     )
-    summary: Optional[str]
+    summary_de: Optional[str]
+    summary_en: Optional[str]

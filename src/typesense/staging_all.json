@@ -203,7 +203,43 @@
       "index": false
     },
     {
-      "name": "summary",
+      "name": "summary_de",
+      "type": "string",
+      "optional": true,
+      "index": false
+    },
+    {
+      "name": "summary_en",
+      "type": "string",
+      "optional": true,
+      "index": false
+    },
+    {
+      "name": "location_country_de",
+      "type": "string",
+      "optional": true,
+      "index": false
+    },
+    {
+      "name": "location_country_en",
+      "type": "string",
+      "optional": true,
+      "index": false
+    },
+    {
+      "name": "organizer_location",
+      "type": "string",
+      "optional": true,
+      "index": false
+    },
+    {
+      "name": "organizer_location_country_de",
+      "type": "string",
+      "optional": true,
+      "index": false
+    },
+    {
+      "name": "organizer_location_country_en",
       "type": "string",
       "optional": true,
       "index": false
