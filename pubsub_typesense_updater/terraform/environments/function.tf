@@ -51,7 +51,7 @@ resource "google_cloudfunctions2_function" "pubsub_typesense_updater" {
       REDIS_PORT                          = local.environment_name == "production" ? data.terraform_remote_state.holi_infra_state.outputs.redis_port_cmek_production : data.terraform_remote_state.holi_infra_state.outputs.redis_port_cmek_development
       REDIS_DB                            = local.environment_name == "production" ? 14 : 6
       LANGFUSE_HOST                       = "https://cloud.langfuse.com"
-      CACHE_DEBUG                         = "False"
+      CACHE_DEBUG                         = "True"
       VERTEX_AI_PROJECT                   = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
       VERTEX_AI_LOCATION                  = local.default_region
       VERTEX_AI_RETRIES                   = "2"
