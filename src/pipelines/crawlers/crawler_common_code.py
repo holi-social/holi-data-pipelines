@@ -39,6 +39,23 @@ async def source_to_sink(
     return source_task.result()
 
 
+def stdout_sink(stop_document: Any = None) -> Callable[[Queue[Any]], Coroutine[Any, Any, None]]:
+    @task
+    async def write_to_bigquery(queue: Queue[Any]) -> None:
+        async def get_document_from_queue() -> Any:
+            result = await queue.get()
+            queue.task_done()
+            return result
+
+        finished = False
+        while not finished:
+            document = await get_document_from_queue()
+            if document == stop_document:  # Stop signal
+                finished = True
+
+    return write_to_bigquery
+
+
 def bigquery_sink(
     config: CrawlerConfig, stop_document: Any = None
 ) -> Callable[[Queue[Any]], Coroutine[Any, Any, None]]:

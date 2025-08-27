@@ -16,11 +16,6 @@ class DonationPicture(BaseModel):
     fallback: Optional[bool] = None
 
 
-class DonationProfilePicture(BaseModel):
-    fallback: Optional[bool] = None
-    links: List[DonationLink] = []
-
-
 class DonationContact(BaseModel):
     links: List[DonationLink] = []
     picture: Optional[DonationPicture] = None
@@ -72,7 +67,7 @@ class Donation(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     links: List[DonationLink] = []
-    profile_picture: Optional[DonationProfilePicture] = None
+    profile_picture: Optional[DonationPicture] = None
     contact: Optional[DonationContact] = None
     completed_need_count: Optional[int] = None
     comments_count: Optional[int] = None
