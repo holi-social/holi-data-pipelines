@@ -220,12 +220,12 @@ def cache(persistence: Optional[CachePersistence] = None, ignore_args: Optional[
             cached_result = persistence.get(cache_key)
             if cached_result is not None:
                 if CACHE_DEBUG and logger is not None:
-                    logger.debug(f"{log_prefix} cache hit for key: ", cache_key)  # noqa: T201
+                    logger.debug(f"{log_prefix} cache hit for key: {cache_key}")  # noqa: T201
                 return cached_result
 
             # Execute function and cache result
             if CACHE_DEBUG and logger is not None:
-                logger.debug(f"{log_prefix} cache miss for key: ", cache_key)  # noqa: T201
+                logger.debug(f"{log_prefix} cache miss for key: {cache_key}")  # noqa: T201
             result = func(*args, **{k: v for k, v in kwargs.items() if k != KWARGS_KEY_LOGGING_CONTEXT})
             persistence.set(cache_key, result)
 
