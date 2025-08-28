@@ -1,5 +1,6 @@
 import os
 from shared.cache import CachePersistence, RedisCachePersistence, InMemoryCachePersistence
+from cf_logging import logger
 from redis import Redis
 
 redis_configured = all(
@@ -21,4 +22,4 @@ else:
         db=int(os.environ.get("REDIS_DB")),
         password=os.environ.get("REDIS_PASSWORD"),
     )
-    cache_persistence = RedisCachePersistence(redis_client)
+    cache_persistence = RedisCachePersistence(redis_client, logger)

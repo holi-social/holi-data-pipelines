@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, Any, Union
+from typing import Optional, Any
 
 from cloudevents.http import CloudEvent
 from shared.events import DonationCreatedEvent, DonationUpdatedEvent, DonationDeletedEvent
@@ -17,7 +17,7 @@ from events import (
 
 class EventProcessorLogger(logging.Logger):
     cloud_event: Optional[CloudEvent] = None
-    domain_event: Optional[Union[DomainEvent, DonationCreatedEvent, DonationUpdatedEvent, DonationDeletedEvent]] = None
+    domain_event: Optional[DomainEvent | DonationCreatedEvent | DonationUpdatedEvent | DonationDeletedEvent] = None
 
     def _get_labels(self) -> dict[str, str]:
         """Get labels based on cloud_event and domain_event properties."""

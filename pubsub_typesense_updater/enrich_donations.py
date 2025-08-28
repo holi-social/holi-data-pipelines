@@ -1,6 +1,7 @@
 import dataclasses
 
 from enrichments import Enrichments
+from cf_logging import logger
 from similarity_embedding import (
     SimilarityEmbedding,
     create_similarity_embedding,
@@ -44,7 +45,13 @@ def create_topics_v2_embedding_for_donation(donation: Donation) -> TopicEmbeddin
     prompt_template = PromptTemplate.from_template(prompt.get_langchain_prompt())
     return TopicEmbeddingJson.model_validate(
         invoke_llm_with_structured_output_cached(
-            prompt_template, input, output_json_schema=TopicEmbeddingJson.model_json_schema()
+            prompt_template=prompt_template,
+            input=input,
+            output_json_schema=TopicEmbeddingJson.model_json_schema(),
+            cache_logging_context={
+                "logger": logger,
+                "log_prefix": f"[id={donation.id} / topics_v2_embedding]",
+            },
         )
     )
 
@@ -58,7 +65,13 @@ def create_skills_v2_embedding_for_donation(donation: Donation):
     prompt_template = PromptTemplate.from_template(prompt.get_langchain_prompt())
     return SkillEmbeddingJson.model_validate(
         invoke_llm_with_structured_output_cached(
-            prompt_template, input, output_json_schema=SkillEmbeddingJson.model_json_schema()
+            prompt_template=prompt_template,
+            input=input,
+            output_json_schema=SkillEmbeddingJson.model_json_schema(),
+            cache_logging_context={
+                "logger": logger,
+                "log_prefix": f"[id={donation.id} / skills_v2_embedding]",
+            },
         )
     )
 

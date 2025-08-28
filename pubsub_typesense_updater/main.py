@@ -1,14 +1,15 @@
 import os
-import logging
+import json
+from cf_logging import logger
 from typing import Union
 
 import vertexai
 import functions_framework
-from google.cloud import bigquery, logging as gcloud_logging
+from cf_logging import add_logging_context
+from google.cloud import bigquery
 from cloudevents.http.event import CloudEvent
 from event_processor_logger import EventProcessorLogger
 from events import (
-    DomainEvent,
     SpaceCreatedEvent,
     SpaceDeletedEvent,
     SpaceUpdatedEvent,
@@ -30,16 +31,6 @@ from task_classifier import TaskClassifier
 
 from typesense_client import TypesenseClient
 from typesense.exceptions import ObjectNotFound
-
-logging.setLoggerClass(EventProcessorLogger)
-
-# only log to Google Cloud Logging if run in that environment
-if "K_SERVICE" in os.environ:
-    gcloud_logging_client = gcloud_logging.Client()  # type: ignore
-    gcloud_logging_client.setup_logging(log_level=logging.INFO)  # type: ignore
-
-logger = logging.getLogger("pubsub_typesense_updater")
-logger.setLevel(logging.DEBUG)
 
 
 def gcloud_project_id() -> str:
@@ -152,18 +143,21 @@ def process_task_deleted_event(ts_client: TypesenseClient, id: str) -> None:
     _delete_task(ts_client, id)
 
 
-def process_donation_created_event(ts_client: TypesenseClient, event: DonationCreatedEvent) -> None:
-    logger.debug(f"[id={event.data.id}] Processing DonationCreated event")
+def _upsert_donation(ts_client: TypesenseClient, event: DonationCreatedEvent | DonationUpdatedEvent) -> None:
     enriched = enrich_donation(event.data)
     typesense_doc = enriched_donation_to_typesense_doc(enriched)
     ts_client.upsert(typesense_doc.model_dump_json())
+    logger.info(f"[id={event.data.id}] Upserted donation in Typesense")
+
+
+def process_donation_created_event(ts_client: TypesenseClient, event: DonationCreatedEvent) -> None:
+    logger.debug(f"[id={event.data.id}] Processing DonationCreated event")
+    _upsert_donation(ts_client, event)
 
 
 def process_donation_updated_event(ts_client: TypesenseClient, event: DonationUpdatedEvent) -> None:
     logger.debug(f"[id={event.data.id}] Processing DonationUpdated event")
-    enriched = enrich_donation(event.data)
-    typesense_doc = enriched_donation_to_typesense_doc(enriched)
-    ts_client.upsert(typesense_doc.model_dump_json())
+    _upsert_donation(ts_client, event)
 
 
 def _delete_donation(ts_client: TypesenseClient, id: str) -> None:
@@ -180,10 +174,6 @@ def process_donation_deleted_event(ts_client: TypesenseClient, event: DonationDe
 
 
 def process_event(ts_client: TypesenseClient, cloud_event: CloudEvent) -> None:
-    def add_logging_context(event: DomainEvent) -> None:
-        if isinstance(logger, EventProcessorLogger):
-            logger.domain_event = event
-
     event_type = get_event_type(cloud_event)
     event_version = get_event_version(cloud_event)
 
@@ -251,12 +241,23 @@ def process_event(ts_client: TypesenseClient, cloud_event: CloudEvent) -> None:
 
 @functions_framework.cloud_event
 def process_message(event: CloudEvent) -> None:
+    # when running locally, values exist in JSON serialization (including quotes) so we need to unwrap
+    def maybe_unwrap(v: str) -> str:
+        local_execution = "K_SERVICE" not in os.environ
+        return json.loads(v) if local_execution else v
+
+    typesense_api_key = maybe_unwrap(os.getenv("TYPESENSE_ADMIN_API_KEY"))
+    typesense_host = maybe_unwrap(os.getenv("TYPESENSE_HOST"))
+    typesense_port = maybe_unwrap(os.getenv("TYPESENSE_PORT", "443"))
+    typesense_protocol = maybe_unwrap(os.getenv("TYPESENSE_PROTOCOL"))
+    typesense_collection_name = maybe_unwrap(os.getenv("TYPESENSE_COLLECTION_NAME"))
+
     ts_client = TypesenseClient(
-        api_key=os.getenv("TYPESENSE_ADMIN_API_KEY"),
-        host=os.getenv("TYPESENSE_HOST"),
-        port=os.getenv("TYPESENSE_PORT", "443"),
-        protocol=os.getenv("TYPESENSE_PROTOCOL"),
-        collection_name=os.getenv("TYPESENSE_COLLECTION_NAME"),
+        api_key=typesense_api_key,
+        host=typesense_host,
+        port=typesense_port,
+        protocol=typesense_protocol,
+        collection_name=typesense_collection_name,
     )
     if isinstance(logger, EventProcessorLogger):
         logger.cloud_event = event

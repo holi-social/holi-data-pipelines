@@ -1,8 +1,8 @@
+import logging
 import os
 import hashlib
 import inspect
 import pickle
-import sys
 from redis import Redis
 from abc import ABC, abstractmethod
 from functools import wraps
@@ -61,7 +61,7 @@ class InMemoryCachePersistence(CachePersistence):
 class RedisCachePersistence(CachePersistence):
     """Redis-based cache persistence."""
 
-    def __init__(self, redis_client: Redis, ttl: Optional[int] = None) -> None:
+    def __init__(self, redis_client: Redis, logger: logging.Logger, ttl: Optional[int] = None) -> None:
         """
         Initialize Redis cache persistence.
 
@@ -71,6 +71,7 @@ class RedisCachePersistence(CachePersistence):
         """
         self.redis = redis_client
         self.ttl = ttl
+        self.logger = logger
 
     def get(self, key: str) -> Optional[Any]:
         try:
@@ -79,7 +80,7 @@ class RedisCachePersistence(CachePersistence):
                 return None
             return pickle.loads(data)  # noqa: S301
         except Exception as e:
-            print(f"RedisCachePersistence caught exception while trying to load {key}: {e}", file=sys.stderr)  # noqa: T201
+            self.logger.error(f"RedisCachePersistence caught exception while trying to load {key}: {e}")
             return None
 
     def set(self, key: str, value: Any) -> None:
@@ -90,14 +91,14 @@ class RedisCachePersistence(CachePersistence):
             else:
                 self.redis.set(key, serialized)
         except Exception:
-            print(f"RedisCachePersistence failed to serialize {key}", file=sys.stderr)  # noqa: T201
+            self.logger.error(f"RedisCachePersistence failed to serialize {key}")
             pass
 
     def clear(self) -> None:
         try:
             self.redis.flushdb()
-        except Exception:
-            print("RedisCachePersistence failed to clear cache", file=sys.stderr)  # noqa: T201
+        except Exception as e:
+            self.logger.error(f"RedisCachePersistence failed to clear cache: {e}")
             pass
 
 
@@ -166,10 +167,10 @@ def _generate_cache_key(func: Callable[..., Any], args: Tuple[Any, ...], kwargs:
 
     hexdigest = hasher.hexdigest()
 
-    if CACHE_DEBUG:
-        print("Cache key:", hexdigest)  # noqa: T201
-
     return hexdigest
+
+
+KWARGS_KEY_LOGGING_CONTEXT = "cache_logging_context"
 
 
 def cache(persistence: Optional[CachePersistence] = None, ignore_args: Optional[List[str]] = None) -> Callable[[F], F]:
@@ -186,13 +187,19 @@ def cache(persistence: Optional[CachePersistence] = None, ignore_args: Optional[
     if persistence is None:
         persistence = InMemoryCachePersistence()
 
-    ignore_args = ignore_args or []
+    ignore_args = (ignore_args or []) + [KWARGS_KEY_LOGGING_CONTEXT]
 
     def decorator(func: F) -> F:
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             # Filter out ignored arguments for cache key generation
             filtered_kwargs = {k: v for k, v in kwargs.items() if k not in ignore_args}
+
+            logger: logging.Logger | None = None
+            log_prefix = ""
+            if kwargs.get(KWARGS_KEY_LOGGING_CONTEXT) is not None:
+                logger = kwargs[KWARGS_KEY_LOGGING_CONTEXT]["logger"]
+                log_prefix = kwargs[KWARGS_KEY_LOGGING_CONTEXT]["log_prefix"]
 
             # Handle ignored positional arguments
             sig = inspect.signature(func)
@@ -212,14 +219,14 @@ def cache(persistence: Optional[CachePersistence] = None, ignore_args: Optional[
             # Try to get cached result
             cached_result = persistence.get(cache_key)
             if cached_result is not None:
-                if CACHE_DEBUG:
-                    print("Cache hit for key: ", cache_key)  # noqa: T201
+                if CACHE_DEBUG and logger is not None:
+                    logger.debug(f"{log_prefix} cache hit for key: ", cache_key)  # noqa: T201
                 return cached_result
 
             # Execute function and cache result
-            if CACHE_DEBUG:
-                print("Cache miss for key: ", cache_key)  # noqa: T201
-            result = func(*args, **kwargs)
+            if CACHE_DEBUG and logger is not None:
+                logger.debug(f"{log_prefix} cache miss for key: ", cache_key)  # noqa: T201
+            result = func(*args, **{k: v for k, v in kwargs.items() if k != KWARGS_KEY_LOGGING_CONTEXT})
             persistence.set(cache_key, result)
 
             return result

@@ -1,8 +1,12 @@
 import time
+import logging
+
 from typing import Any, Dict, List, cast
 from unittest.mock import Mock
 
 from shared.cache import CachedFunction, cache, InMemoryCachePersistence, RedisCachePersistence, _generate_cache_key
+
+test_logger = logging.getLogger(__name__)
 
 
 class TestInMemoryCachePersistence:
@@ -33,7 +37,7 @@ class TestRedisCachePersistence:
         mock_redis = Mock()
         mock_redis.get.return_value = None
 
-        persistence = RedisCachePersistence(mock_redis)
+        persistence = RedisCachePersistence(mock_redis, test_logger)
 
         # Test setting a value
         persistence.set("key1", "value1")
@@ -46,14 +50,14 @@ class TestRedisCachePersistence:
 
     def test_ttl_setting(self) -> None:
         mock_redis = Mock()
-        persistence = RedisCachePersistence(mock_redis, ttl=3600)
+        persistence = RedisCachePersistence(mock_redis, test_logger, ttl=3600)
 
         persistence.set("key1", "value1")
         mock_redis.setex.assert_called_once()
 
     def test_clear(self) -> None:
         mock_redis = Mock()
-        persistence = RedisCachePersistence(mock_redis)
+        persistence = RedisCachePersistence(mock_redis, test_logger)
 
         persistence.clear()
         mock_redis.flushdb.assert_called_once()
