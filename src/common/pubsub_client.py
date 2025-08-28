@@ -9,10 +9,8 @@ from src.common.variables import variable_value_as
 class PubSubClient:
     def __init__(self, topic_name: str, ordering_key: Optional[str] = None) -> None:
         project_id = variable_value_as(str, "google_cloud_project_id")
-        client_options = {"api_endpoint": "europe-north1-pubsub.googleapis.com:443"}
 
         self.publisher = pubsub_v1.PublisherClient(
-            client_options=client_options,
             publisher_options=PublisherOptions(enable_message_ordering=True) if ordering_key else None,
         )
         self.topic_name = f"projects/{project_id}/topics/{topic_name}"
