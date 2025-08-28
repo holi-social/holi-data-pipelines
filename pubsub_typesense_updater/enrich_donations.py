@@ -33,7 +33,13 @@ def create_text_input_for_similarity_embedding_from_donation(donation: Donation)
 
 def create_similarity_embedding_for_donation(donation: Donation) -> SimilarityEmbedding:
     input = create_text_input_for_similarity_embedding_from_donation(donation)
-    return create_similarity_embedding(input)
+    return create_similarity_embedding(
+        input,
+        cache_logging_context={
+            "logger": logger,
+            "log_prefix": f"[id={donation.id} / similarity_embedding]",
+        },
+    )
 
 
 def create_topics_v2_embedding_for_donation(donation: Donation) -> TopicEmbeddingJson:
