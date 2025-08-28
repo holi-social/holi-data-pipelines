@@ -9,19 +9,21 @@ from src.common.variables import variable_value_as
 class PubSubClient:
     def __init__(self, topic_name: str, ordering_key: Optional[str] = None) -> None:
         project_id = variable_value_as(str, "google_cloud_project_id")
+        client_options = {"api_endpoint": "europe-north1-pubsub.googleapis.com:443"}
 
         self.publisher = pubsub_v1.PublisherClient(
-            publisher_options=PublisherOptions(enable_message_ordering=True) if ordering_key else None
+            client_options=client_options,
+            publisher_options=PublisherOptions(enable_message_ordering=True) if ordering_key else None,
         )
         self.topic_name = f"projects/{project_id}/topics/{topic_name}"
         self.ordering_key = ordering_key
 
-    def publish(self, event: Event[EventPayloadT]) -> pubsub_v1.publisher.futures.Future:
+    def publish(self, event: Event[EventPayloadT], ordering_key: Optional[str]) -> pubsub_v1.publisher.futures.Future:
         data = event.data.model_dump_json().encode("utf-8")
         return self.publisher.publish(
             self.topic_name,
             data=data,
-            ordering_key=self.ordering_key,
+            ordering_key=ordering_key or self.ordering_key,
             eventType=event.event_type,
             eventVersion=str(event.event_version),
         )

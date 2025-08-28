@@ -131,7 +131,7 @@ def donation_events_flow(old_partition_date: Optional[date], new_partition_date:
 
     for change_type, change in changes:
         event = create_event(change_type, change)
-        future = pubsub_client.publish(event)
+        future = pubsub_client.publish(event, ordering_key=f"donation_{change.id}")
         message_id = future.result()
         logger.debug(f"Published event {event.event_type} with message id {message_id} for donation {change.id}")
 
