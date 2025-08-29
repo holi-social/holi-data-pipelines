@@ -8,6 +8,8 @@ from prefect.deployments.schedules import FlexibleScheduleList
 from prefect.events import DeploymentTriggerTypes, TriggerTypes
 
 from src.common.variables import variable_value_as
+from src.pipelines.donation_events.donation_events import donation_events_flow
+from src.pipelines.donation_updates.donation_updates import donation_updates_flow
 from src.pipelines.volunteering_to_typesense.aktion_mensch_to_typesense_ingest_from_scratch import (
     aktion_mensch_to_typesense_ingest_from_scratch_flow,
 )
@@ -125,6 +127,18 @@ def get_deployments() -> List[RunnerDeployment]:
         deployment_for_flow(
             crawl_betterplace,
             description="Crawls betterplace.org for charity projects and ingests them into BigQuery",
+            job_variables_overrides={"memory": "1024Mi"},
+            paused=True,
+        ),
+        deployment_for_flow(
+            donation_updates_flow,
+            description="Orchestration flow to execute donation crawler and emit events",
+            job_variables_overrides={"memory": "1024Mi"},
+            paused=True,
+        ),
+        deployment_for_flow(
+            donation_events_flow,
+            description="Emits DonationCreated, DonationUpdated and DonationDeleted events based on previously crawled data",
             job_variables_overrides={"memory": "1024Mi"},
             paused=True,
         ),
