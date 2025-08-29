@@ -105,7 +105,27 @@ def create_event(change_type: ChangeType, change: Donation) -> Event[Donation]:
         case "deleted":
             return DonationDeletedEvent(change)
         case _:
-            raise Exception(f"Unknown change type {change_type}")
+            raise Exception(f"Unknown change type '{change_type}'")
+
+
+def extract_and_publish_donation_change_events(
+    pubsub_client: PubSubClient, old_partition_date: Optional[date], new_partition_date: date
+) -> None:
+    changes = extract_changes_from_bigquery(old_partition_date, new_partition_date)
+
+    counts = {"created": 0, "updated": 0, "deleted": 0}
+    for change_type, _ in changes:
+        if change_type in counts:
+            counts[change_type] = counts[change_type] + 1
+    logger.info(
+        f"{len(changes)} total changes, {counts['created']} creations, {counts['updated']} updates, {counts['deleted']} deletions"
+    )
+
+    for change_type, change in changes:
+        event = create_event(change_type, change)
+        future = pubsub_client.publish(event, ordering_key=f"donation_{change.id}")
+        message_id = future.result()
+        logger.debug(f"Published event {event.event_type} with message id {message_id} for donation {change.id}")
 
 
 @flow(
@@ -120,20 +140,10 @@ def donation_events_flow(old_partition_date: Optional[date], new_partition_date:
     """
     topic_name = variable_value_as(str, "google_cloud_pubsub_donations_topic_name")
     pubsub_client = PubSubClient(topic_name, ordering_key="donations")
-    changes = extract_changes_from_bigquery(old_partition_date, new_partition_date)
 
-    counts = {"created": 0, "updated": 0, "deleted": 0}
-    for change_type, _ in changes:
-        counts[change_type] = counts[change_type] + 1
-    logger.info(
-        f"{len(changes)} total changes, {counts['created']} creations, {counts['updated']} updates, {counts['deleted']} deletions"
+    extract_and_publish_donation_change_events(
+        pubsub_client=pubsub_client, old_partition_date=old_partition_date, new_partition_date=new_partition_date
     )
-
-    for change_type, change in changes:
-        event = create_event(change_type, change)
-        future = pubsub_client.publish(event, ordering_key=f"donation_{change.id}")
-        message_id = future.result()
-        logger.debug(f"Published event {event.event_type} with message id {message_id} for donation {change.id}")
 
     return Completed()
 

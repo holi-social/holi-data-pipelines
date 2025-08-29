@@ -1,6 +1,5 @@
 from prefect import flow
 from prefect.states import State, Failed
-from typing import Literal
 from src.pipelines.crawlers.betterplace.pipeline import crawl_betterplace
 from src.pipelines.donation_events.donation_events import donation_events_flow
 from src.common.monitoring.flow import (
@@ -10,8 +9,6 @@ from src.common.monitoring.flow import (
     on_completion_hooks,
 )
 from src.common.logging.PipelineLogger import PipelineLogger
-
-ChangeType = Literal["created", "updated", "deleted"]
 
 logger = PipelineLogger(__name__)
 
