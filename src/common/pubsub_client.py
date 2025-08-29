@@ -11,12 +11,14 @@ class PubSubClient:
         project_id = variable_value_as(str, "google_cloud_project_id")
 
         self.publisher = pubsub_v1.PublisherClient(
-            publisher_options=PublisherOptions(enable_message_ordering=True) if ordering_key else None,
+            publisher_options=PublisherOptions(enable_message_ordering=True if ordering_key else False)
         )
         self.topic_name = f"projects/{project_id}/topics/{topic_name}"
         self.ordering_key = ordering_key
 
-    def publish(self, event: Event[EventPayloadT], ordering_key: Optional[str]) -> pubsub_v1.publisher.futures.Future:
+    def publish(
+        self, event: Event[EventPayloadT], ordering_key: Optional[str] = None
+    ) -> pubsub_v1.publisher.futures.Future:
         data = event.data.model_dump_json().encode("utf-8")
         return self.publisher.publish(
             self.topic_name,

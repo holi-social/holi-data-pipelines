@@ -5,3 +5,5 @@ src/pipelines/donation_events/test_donation_events.py:generic-api-key:46
 src/pipelines/donation_events/test_donation_events.py:generic-api-key:47
 src/pipelines/donation_events/test_donation_events.py:generic-api-key:48
 src/pipelines/donation_events/test_donation_events.py:generic-api-key:49
+src/common/test_pubsub_client.py:generic-api-key:37
+src/common/test_pubsub_client.py:generic-api-key:42
