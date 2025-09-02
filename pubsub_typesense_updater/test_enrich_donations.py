@@ -13,154 +13,31 @@ from pubsub_typesense_updater.enrich_donations import (
     create_text_input_for_similarity_embedding_from_donation,
     create_topics_v2_embedding_for_donation,
     enrich_donation,
+    enriched_donation_to_typesense_doc,
 )
 from shared.events import Donation
-
-test_donation = Donation(
-    id=1,
-    title="Integrative Sommerfreizeit für Jugendliche nach Dänemark",
-    description="<div>Die Sehnsucht bei Jugendlichen nach unbeschwerten Tagen ist sehr groß. Die Sommerfreizeit im Juli 2025 soll solche Tage ermöglichen. Jugendliche aus unterschiedlichen sozialen Zusammenhängen und mit ihren je eigenen Vorstellungen vom Leben verbringen 14 Tage an der Ostseeküste von Dänemark eine erlebnisreiche Zeit miteinander.</div>",
-    summary="Freizeiten sind für junge Menschen eine gute Möglichkeit, mit Gleichaltrigen gemeinsam eine erlebnisreiche und zugleich entspannte Zeit zu erleben. Solche Erfahrungen stärken die Jugendliche in herausfordernden Zeiten und schwierigen Lebensphasen.",
-    city="Sdr. Stenderup",
-    carrier={"name": "Evangelische Kirchengemeinde Steinheim/Main"},
-    categories=[
-        {"name": "Bildung"},
-        {"name": "Integration"},
-        {"name": "Kinder und Jugend"},
-    ],
-)
-
-test_similarity_embedding = [0.1, 0.2, 0.3]
-
-valid_topics_embedding_json = {
-    "animal_welfare": 0,
-    "arts_culture": 0,
-    "climate_environment": 0,
-    "democracy_politics": 0,
-    "disability_inclusion": 0,
-    "disaster_relief": 0,
-    "elderly_care": 0,
-    "family_kids": 0,
-    "food_hunger_relief": 0,
-    "gender_equality": 0,
-    "housing": 0,
-    "human_rights": 0,
-    "lgbtqia_plus": 0,
-    "lifestyle_consumption": 0,
-    "literacy_education": 0,
-    "mental_physical_health": 0,
-    "migration_refugees": 1,
-    "mobility_transport": 0,
-    "other": 0,
-    "peace_security": 0,
-    "poverty_homelessness": 0,
-    "sports_recreation": 0.5,
-    "technology_innovation": 0,
-    "youth_development": 1,
-}
-
-valid_topics_embedding = TopicEmbeddingJson(
-    animal_welfare=0,
-    arts_culture=0,
-    climate_environment=0,
-    democracy_politics=0,
-    disability_inclusion=0,
-    disaster_relief=0,
-    elderly_care=0,
-    family_kids=0,
-    food_hunger_relief=0,
-    gender_equality=0,
-    housing=0,
-    human_rights=0,
-    lgbtqia_plus=0,
-    lifestyle_consumption=0,
-    literacy_education=0,
-    mental_physical_health=0,
-    migration_refugees=1,
-    mobility_transport=0,
-    other=0,
-    peace_security=0,
-    poverty_homelessness=0,
-    sports_recreation=0.5,
-    technology_innovation=0,
-    youth_development=1,
-)
-
-valid_skills_embedding_json = {
-    "administration": 0,
-    "animal_care": 0,
-    "arts_crafts": 0,
-    "building_handicraft": 0,
-    "childcare": 0,
-    "community_organizing": 0.5,
-    "creativity_design": 0,
-    "driving": 0,
-    "emergency_care": 0,
-    "event_planning": 0,
-    "finances_taxes": 0,
-    "food_service": 1,
-    "fundraising": 0,
-    "gardening_conservation": 0.5,
-    "intercultural_competence": 0,
-    "it_technology": 0,
-    "legal_assistance": 0,
-    "management_strategy": 0,
-    "marketing_communications": 0,
-    "moderation_facilitation": 0,
-    "music_performance": 0,
-    "nursing_caregiving": 0,
-    "other": 0,
-    "religious_spiritual_care": 0,
-    "research_analysis": 0,
-    "sales_distribution": 0,
-    "team_leadership": 0,
-    "translation": 0,
-    "tutoring_coaching": 0,
-}
-
-valid_skills_embedding = SkillEmbeddingJson(
-    administration=0,
-    animal_care=0,
-    arts_crafts=0,
-    building_handicraft=0,
-    childcare=0,
-    community_organizing=0.5,
-    creativity_design=0,
-    driving=0,
-    emergency_care=0,
-    event_planning=0,
-    finances_taxes=0,
-    food_service=1,
-    fundraising=0,
-    gardening_conservation=0.5,
-    intercultural_competence=0,
-    it_technology=0,
-    legal_assistance=0,
-    management_strategy=0,
-    marketing_communications=0,
-    moderation_facilitation=0,
-    music_performance=0,
-    nursing_caregiving=0,
-    other=0,
-    religious_spiritual_care=0,
-    research_analysis=0,
-    sales_distribution=0,
-    team_leadership=0,
-    translation=0,
-    tutoring_coaching=0,
+from pubsub_typesense_updater.test_data import (
+    valid_skills_embedding,
+    valid_skills_embedding_json,
+    valid_topics_embedding,
+    valid_topics_embedding_json,
+    test_donation,
+    test_typesense_document,
+    test_similarity_embedding,
 )
 
 
 class TestEnrichDonations(unittest.TestCase):
     @patch("pubsub_typesense_updater.enrich_donations.create_similarity_embedding")
     def test_should_create_similarity_embedding(self, create_similarity_embedding_mock: MagicMock) -> None:
-        expected_text_input = "Integrative Sommerfreizeit für Jugendliche nach Dänemark Die Sehnsucht bei Jugendlichen nach unbeschwerten Tagen ist sehr groß. Die Sommerfreizeit im Juli 2025 soll solche Tage ermöglichen. Jugendliche aus unterschiedlichen sozialen Zusammenhängen und mit ihren je eigenen Vorstellungen vom Leben verbringen 14 Tage an der Ostseeküste von Dänemark eine erlebnisreiche Zeit miteinander. Freizeiten sind für junge Menschen eine gute Möglichkeit, mit Gleichaltrigen gemeinsam eine erlebnisreiche und zugleich entspannte Zeit zu erleben. Solche Erfahrungen stärken die Jugendliche in herausfordernden Zeiten und schwierigen Lebensphasen. Sdr. Stenderup Evangelische Kirchengemeinde Steinheim/Main Bildung Integration Kinder und Jugend"
+        expected_text_input = "Integrative Sommerfreizeit für Jugendliche nach Dänemark Die Sehnsucht bei Jugendlichen nach unbeschwerten Tagen ist sehr groß. Die Sommerfreizeit im Juli 2025 soll solche Tage ermöglichen. Jugendliche aus unterschiedlichen sozialen Zusammenhängen und mit ihren je eigenen Vorstellungen vom Leben verbringen 14 Tage an der Ostseeküste von Dänemark eine erlebnisreiche Zeit miteinander. Sie kochen füreinander, organisieren gemeinsam den Abwasch und die Reinigung der gemeinsam genutzten Räume, wie auch die gemeinsamen Freizeitaktivitäten. Sie werden von einem 6 bis 8 köpfigen Team aus ehrenamtlichen jungen Erwachsenen im Alter zwischen 20 bis 30 Jahren und dem Sozialpädagogen der Kirchengemeinde begleitet. Die Jugendlichen kommen damit zugleich mit unterschiedlichen Lebensentwürfen und Perspektiven in Kontakt, die Anregung und Vorbild für ihr eigenes Leben sein können.Soziale Kompetenzen werden in diesem „Aufeinander-angewiesen-sein“ intensiv erworben, auf die Probe gestellt und erweitert. Was sich hier in 14 Tagen entwickelt, dauert auf andere Weise oft Jahre. Es werden auch nicht zuletzt Konfliktlösungen eingeübt, gemeinsame Strategien entwickelt und Kompromissfähigkeit erlernt. Integration bedeutet hier ein Lernen auf Augenhöhe für alle. Unsere Sommerfreizeit ist ein Ort von Bildung, Begegnung, Partizipation und sozialem Lernen, bietet Erholung und fördert so die psychische Widerstandskraft und vermittelt Methoden zur Stressregulierung.Damit diese unbeschwerten Tage für alle Jugendlichen möglich werden, gleich welcher Herkunft oder in welch schwierigen Lagen sich Jugendliche und ihre Familien befinden, braucht es finanzielle Unterstützung. Mit einer Spende können Sie jungen Menschen diese nachhaltig prägenden Erfahrungen und Erlebnissen einer Jugendfreizeit ermöglichen. Freizeiten sind für junge Menschen eine gute Möglichkeit, mit Gleichaltrigen gemeinsam eine erlebnisreiche und zugleich entspannte Zeit zu erleben. Solche Erfahrungen stärken die Jugendliche in herausfordernden Zeiten und schwierigen Lebensphasen. Sdr. Stenderup Evangelische Kirchengemeinde Steinheim/Main Bildung Integration Kinder und Jugend"
         create_similarity_embedding_mock.return_value = test_similarity_embedding
 
         result = create_similarity_embedding_for_donation(test_donation)
 
         create_similarity_embedding_mock.assert_called_with(
-            expected_text_input, cache_logging_context={"logger": ANY, "log_prefix": "[id=1 / similarity_embedding]"}
+            expected_text_input,
+            cache_logging_context={"logger": ANY, "log_prefix": "[id=144757 / similarity_embedding]"},
         )
         self.assertEqual(result, test_similarity_embedding)
 
@@ -208,12 +85,12 @@ class TestEnrichDonations(unittest.TestCase):
             output_json_schema=TopicEmbeddingJson.model_json_schema(),
             cache_logging_context={
                 "logger": ANY,
-                "log_prefix": "[id=1 / topics_v2_embedding]",
+                "log_prefix": "[id=144757 / topics_v2_embedding]",
             },
         )
         self.assertEqual(
-            result,
-            valid_topics_embedding,
+            result.model_dump_json(),
+            valid_topics_embedding.model_dump_json(),
         )
 
     @patch("pubsub_typesense_updater.enrich_donations.get_client")
@@ -265,12 +142,12 @@ class TestEnrichDonations(unittest.TestCase):
             output_json_schema=SkillEmbeddingJson.model_json_schema(),
             cache_logging_context={
                 "logger": ANY,
-                "log_prefix": "[id=1 / skills_v2_embedding]",
+                "log_prefix": "[id=144757 / skills_v2_embedding]",
             },
         )
         self.assertEqual(
-            result,
-            valid_skills_embedding,
+            result.model_dump_json(),
+            valid_skills_embedding.model_dump_json(),
         )
 
     @patch("pubsub_typesense_updater.enrich_donations.get_client")
@@ -322,3 +199,15 @@ class TestEnrichDonations(unittest.TestCase):
                 skills_v2_embedding=valid_skills_embedding,
             ),
         )
+
+    def test_should_transform_enrichted_donation_to_typesense_document(self):
+        enriched_donation = EnrichedDonation(
+            similarity_embedding=test_similarity_embedding,
+            topics_v2_embedding=valid_topics_embedding,
+            skills_v2_embedding=valid_skills_embedding,
+            donation=test_donation,
+        )
+
+        actual_document = enriched_donation_to_typesense_doc(enriched_donation)
+
+        self.assertEqual(actual_document.model_dump_json(), test_typesense_document.model_dump_json())
