@@ -139,7 +139,7 @@ def get_deployments() -> List[RunnerDeployment]:
         deployment_for_flow(
             donation_events_flow,
             description="Emits DonationCreated, DonationUpdated and DonationDeleted events based on previously crawled data",
-            job_variables_overrides={"memory": "1024Mi"},
+            job_variables_overrides={"memory": "2048Mi"},
             paused=True,
         ),
         # -------------- GLOBAL QUALITY CHECKS --------------
