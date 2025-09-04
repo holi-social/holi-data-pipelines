@@ -28,6 +28,7 @@ from src.pipelines.bigquery import (
     tasks_with_classifications,
     volunteering_voltastics_classified_enriched_partitioned,
     volunteering_aktion_mensch_classified_enriched_partitioned,
+    donations_betterplace_raw,
 )
 
 logger = PipelineLogger(__name__)
@@ -155,6 +156,16 @@ def get_volunteering_ids_bq() -> list[str]:
 
 
 @task
+def get_donation_ids_bq() -> list[str]:
+    result = extract_data_from_bigquery(f"""
+        SELECT id
+        FROM `{donations_betterplace_raw()}`
+        WHERE TIMESTAMP_TRUNC(_PARTITIONTIME, DAY) = TIMESTAMP_TRUNC(CURRENT_TIMESTAMP(), DAY)
+    """)  # noqa: S608
+    return cast(list[str], [str(row["id"]) for row in result])
+
+
+@task
 def get_ids_ts(ts_client: TypesenseClient, ts_collection: str, document_type: str) -> list[str]:
     def strip_prefix(id: str) -> str:
         return id.split(f"{document_type}_")[1]
@@ -213,6 +224,9 @@ def typesense_qc_flow() -> State:
 
     volunteering_ids_bq = get_volunteering_ids_bq()
     volunteering_ids_ts = get_ids_ts(ts_client, ts_collection, "volunteering")
+
+    donation_ids_bq = get_donation_ids_bq()
+    donation_ids_ts = get_ids_ts(ts_client, ts_collection, "donation")
 
     @dataclasses.dataclass
     class ConsistencyCheckResult:
@@ -286,9 +300,18 @@ def typesense_qc_flow() -> State:
             bq_ids_not_in_ts=set(volunteering_ids_bq) - set(volunteering_ids_ts),
             ts_ids_not_in_bq=set(volunteering_ids_ts) - set(volunteering_ids_bq),
         ),
+        "donations": ConsistencyCheckResult(
+            pg_count=None,
+            bq_count=len(donation_ids_bq),
+            ts_count=len(donation_ids_ts),
+            pg_ids_not_in_bq=None,
+            bq_ids_not_in_pg=None,
+            bq_ids_not_in_ts=set(donation_ids_bq) - set(donation_ids_ts),
+            ts_ids_not_in_bq=set(donation_ids_ts) - set(donation_ids_bq),
+        ),
     }
 
-    all_types = ["profile", "space", "task", "volunteering"]
+    all_types = ["profile", "space", "task", "volunteering", "donations"]
     errors = []
 
     for typ in all_types:
