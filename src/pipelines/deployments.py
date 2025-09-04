@@ -133,7 +133,8 @@ def get_deployments() -> List[RunnerDeployment]:
         deployment_for_flow(
             donation_updates_flow,
             description="Orchestration flow to execute donation crawler and emit events",
-            job_variables_overrides={"memory": "1024Mi"},
+            job_variables_overrides={"memory": "2048Mi"},
+            schedules=[cron_schedule("00 01 * * *")],
             paused=True,
         ),
         deployment_for_flow(
