@@ -49,10 +49,13 @@ def create_topics_v2_embedding_for_donation(donation: Donation) -> TopicEmbeddin
     Estimate the similarity of the project to the given topics between -1 and 1 (-1 for not similar, 1 for similar)"""
     prompt = langfuse.get_prompt("donations_topics_v2_embedding_prompt", fallback=fallback_prompt)
     prompt_template = PromptTemplate.from_template(prompt.get_langchain_prompt())
+    # only pass in properties used within the prompt template so that the cached LLM invocation only generates a cache
+    # miss if property values used in the prompt changes
+    input_used_vars = {key: input[key] for key in prompt_template.input_variables if key in input}
     return TopicEmbeddingJson.model_validate(
         invoke_llm_with_structured_output_cached(
             prompt_template=prompt_template,
-            input=input,
+            input=input_used_vars,
             output_json_schema=TopicEmbeddingJson.model_json_schema(),
             cache_logging_context={
                 "logger": logger,
@@ -69,10 +72,13 @@ def create_skills_v2_embedding_for_donation(donation: Donation):
     Estimate the similarity of the project to the given skills between -1 and 1 (-1 for not similar, 1 for similar)"""
     prompt = langfuse.get_prompt("donations_skills_v2_embedding_prompt", fallback=fallback_prompt)
     prompt_template = PromptTemplate.from_template(prompt.get_langchain_prompt())
+    # only pass in properties used within the prompt template so that the cached LLM invocation only generates a cache
+    # miss if property values used in the prompt changes
+    input_used_vars = {key: input[key] for key in prompt_template.input_variables if key in input}
     return SkillEmbeddingJson.model_validate(
         invoke_llm_with_structured_output_cached(
             prompt_template=prompt_template,
-            input=input,
+            input=input_used_vars,
             output_json_schema=SkillEmbeddingJson.model_json_schema(),
             cache_logging_context={
                 "logger": logger,
