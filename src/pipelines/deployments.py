@@ -128,20 +128,17 @@ def get_deployments() -> List[RunnerDeployment]:
             crawl_betterplace,
             description="Crawls betterplace.org for charity projects and ingests them into BigQuery",
             job_variables_overrides={"memory": "1024Mi"},
-            paused=True,
         ),
         deployment_for_flow(
             donation_updates_flow,
             description="Orchestration flow to execute donation crawler and emit events",
             job_variables_overrides={"memory": "2048Mi"},
             schedules=[cron_schedule("00 01 * * *")],
-            paused=True,
         ),
         deployment_for_flow(
             donation_events_flow,
             description="Emits DonationCreated, DonationUpdated and DonationDeleted events based on previously crawled data",
             job_variables_overrides={"memory": "2048Mi"},
-            paused=True,
         ),
         # -------------- GLOBAL QUALITY CHECKS --------------
         deployment_for_flow(
