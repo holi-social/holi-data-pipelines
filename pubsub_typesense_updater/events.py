@@ -247,7 +247,7 @@ class TaskPayload:
         self.visibility = task_data.get("visibility")
         self.location_type = task_data.get("locationType")
         self.location = task_data.get("location")
-        self.geolocation_geojson = task_data.get("geolocationGeoJson")
+        self.geolocation_geojson = task_data.get("geolocationGeoJSON")
         self.skills_v2 = task_data.get("skillsV2", [])  # Default to empty list if None
         self.thumbnail = task_data.get("thumbnail")
         self.contact_email = task_data.get("contactEmail")
