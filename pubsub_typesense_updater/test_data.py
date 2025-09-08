@@ -1,6 +1,21 @@
+import base64
+from pydantic import BaseModel
 from pubsub_typesense_updater.topics_skills_embedding import TopicEmbeddingJson, SkillEmbeddingJson
 from pubsub_typesense_updater.typesense_document import TypesenseDocument
-from shared.events import Donation, DonationCarrier, DonationCategory, DonationContact, DonationLink, DonationPicture
+from shared.events import (
+    Donation,
+    DonationCarrier,
+    DonationCategory,
+    DonationContact,
+    DonationCreatedEvent,
+    DonationDeletedEvent,
+    DonationLink,
+    DonationPicture,
+    DonationUpdatedEvent,
+)
+
+# noinspection PyPackageRequirements
+from cloudevents.http.event import CloudEvent
 
 valid_topics_embedding_json = {
     "animal_welfare": -1,
@@ -600,8 +615,73 @@ test_donation = Donation(
     ],
 )
 
+test_minimal_donation = Donation(
+    links=[],
+    profile_picture=DonationPicture(
+        links=[],
+    ),
+    contact=DonationContact(
+        links=[
+            DonationLink(href="https://www.betterplace.org/de/users/633648", rel="platform"),
+            DonationLink(
+                href="https://api.betterplace.org/de/api_v4/users/633648/contact_data.json",
+                rel="contact_data",
+            ),
+        ],
+        picture=DonationPicture(
+            links=[
+                DonationLink(
+                    href="https://betterplace-assets.betterplace.org/assets/default/user_profile_picture/default-2aa1f5cc3d8ab658870587fb6ed9e853e61c01f118148117c28db6a0f54561bd.svg",
+                    rel="fill_100x100",
+                ),
+                DonationLink(
+                    href="https://betterplace-assets.betterplace.org/assets/default/user_profile_picture/default-2aa1f5cc3d8ab658870587fb6ed9e853e61c01f118148117c28db6a0f54561bd.svg",
+                    rel="original",
+                ),
+            ],
+            fallback=True,
+        ),
+        name="Anke Menzel",
+        id=633648,
+    ),
+    completed_need_count=0,
+    comments_count=0,
+    donor_count=3,
+    donations_count=3,
+    negative_opinions_count=0,
+    positive_opinions_count=3,
+    blog_post_count=0,
+    newsletter_subscriptions_count=3,
+    incomplete_need_count=1,
+    id=144757,
+    title="Integrative Sommerfreizeit für Jugendliche nach Dänemark",
+    description="<div>Beschreibung</div>",
+    summary="Freizeiten sind für junge Menschen eine gute Möglichkeit, mit Gleichaltrigen gemeinsam eine erlebnisreiche und zugleich entspannte Zeit zu erleben. Solche Erfahrungen stärken die Jugendliche in herausfordernden Zeiten und schwierigen Lebensphasen.",
+    open_amount_in_cents=190500,
+    donated_amount_in_cents=9500,
+    tax_deductible=True,
+    donations_prohibited=False,
+    progress_percentage=4,
+    street="Frydenborgvej 40",
+    city="Sdr. Stenderup",
+    zip="6092",
+    country="Dänemark",
+    created_at="2024-11-07T14:01:38Z",
+    updated_at="2025-08-11T00:17:45Z",
+    content_updated_at="2024-11-08T09:36:57Z",
+    activated_at="2024-11-08T09:36:57Z",
+    completed_at=None,
+    closed_at=None,
+    active_matching_fund=None,
+    matching_events=[],
+    categories=[
+        DonationCategory(slug="bildung", name="Bildung", id=3),
+        DonationCategory(slug="integration ", name="Integration", id=18),
+        DonationCategory(slug="kinder", name="Kinder und Jugend", id=2),
+    ],
+)
 
-test_typesense_document = TypesenseDocument(
+test_donation_typesense_document = TypesenseDocument(
     id="donation_144757",
     type="donation",
     title_de="Integrative Sommerfreizeit für Jugendliche nach Dänemark",
@@ -637,4 +717,92 @@ test_typesense_document = TypesenseDocument(
     contact=None,
     donation_progress_percentage=4,
     donation_open_amount_in_cents=190500,
+)
+
+test_minimal_typesense_document = TypesenseDocument(
+    id="donation_144757",
+    type="donation",
+    title_de="Integrative Sommerfreizeit für Jugendliche nach Dänemark",
+    title_en=None,
+    description_de="<div>Beschreibung</div>",
+    description_en=None,
+    summary_de="Freizeiten sind für junge Menschen eine gute Möglichkeit, mit Gleichaltrigen gemeinsam eine erlebnisreiche und zugleich entspannte Zeit zu erleben. Solche Erfahrungen stärken die Jugendliche in herausfordernden Zeiten und schwierigen Lebensphasen.",
+    summary_en=None,
+    location="Sdr. Stenderup",
+    location_type=None,
+    location_lat_lng=None,
+    location_country_de="Dänemark",
+    location_country_en=None,
+    image_url=None,
+    link_locators={"donation": 144757},
+    user_full_name=None,
+    topics_v2=None,
+    skills_v2=None,
+    topics_skills_embedding_v2=None,
+    similarity_embedding=None,
+    organizer_name=None,
+    organizer_image_url=None,
+    organizer_url=None,
+    organizer_location=None,
+    organizer_location_country_de=None,
+    organizer_location_country_en=None,
+    external_url=None,
+    source="Betterplace",
+    commitment_label=None,
+    commitment_duration=None,
+    commitment_duration_ai_derived=None,
+    commitment_duration_ai_reasoning=None,
+    contact=None,
+    donation_progress_percentage=4,
+    donation_open_amount_in_cents=190500,
+)
+
+test_event_donation_created = DonationCreatedEvent(test_donation)
+test_event_donation_updated = DonationUpdatedEvent(test_donation)
+test_event_donation_deleted = DonationDeletedEvent(test_donation)
+
+test_cloud_event_attributes = {
+    "id": "12833783708309476",
+    "time": "2024-12-07T16:21:48.022Z",
+    "specversion": "1.0",
+    "datacontenttype": "application/json",
+    "type": "google.cloud.pubsub.topic.v1.messagePublished",
+    "source": "//pubsub.googleapis.com/",
+}
+
+
+def create_test_cloud_event(event_type: str, event_version: str, data: BaseModel) -> CloudEvent:
+    return CloudEvent(
+        attributes=test_cloud_event_attributes,
+        data={
+            "message": {
+                "@type": "type.googleapis.com/google.pubsub.v1.PubsubMessage",
+                "attributes": {
+                    "eventType": event_type,
+                    "eventVersion": event_version,
+                },
+                "data": base64.b64encode(data.model_dump_json().encode("utf-8")),
+                "messageId": "12833783708309476",
+                "publishTime": "2024-12-07T16:21:48.022Z",
+            }
+        },
+    )
+
+
+test_cloud_event_donation_created = create_test_cloud_event(
+    event_type="DonationCreated",
+    event_version="1.0.0",
+    data=test_donation,
+)
+
+test_cloud_event_donation_updated = create_test_cloud_event(
+    event_type="DonationUpdated",
+    event_version="1.0.0",
+    data=test_donation,
+)
+
+test_cloud_event_donation_deleted = create_test_cloud_event(
+    event_type="DonationDeleted",
+    event_version="1.0.0",
+    data=test_donation,
 )

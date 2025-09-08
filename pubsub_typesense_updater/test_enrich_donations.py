@@ -22,8 +22,10 @@ from pubsub_typesense_updater.test_data import (
     valid_topics_embedding,
     valid_topics_embedding_json,
     test_donation,
-    test_typesense_document,
+    test_donation_typesense_document,
     test_similarity_embedding,
+    test_minimal_donation,
+    test_minimal_typesense_document,
 )
 
 
@@ -200,7 +202,7 @@ class TestEnrichDonations(unittest.TestCase):
             ),
         )
 
-    def test_should_transform_enrichted_donation_to_typesense_document(self):
+    def test_should_transform_enriched_donation_to_typesense_document(self):
         enriched_donation = EnrichedDonation(
             similarity_embedding=test_similarity_embedding,
             topics_v2_embedding=valid_topics_embedding,
@@ -210,4 +212,16 @@ class TestEnrichDonations(unittest.TestCase):
 
         actual_document = enriched_donation_to_typesense_doc(enriched_donation)
 
-        self.assertEqual(actual_document.model_dump_json(), test_typesense_document.model_dump_json())
+        self.assertEqual(actual_document.model_dump_json(), test_donation_typesense_document.model_dump_json())
+
+    def test_should_transform_minimal_donation_to_typesense_document(self):
+        enriched_donation = EnrichedDonation(
+            similarity_embedding=None,
+            topics_v2_embedding=None,
+            skills_v2_embedding=None,
+            donation=test_minimal_donation,
+        )
+
+        actual_document = enriched_donation_to_typesense_doc(enriched_donation)
+
+        self.assertEqual(actual_document.model_dump_json(), test_minimal_typesense_document.model_dump_json())
