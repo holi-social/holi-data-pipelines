@@ -11,6 +11,13 @@ from pytest import fail
 
 from typesense.exceptions import ObjectNotFound, RequestUnauthorized
 
+from pubsub_typesense_updater.test_data import test_donation_typesense_document, test_enriched_donation
+from pubsub_typesense_updater.test_enrich_donations import test_donation
+from pubsub_typesense_updater.test_events import (
+    test_cloud_event_donation_created,
+    test_cloud_event_donation_deleted,
+    test_cloud_event_donation_updated,
+)
 from shared.classifiers.classifier import ClassificationResult
 
 attributes: Any = {
@@ -735,3 +742,43 @@ def test_malformed_event_missing_data(mock_client: MagicMock) -> None:
 
     mock_client.upsert.assert_not_called()
     mock_client.delete.assert_not_called()
+
+
+@patch("main.enrich_donation", return_value=test_enriched_donation)
+@patch("typesense.client.Client")
+def test_should_process_donation_created_event(mock_client: MagicMock, mock_enrich_donation: MagicMock) -> None:
+    process_event(
+        mock_client, CloudEvent(attributes, message_data("UnknownEventType", "1.1.0", {"user": user_payload}))
+    )
+
+    process_event(mock_client, test_cloud_event_donation_created)
+
+    mock_enrich_donation.assert_called_with(test_donation)
+    mock_client.upsert.assert_called_with(test_donation_typesense_document.model_dump_json())
+
+
+@patch("main.enrich_donation", return_value=test_enriched_donation)
+@patch("typesense.client.Client")
+def test_should_process_donation_updated_event(mock_client: MagicMock, mock_enrich_donation: MagicMock) -> None:
+    process_event(mock_client, test_cloud_event_donation_updated)
+
+    mock_enrich_donation.assert_called_with(test_donation)
+    mock_client.upsert.assert_called_with(test_donation_typesense_document.model_dump_json())
+
+
+@patch("main.enrich_donation", return_value=test_enriched_donation)
+@patch("typesense.client.Client")
+def test_should_process_donation_deleted_event(mock_client: MagicMock, mock_enrich_donation: MagicMock) -> None:
+    process_event(mock_client, test_cloud_event_donation_deleted)
+
+    mock_enrich_donation.assert_not_called()
+    mock_client.delete.assert_called_with("donation_144757")
+
+
+@patch("typesense.client.Client")
+def test_should_ignore_not_found_error_when_processing_donation_deleted_event(mock_client: MagicMock) -> None:
+    mock_client.delete.side_effect = ObjectNotFound("Object not found")
+
+    process_event(mock_client, test_cloud_event_donation_deleted)
+
+    mock_client.delete.assert_called_with("donation_144757")

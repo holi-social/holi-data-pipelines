@@ -1,5 +1,6 @@
 import base64
 from pydantic import BaseModel
+from pubsub_typesense_updater.enrich_donations import EnrichedDonation
 from pubsub_typesense_updater.topics_skills_embedding import TopicEmbeddingJson, SkillEmbeddingJson
 from pubsub_typesense_updater.typesense_document import TypesenseDocument
 from shared.events import (
@@ -679,6 +680,13 @@ test_minimal_donation = Donation(
         DonationCategory(slug="integration ", name="Integration", id=18),
         DonationCategory(slug="kinder", name="Kinder und Jugend", id=2),
     ],
+)
+
+test_enriched_donation = EnrichedDonation(
+    donation=test_donation,
+    similarity_embedding=test_similarity_embedding,
+    topics_v2_embedding=valid_topics_embedding,
+    skills_v2_embedding=valid_skills_embedding,
 )
 
 test_donation_typesense_document = TypesenseDocument(
