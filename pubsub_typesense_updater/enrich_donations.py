@@ -1,12 +1,11 @@
 import dataclasses
 
-from enrichments import Enrichments
+from enrichments import Enrichments, normalize_text
 from cf_logging import logger
 from similarity_embedding import (
     SimilarityEmbedding,
     create_similarity_embedding,
 )
-from pubsub_typesense_updater.enrichments import normalize_text
 from langfuse import get_client
 from langchain_core.prompts import PromptTemplate
 from topics_skills_embedding import (
