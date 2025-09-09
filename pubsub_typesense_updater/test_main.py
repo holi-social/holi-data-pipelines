@@ -69,7 +69,7 @@ task_payload: Any = {
     "visibility": "PUBLIC",
     "locationType": "ONSITE",
     "location": "Klitmøller, Denmark",
-    "geolocationGeoJson": geojson_point,
+    "geolocationGeoJSON": geojson_point,
     "skillsV2": ["gardening", "carpentry", "landscaping"],
     "thumbnail": "https://example.com/images/garden-cleanup.jpg",
     "contactEmail": "garden@example.org",
@@ -149,8 +149,8 @@ def _expected_task_ts_doc(
         "description_en": task_event_payload["description"],
         "location": task_event_payload["location"],
         "location_lat_lng": [
-            task_event_payload["geolocationGeoJson"]["coordinates"][0],
-            task_event_payload["geolocationGeoJson"]["coordinates"][1],
+            task_event_payload["geolocationGeoJSON"]["coordinates"][0],
+            task_event_payload["geolocationGeoJSON"]["coordinates"][1],
         ],
         "location_type": location_type,
         "commitment_label": commitment_label,
@@ -624,7 +624,7 @@ def test_task_updated_with_missing_optional_fields(mock_client: MagicMock) -> No
     del task["timeframeStartDate"]
     del task["timeframeEndDate"]
     del task["location"]
-    del task["geolocationGeoJson"]
+    del task["geolocationGeoJSON"]
     del task["skillsV2"]
     del task["locationType"]
     del task["regularity"]
@@ -666,7 +666,7 @@ def test_task_updated_with_missing_optional_fields(mock_client: MagicMock) -> No
 def test_task_updated_with_broken_geojson(mock_client: MagicMock) -> None:
     # Test with missing optional fields
     task = task_payload.copy()
-    del task["geolocationGeoJson"]["coordinates"]
+    del task["geolocationGeoJSON"]["coordinates"]
 
     process_event(
         mock_client,
