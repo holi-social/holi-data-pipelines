@@ -1,6 +1,6 @@
 import unittest
 
-from pubsub_typesense_updater.enrichments import Enrichments
+from pubsub_typesense_updater.enrichments import Enrichments, normalize_text
 from pubsub_typesense_updater.test_data import (
     valid_skills_embedding,
     valid_topics_embedding,
@@ -90,3 +90,9 @@ class TestEnrichments(unittest.TestCase):
         actual_embedding = enrichment.topics_skills_embedding_v2()
 
         self.assertIsNone(actual_embedding)
+
+    def test_should_normalize_text(self):
+        text = "<div>  Some text with <b>html</b> and whitespace  </div> <br/> <br/>"
+        expected_text = "Some text with html and whitespace"
+
+        self.assertEqual(normalize_text(text), expected_text)
