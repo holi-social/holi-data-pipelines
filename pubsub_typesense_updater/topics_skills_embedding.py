@@ -102,7 +102,7 @@ class SkillEmbeddingJson(BaseModel):
 
 @cache(cache_persistence)
 def invoke_llm_with_structured_output_cached(
-    prompt_template: PromptTemplate,
+    langchain_prompt: str,
     input: Dict[str, Any],
     output_json_schema: Dict[str, Any],
     model_name: str = MODEL_NAME,
@@ -114,7 +114,7 @@ def invoke_llm_with_structured_output_cached(
     1. LLMs then use controlled genetration to generate the response rather than function calling (faster).
     2. Passing the model class is not (easily) serializable, so it can't be used for cache key generation.
 
-    :param prompt_template:
+    :param langchain_prompt: a prompt in the Langchain PromptTemplate format
     :param input: a dict containing values to be rendered inside the prompt template
     :param output_json_schema:
     :param model_name: the LLM models name
@@ -129,6 +129,7 @@ def invoke_llm_with_structured_output_cached(
         callbacks=[langfuse_handler],
     )
     model_with_structure = llm.with_structured_output(output_json_schema, method="json_mode")
+    prompt_template = PromptTemplate.from_template(langchain_prompt)
     response = prompt_template.invoke(input)
     structured_output = model_with_structure.invoke(response)
 

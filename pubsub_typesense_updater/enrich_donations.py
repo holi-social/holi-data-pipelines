@@ -5,8 +5,8 @@ from cf_logging import logger
 from similarity_embedding import (
     SimilarityEmbedding,
     create_similarity_embedding,
-    normalize_text,
 )
+from pubsub_typesense_updater.enrichments import normalize_text
 from langfuse import get_client
 from langchain_core.prompts import PromptTemplate
 from topics_skills_embedding import (
@@ -49,13 +49,17 @@ def create_topics_v2_embedding_for_donation(donation: Donation) -> TopicEmbeddin
     Estimate the similarity of the project to the given topics between -1 and 1 (-1 for not similar, 1 for similar)"""
     prompt = langfuse.get_prompt("donations_topics_v2_embedding_prompt", fallback=fallback_prompt)
     # Note: Langfuse uses double curly brackets for variables, while langchain uses single curly brackets
-    prompt_template = PromptTemplate.from_template(prompt.get_langchain_prompt())
+    langchain_prompt = prompt.get_langchain_prompt()
     # only pass in properties used within the prompt template so that the cached LLM invocation only generates a cache
     # miss if property values used in the prompt changes
-    input_used_vars = {key: input[key] for key in prompt_template.input_variables if key in input}
+    input_used_vars = {
+        key: normalize_text(str(input[key]))
+        for key in PromptTemplate.from_template(langchain_prompt).input_variables
+        if key in input
+    }
     return TopicEmbeddingJson.model_validate(
         invoke_llm_with_structured_output_cached(
-            prompt_template=prompt_template,
+            langchain_prompt=langchain_prompt,
             input=input_used_vars,
             output_json_schema=TopicEmbeddingJson.model_json_schema(),
             cache_logging_context={
@@ -73,13 +77,17 @@ def create_skills_v2_embedding_for_donation(donation: Donation):
     Estimate the similarity of the project to the given skills between -1 and 1 (-1 for not similar, 1 for similar)"""
     prompt = langfuse.get_prompt("donations_skills_v2_embedding_prompt", fallback=fallback_prompt)
     # Note: Langfuse uses double curly brackets for variables, while langchain uses single curly brackets
-    prompt_template = PromptTemplate.from_template(prompt.get_langchain_prompt())
+    langchain_prompt = prompt.get_langchain_prompt()
     # only pass in properties used within the prompt template so that the cached LLM invocation only generates a cache
     # miss if property values used in the prompt changes
-    input_used_vars = {key: input[key] for key in prompt_template.input_variables if key in input}
+    input_used_vars = {
+        key: normalize_text(str(input[key]))
+        for key in PromptTemplate.from_template(langchain_prompt).input_variables
+        if key in input
+    }
     return SkillEmbeddingJson.model_validate(
         invoke_llm_with_structured_output_cached(
-            prompt_template=prompt_template,
+            langchain_prompt=langchain_prompt,
             input=input_used_vars,
             output_json_schema=SkillEmbeddingJson.model_json_schema(),
             cache_logging_context={

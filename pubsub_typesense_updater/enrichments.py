@@ -1,5 +1,9 @@
 import dataclasses
+import re
 from typing import Optional
+
+from bs4 import BeautifulSoup
+
 from similarity_embedding import SimilarityEmbedding
 from topics_skills_embedding import TopicEmbeddingJson, SkillEmbeddingJson
 
@@ -122,3 +126,11 @@ class Enrichments:
             ]
         )
         return topics_vector + skills_vector
+
+
+def normalize_text(input: str) -> str:
+    """
+    Normalizes text by stripping HTML tags and unnecessary whitespace.
+    """
+    text = BeautifulSoup(input, "html.parser").get_text()
+    return re.sub(r"\s+", " ", text).strip()

@@ -91,7 +91,7 @@ class RedisCachePersistence(CachePersistence):
             else:
                 self.redis.set(key, serialized)
         except Exception:
-            self.logger.error(f"RedisCachePersistence failed to serialize {key}")
+            self.logger.error(f"RedisCachePersistence failed to store {key}")
             pass
 
     def clear(self) -> None:
