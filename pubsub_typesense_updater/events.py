@@ -289,9 +289,10 @@ class TaskEvent(DomainEvent):
             "description_de": self.task.description,
             "description_en": self.task.description,
             "location": self.task.location,
+            # GeoJSON uses X (longitude), Y (latitude) order, we need to reverse it to match the lat, lng "standard"
             "location_lat_lng": [
-                self.task.geolocation_geojson["coordinates"][0],
                 self.task.geolocation_geojson["coordinates"][1],
+                self.task.geolocation_geojson["coordinates"][0],
             ]
             if self.task.geolocation_geojson and self.task.geolocation_geojson.get("coordinates")
             else None,
