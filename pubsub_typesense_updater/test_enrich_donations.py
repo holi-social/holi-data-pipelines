@@ -78,7 +78,7 @@ class TestEnrichDonations(unittest.TestCase):
 
         langfuse_mock.get_prompt.assert_called_with(
             "donations_topics_v2_embedding_prompt",
-            fallback="""Here is a donation project with title '{title}' and decription '{description}'.
+            fallback="""Here is a donation project with title '{{title}}' and decription '{{description}}'.
     Estimate the similarity of the project to the given topics between -1 and 1 (-1 for not similar, 1 for similar)""",
         )
         llm_mock.assert_called_with(
@@ -135,7 +135,7 @@ class TestEnrichDonations(unittest.TestCase):
 
         langfuse_mock.get_prompt.assert_called_with(
             "donations_skills_v2_embedding_prompt",
-            fallback="""Here is a donation project with title '{title}' and decription '{description}'.
+            fallback="""Here is a donation project with title '{{title}}' and decription '{{description}}'.
     Estimate the similarity of the project to the given skills between -1 and 1 (-1 for not similar, 1 for similar)""",
         )
         llm_mock.assert_called_with(
