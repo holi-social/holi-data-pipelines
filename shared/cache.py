@@ -234,6 +234,7 @@ def cache(persistence: Optional[CachePersistence] = None, ignore_args: Optional[
         # Add cache management methods to the wrapper
         wrapper.cache_clear = persistence.clear  # type: ignore[attr-defined]
         wrapper.cache_info = lambda: {"persistence": type(persistence).__name__}  # type: ignore[attr-defined]
+        wrapper.fn = func  # type: ignore[attr-defined]
 
         return cast(F, wrapper)
 
