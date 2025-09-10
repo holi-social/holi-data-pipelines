@@ -239,6 +239,11 @@ def process_event(ts_client: TypesenseClient, cloud_event: CloudEvent) -> None:
         return
 
 
+@functions_framework.http
+def main(request):
+    return "OK", 200
+
+
 @functions_framework.cloud_event
 def process_message(event: CloudEvent) -> None:
     # when running locally, values exist in JSON serialization (including quotes) so we need to unwrap
