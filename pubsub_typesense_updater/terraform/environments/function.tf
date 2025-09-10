@@ -102,4 +102,11 @@ resource "google_cloudfunctions2_function" "pubsub_typesense_updater" {
     "environment_type" = local.environment_type
     "holi_service"     = "pubsub-typesense-updater"
   }
+
+  # taken from https://github.com/hashicorp/terraform-provider-google/issues/1938#issuecomment-1229042663
+  lifecycle {
+    replace_triggered_by = [
+      google_storage_bucket_object.function_source
+    ]
+  }
 }
