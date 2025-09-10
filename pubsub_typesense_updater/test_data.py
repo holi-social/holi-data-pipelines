@@ -1,8 +1,8 @@
 import base64
 from pydantic import BaseModel
-from pubsub_typesense_updater.enrich_donations import EnrichedDonation
-from pubsub_typesense_updater.topics_skills_embedding import TopicEmbeddingJson, SkillEmbeddingJson
-from pubsub_typesense_updater.typesense_document import TypesenseDocument
+from enrich_donations import EnrichedDonation
+from topics_skills_embedding import TopicEmbeddingJson, SkillEmbeddingJson
+from typesense_document import TypesenseDocument
 from shared.events import (
     Donation,
     DonationCarrier,

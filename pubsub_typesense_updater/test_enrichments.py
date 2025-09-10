@@ -1,7 +1,7 @@
 import unittest
 
-from pubsub_typesense_updater.enrichments import Enrichments, normalize_text
-from pubsub_typesense_updater.test_data import (
+from enrichments import Enrichments, normalize_text
+from test_data import (
     valid_skills_embedding,
     valid_topics_embedding,
     test_topic_skills_embedding,

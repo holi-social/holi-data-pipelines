@@ -2,15 +2,15 @@ import unittest
 from unittest.mock import patch, MagicMock
 from langchain_core.prompt_values import StringPromptValue
 
-from pubsub_typesense_updater.topics_skills_embedding import (
+from topics_skills_embedding import (
     TopicEmbeddingJson,
     invoke_llm_with_structured_output_cached,
 )
 
 
 class TestTopicSkillsEmbedding(unittest.TestCase):
-    @patch("pubsub_typesense_updater.topics_skills_embedding.ChatVertexAI")
-    @patch("pubsub_typesense_updater.topics_skills_embedding.CallbackHandler")
+    @patch("topics_skills_embedding.ChatVertexAI")
+    @patch("topics_skills_embedding.CallbackHandler")
     @patch(
         "os.environ",
         {

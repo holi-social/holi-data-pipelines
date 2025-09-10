@@ -1,6 +1,6 @@
 import unittest
 
-from pubsub_typesense_updater.test_data import (
+from test_data import (
     create_test_cloud_event,
     test_cloud_event_donation_created,
     test_cloud_event_donation_deleted,
@@ -10,13 +10,13 @@ from pubsub_typesense_updater.test_data import (
     test_event_donation_updated,
 )
 
-from pubsub_typesense_updater.events import (
+from events import (
     parse_donation_created_event,
     parse_donation_deleted_event,
     parse_donation_updated_event,
 )
-from pubsub_typesense_updater.test_enrich_donations import test_donation
-from pubsub_typesense_updater.test_enrichments import valid_topics_embedding
+from test_enrich_donations import test_donation
+from test_enrichments import valid_topics_embedding
 from shared.events import DonationCreatedEvent
 
 

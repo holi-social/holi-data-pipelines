@@ -5,7 +5,7 @@ from topics_skills_embedding import (
     SkillEmbeddingJson,
 )
 
-from pubsub_typesense_updater.enrich_donations import (
+from enrich_donations import (
     EnrichedDonation,
     create_similarity_embedding_for_donation,
     create_skills_v2_embedding_for_donation,
@@ -15,7 +15,7 @@ from pubsub_typesense_updater.enrich_donations import (
     enriched_donation_to_typesense_doc,
 )
 from shared.events import Donation
-from pubsub_typesense_updater.test_data import (
+from test_data import (
     valid_skills_embedding,
     valid_skills_embedding_json,
     valid_topics_embedding,
@@ -31,7 +31,7 @@ normalized_description = "Die Sehnsucht bei Jugendlichen nach unbeschwerten Tage
 
 
 class TestEnrichDonations(unittest.TestCase):
-    @patch("pubsub_typesense_updater.enrich_donations.create_similarity_embedding")
+    @patch("enrich_donations.create_similarity_embedding")
     def test_should_create_similarity_embedding(self, create_similarity_embedding_mock: MagicMock) -> None:
         expected_text_input = f"Integrative Sommerfreizeit für Jugendliche nach Dänemark {normalized_description} Freizeiten sind für junge Menschen eine gute Möglichkeit, mit Gleichaltrigen gemeinsam eine erlebnisreiche und zugleich entspannte Zeit zu erleben. Solche Erfahrungen stärken die Jugendliche in herausfordernden Zeiten und schwierigen Lebensphasen. Sdr. Stenderup Evangelische Kirchengemeinde Steinheim/Main Bildung Integration Kinder und Jugend"
         create_similarity_embedding_mock.return_value = test_similarity_embedding
@@ -62,9 +62,9 @@ class TestEnrichDonations(unittest.TestCase):
 
         self.assertEqual(result, expected_text_input)
 
-    @patch("pubsub_typesense_updater.enrich_donations.get_client")
+    @patch("enrich_donations.get_client")
     @patch(
-        "pubsub_typesense_updater.enrich_donations.invoke_llm_with_structured_output_cached",
+        "enrich_donations.invoke_llm_with_structured_output_cached",
         return_value=valid_topics_embedding_json,
     )
     def test_should_create_topics_v2_embedding(self, llm_mock: MagicMock, langfuse_get_client_mock: MagicMock) -> None:
@@ -98,9 +98,9 @@ class TestEnrichDonations(unittest.TestCase):
             valid_topics_embedding.model_dump_json(),
         )
 
-    @patch("pubsub_typesense_updater.enrich_donations.get_client")
+    @patch("enrich_donations.get_client")
     @patch(
-        "pubsub_typesense_updater.enrich_donations.invoke_llm_with_structured_output_cached",
+        "enrich_donations.invoke_llm_with_structured_output_cached",
         return_value={"animal_welfare": 0},
     )
     def test_should_raise_exception_for_invalid_topics_embedding(
@@ -121,9 +121,9 @@ class TestEnrichDonations(unittest.TestCase):
             str(ctx.exception),
         )
 
-    @patch("pubsub_typesense_updater.enrich_donations.get_client")
+    @patch("enrich_donations.get_client")
     @patch(
-        "pubsub_typesense_updater.enrich_donations.invoke_llm_with_structured_output_cached",
+        "enrich_donations.invoke_llm_with_structured_output_cached",
         return_value=valid_skills_embedding_json,
     )
     def test_should_create_skills_v2_embedding(self, llm_mock: MagicMock, langfuse_get_client_mock: MagicMock) -> None:
@@ -157,9 +157,9 @@ class TestEnrichDonations(unittest.TestCase):
             valid_skills_embedding.model_dump_json(),
         )
 
-    @patch("pubsub_typesense_updater.enrich_donations.get_client")
+    @patch("enrich_donations.get_client")
     @patch(
-        "pubsub_typesense_updater.enrich_donations.invoke_llm_with_structured_output_cached",
+        "enrich_donations.invoke_llm_with_structured_output_cached",
         return_value={"animal_care": 0},
     )
     def test_should_raise_exception_for_invalid_skills_embedding(
@@ -181,15 +181,15 @@ class TestEnrichDonations(unittest.TestCase):
         )
 
     @patch(
-        "pubsub_typesense_updater.enrich_donations.create_skills_v2_embedding_for_donation",
+        "enrich_donations.create_skills_v2_embedding_for_donation",
         return_value=valid_skills_embedding,
     )
     @patch(
-        "pubsub_typesense_updater.enrich_donations.create_topics_v2_embedding_for_donation",
+        "enrich_donations.create_topics_v2_embedding_for_donation",
         return_value=valid_topics_embedding,
     )
     @patch(
-        "pubsub_typesense_updater.enrich_donations.create_similarity_embedding_for_donation",
+        "enrich_donations.create_similarity_embedding_for_donation",
         return_value=test_similarity_embedding,
     )
     def test_should_enrich_donation(

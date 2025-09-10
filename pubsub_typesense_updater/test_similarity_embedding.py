@@ -1,12 +1,12 @@
 import unittest
 from unittest.mock import patch, MagicMock
 
-from pubsub_typesense_updater.similarity_embedding import create_similarity_embedding
-from pubsub_typesense_updater.test_data import test_similarity_embedding
+from similarity_embedding import create_similarity_embedding
+from test_data import test_similarity_embedding
 
 
 class TestSimilarityEmbedding(unittest.TestCase):
-    @patch("pubsub_typesense_updater.similarity_embedding.VertexAIEmbeddings")
+    @patch("similarity_embedding.VertexAIEmbeddings")
     @patch(
         "os.environ",
         {

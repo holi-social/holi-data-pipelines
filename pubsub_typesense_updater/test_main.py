@@ -11,9 +11,9 @@ from pytest import fail
 
 from typesense.exceptions import ObjectNotFound, RequestUnauthorized
 
-from pubsub_typesense_updater.test_data import test_donation_typesense_document, test_enriched_donation
-from pubsub_typesense_updater.test_enrich_donations import test_donation
-from pubsub_typesense_updater.test_events import (
+from test_data import test_donation_typesense_document, test_enriched_donation
+from test_enrich_donations import test_donation
+from test_events import (
     test_cloud_event_donation_created,
     test_cloud_event_donation_deleted,
     test_cloud_event_donation_updated,
