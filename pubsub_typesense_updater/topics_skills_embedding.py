@@ -2,7 +2,6 @@ import os
 
 from pydantic import BaseModel, Field
 from langfuse.langchain import CallbackHandler
-from langchain_core.prompts import PromptTemplate
 from typing import Dict, Any
 from langchain_google_vertexai import ChatVertexAI
 
@@ -102,8 +101,7 @@ class SkillEmbeddingJson(BaseModel):
 
 @cache(cache_persistence)
 def invoke_llm_with_structured_output_cached(
-    langchain_prompt: str,
-    input: Dict[str, Any],
+    prompt: str,
     output_json_schema: Dict[str, Any],
     model_name: str = MODEL_NAME,
 ) -> dict[str, Any]:
@@ -129,8 +127,6 @@ def invoke_llm_with_structured_output_cached(
         callbacks=[langfuse_handler],
     )
     model_with_structure = llm.with_structured_output(output_json_schema, method="json_mode")
-    prompt_template = PromptTemplate.from_template(langchain_prompt)
-    response = prompt_template.invoke(input)
-    structured_output = model_with_structure.invoke(response)
+    structured_output = model_with_structure.invoke(prompt)
 
     return structured_output
