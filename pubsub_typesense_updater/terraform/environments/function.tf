@@ -5,10 +5,15 @@ resource "random_id" "pubsub_typesense_updater" {
   prefix      = "pubsub-typesense-updater-${local.environment_name}-"
 }
 
+variable "pubsub_typesense_updater_source_zip" {
+  type     = string
+  nullable = false
+}
+
 resource "google_storage_bucket_object" "function_source" {
   name   = "${random_id.pubsub_typesense_updater.hex}/pubsub_typesense_updater.zip"
   bucket = data.terraform_remote_state.holi_infra_state.outputs.gcf_sources_upload_bucket_name
-  source = "../../.build/pubsub_typesense_updater.zip"
+  source = var.pubsub_typesense_updater_source_zip
 }
 
 resource "google_cloudfunctions2_function" "pubsub_typesense_updater" {
@@ -96,12 +101,5 @@ resource "google_cloudfunctions2_function" "pubsub_typesense_updater" {
   labels = {
     "environment_type" = local.environment_type
     "holi_service"     = "pubsub-typesense-updater"
-  }
-
-  # taken from https://github.com/hashicorp/terraform-provider-google/issues/1938#issuecomment-1229042663
-  lifecycle {
-    replace_triggered_by = [
-      google_storage_bucket_object.function_source
-    ]
   }
 }
