@@ -1,6 +1,6 @@
 import unittest
 from unittest import skip
-from unittest.mock import patch, MagicMock, ANY
+from unittest.mock import patch, MagicMock
 from topics_skills_embedding import (
     TopicEmbeddingJson,
     SkillEmbeddingJson,
@@ -39,10 +39,7 @@ class TestEnrichDonations(unittest.TestCase):
 
         result = create_similarity_embedding_for_donation(test_donation)
 
-        create_similarity_embedding_mock.assert_called_with(
-            expected_text_input,
-            cache_logging_context={"logger": ANY, "log_prefix": "[id=144757 / similarity_embedding]"},
-        )
+        create_similarity_embedding_mock.assert_called_with(expected_text_input)
         self.assertEqual(result, test_similarity_embedding)
 
     def test_should_handle_optional_values_for_similarity_embedding_text_input(self) -> None:
@@ -90,10 +87,6 @@ class TestEnrichDonations(unittest.TestCase):
             langchain_prompt=expected_prompt_template,
             input={"title": test_donation.title, "description": normalized_description},
             output_json_schema=TopicEmbeddingJson.model_json_schema(),
-            cache_logging_context={
-                "logger": ANY,
-                "log_prefix": "[id=144757 / topics_v2_embedding]",
-            },
         )
         self.assertEqual(
             result.model_dump_json(),
@@ -150,10 +143,6 @@ class TestEnrichDonations(unittest.TestCase):
             langchain_prompt=expected_prompt_template,
             input={"title": test_donation.title, "description": normalized_description},
             output_json_schema=SkillEmbeddingJson.model_json_schema(),
-            cache_logging_context={
-                "logger": ANY,
-                "log_prefix": "[id=144757 / skills_v2_embedding]",
-            },
         )
         self.assertEqual(
             result.model_dump_json(),

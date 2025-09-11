@@ -2,6 +2,7 @@ import dataclasses
 
 from enrichments import Enrichments, normalize_text
 from cf_logging import logger
+from shared.cache import set_cache_logging_context
 from similarity_embedding import (
     SimilarityEmbedding,
     create_similarity_embedding,
@@ -32,13 +33,8 @@ def create_text_input_for_similarity_embedding_from_donation(donation: Donation)
 
 def create_similarity_embedding_for_donation(donation: Donation) -> SimilarityEmbedding:
     input = create_text_input_for_similarity_embedding_from_donation(donation)
-    return create_similarity_embedding(
-        input,
-        cache_logging_context={
-            "logger": logger,
-            "log_prefix": f"[id={donation.id} / similarity_embedding]",
-        },
-    )
+    set_cache_logging_context(logger, f"[id={donation.id} / similarity_embedding]")
+    return create_similarity_embedding(input)
 
 
 def create_topics_v2_embedding_for_donation(donation: Donation) -> TopicEmbeddingJson:
@@ -50,14 +46,11 @@ def create_topics_v2_embedding_for_donation(donation: Donation) -> TopicEmbeddin
     # Note: Langfuse uses double curly brackets for variables, while langchain uses single curly brackets
     prompt_template = PromptTemplate.from_template(prompt.get_langchain_prompt())
     prompt = prompt_template.invoke(input)
+    set_cache_logging_context(logger, f"[id={donation.id} / topics_v2_embedding]")
     return TopicEmbeddingJson.model_validate(
         invoke_llm_with_structured_output_cached(
             prompt=prompt,
             output_json_schema=TopicEmbeddingJson.model_json_schema(),
-            cache_logging_context={
-                "logger": logger,
-                "log_prefix": f"[id={donation.id} / topics_v2_embedding]",
-            },
         )
     )
 
@@ -71,14 +64,11 @@ def create_skills_v2_embedding_for_donation(donation: Donation):
     # Note: Langfuse uses double curly brackets for variables, while langchain uses single curly brackets
     prompt_template = PromptTemplate.from_template(prompt.get_langchain_prompt())
     prompt = prompt_template.invoke(input)
+    set_cache_logging_context(logger, f"[id={donation.id} / skills_v2_embedding]")
     return SkillEmbeddingJson.model_validate(
         invoke_llm_with_structured_output_cached(
             prompt=prompt,
             output_json_schema=SkillEmbeddingJson.model_json_schema(),
-            cache_logging_context={
-                "logger": logger,
-                "log_prefix": f"[id={donation.id} / skills_v2_embedding]",
-            },
         )
     )
 

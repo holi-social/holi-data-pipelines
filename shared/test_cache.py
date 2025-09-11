@@ -1,10 +1,17 @@
 import time
 import logging
 
-from typing import Any, Dict, List, cast
+from typing import Any, Dict, List
 from unittest.mock import Mock
 
-from shared.cache import CachedFunction, cache, InMemoryCachePersistence, RedisCachePersistence, _generate_cache_key
+from shared.cache import (
+    cache,
+    InMemoryCachePersistence,
+    RedisCachePersistence,
+    _generate_cache_key,
+    cache_logging_context,
+    set_cache_logging_context,
+)
 
 test_logger = logging.getLogger(__name__)
 
@@ -147,7 +154,7 @@ class TestCacheDecorator:
         assert result2 == 10
         assert call_count == 1  # Second call should be cached despite different timestamp
 
-    def test_ignore_cache_logging_context(self) -> None:
+    def test_contextvars_logging_context(self) -> None:
         call_count = 0
         logger = logging.getLogger("test")
 
@@ -157,10 +164,34 @@ class TestCacheDecorator:
             call_count += 1
             return x * 2
 
-        result1 = test_function(5, cache_logging_context={"log_prefix": "call1", "logger": logger})
-        result2 = test_function(
-            5, cache_logging_context={"log_prefix": "call2", "logger": logger}
-        )  # Different logging context
+        # Test with context manager
+        with cache_logging_context(logger, "call1"):
+            result1 = test_function(5)
+
+        with cache_logging_context(logger, "call2"):
+            result2 = test_function(5)  # Different logging context, but should be cached
+
+        assert result1 == 10
+        assert result2 == 10
+        assert call_count == 1  # Second call should be cached despite different logging context
+
+    def test_set_cache_logging_context(self) -> None:
+        call_count = 0
+        logger = logging.getLogger("test")
+
+        @cache()
+        def test_function(x: int) -> int:
+            nonlocal call_count
+            call_count += 1
+            return x * 2
+
+        # Test with direct function call
+        set_cache_logging_context(logger, "direct-call")
+        result1 = test_function(5)
+
+        # Change context and call again
+        set_cache_logging_context(logger, "another-call")
+        result2 = test_function(5)  # Should still be cached
 
         assert result1 == 10
         assert result2 == 10
@@ -196,7 +227,7 @@ class TestCacheDecorator:
         assert call_count == 1
 
         # Clear cache
-        cast(CachedFunction, test_function).cache_clear()
+        test_function.cache_clear()  # type: ignore[attr-defined]
 
         # Second call should execute function again
         result2 = test_function(5)
@@ -208,7 +239,7 @@ class TestCacheDecorator:
         def test_function(x: int) -> int:
             return x
 
-        info = cast(CachedFunction, test_function).cache_info()
+        info = test_function.cache_info()  # type: ignore[attr-defined]
         assert "persistence" in info
         assert info["persistence"] == "InMemoryCachePersistence"
 

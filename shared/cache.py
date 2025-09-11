@@ -3,24 +3,22 @@ import os
 import hashlib
 import inspect
 import pickle
+import contextvars
 from redis import Redis
 from abc import ABC, abstractmethod
 from functools import wraps
-from typing import Any, Callable, Dict, List, Optional, Protocol, Tuple, TypeVar, cast
+from contextlib import contextmanager
+from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar, cast, ParamSpec, Generator
 
+P = ParamSpec("P")
+T = TypeVar("T")
 F = TypeVar("F", bound=Callable[..., Any])
 
 CACHE_DEBUG = os.environ.get("CACHE_DEBUG", "false").lower() in ["true", "1"]
 
-
-class CachedFunction(Protocol):
-    """Protocol for cached functions with cache management methods."""
-
-    def __call__(self, *args: Any, **kwargs: Any) -> Any: ...
-
-    def cache_clear(self) -> None: ...
-
-    def cache_info(self) -> Dict[str, str]: ...
+# Context variables for cache logging
+cache_logger: contextvars.ContextVar[Optional[logging.Logger]] = contextvars.ContextVar("cache_logger", default=None)
+cache_log_prefix: contextvars.ContextVar[str] = contextvars.ContextVar("cache_log_prefix", default="")
 
 
 class CachePersistence(ABC):
@@ -180,12 +178,56 @@ def _generate_cache_key(func: Callable[..., Any], args: Tuple[Any, ...], kwargs:
     return hexdigest
 
 
-KWARGS_KEY_LOGGING_CONTEXT = "cache_logging_context"
+def set_cache_logging_context(logger: logging.Logger, log_prefix: str = "") -> None:
+    """Set the logging context for cache operations.
+
+    Args:
+        logger: Logger instance to use for cache debug messages
+        log_prefix: Prefix to add to log messages
+    """
+    cache_logger.set(logger)
+    cache_log_prefix.set(log_prefix)
+
+
+def get_cache_logging_context() -> tuple[Optional[logging.Logger], str]:
+    """Get the current cache logging context.
+
+    Returns:
+        Tuple of (logger, log_prefix)
+    """
+    return cache_logger.get(), cache_log_prefix.get()
+
+
+@contextmanager
+def cache_logging_context(logger: logging.Logger, log_prefix: str = "") -> Generator[None, None, None]:
+    """Context manager for setting cache logging context.
+
+    Args:
+        logger: Logger instance to use for cache debug messages
+        log_prefix: Prefix to add to log messages
+
+    Example:
+        with cache_logging_context(my_logger, "request-123"):
+            result = cached_function(42)  # Uses the provided logger and prefix
+    """
+    # Save current context
+    old_logger = cache_logger.get()
+    old_prefix = cache_log_prefix.get()
+
+    try:
+        # Set new context
+        cache_logger.set(logger)
+        cache_log_prefix.set(log_prefix)
+        yield
+    finally:
+        # Restore previous context
+        cache_logger.set(old_logger)
+        cache_log_prefix.set(old_prefix)
 
 
 def cache(
     persistence: Optional[CachePersistence] = None, ignore_args: Optional[List[str]] = None
-) -> Callable[[F], CachedFunction]:
+) -> Callable[[Callable[P, T]], Callable[P, T]]:
     """
     Decorator that caches function results based on function body and parameters.
 
@@ -199,20 +241,16 @@ def cache(
     if persistence is None:
         persistence = InMemoryCachePersistence()
 
-    ignore_args = (ignore_args or []) + [KWARGS_KEY_LOGGING_CONTEXT]
+    ignore_args = ignore_args or []
 
-    def decorator(func: F) -> CachedFunction:
+    def decorator(func: Callable[P, T]) -> Callable[P, T]:
         @wraps(func)
-        def wrapper(*args: Any, **kwargs: Any) -> Any:
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
             # Filter out ignored arguments for cache key generation
             filtered_kwargs = {k: v for k, v in kwargs.items() if k not in ignore_args}
 
-            logger: logging.Logger | None = None
-            log_prefix = ""
-            cache_logging_context = kwargs.get(KWARGS_KEY_LOGGING_CONTEXT)
-            if cache_logging_context is not None:
-                logger = cache_logging_context["logger"]
-                log_prefix = cache_logging_context["log_prefix"]
+            logger = cache_logger.get()
+            log_prefix = cache_log_prefix.get()
 
             # Handle ignored positional arguments
             sig = inspect.signature(func)
@@ -239,7 +277,7 @@ def cache(
             # Execute function and cache result
             if CACHE_DEBUG and logger is not None:
                 logger.debug(f"{log_prefix} cache miss for key: {cache_key}")  # noqa: T201
-            result = func(*args, **{k: v for k, v in kwargs.items() if k != KWARGS_KEY_LOGGING_CONTEXT})
+            result = func(*args, **kwargs)
             persistence.set(cache_key, result)
 
             return result
@@ -249,6 +287,6 @@ def cache(
         wrapper.cache_info = lambda: {"persistence": type(persistence).__name__}  # type: ignore[attr-defined]
         wrapper.fn = func  # type: ignore[attr-defined]
 
-        return cast(CachedFunction, wrapper)
+        return cast(Callable[P, T], wrapper)
 
     return decorator
