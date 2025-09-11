@@ -147,6 +147,25 @@ class TestCacheDecorator:
         assert result2 == 10
         assert call_count == 1  # Second call should be cached despite different timestamp
 
+    def test_ignore_cache_logging_context(self) -> None:
+        call_count = 0
+        logger = logging.getLogger("test")
+
+        @cache()
+        def test_function(x: int, timestamp: Any = None) -> int:
+            nonlocal call_count
+            call_count += 1
+            return x * 2
+
+        result1 = test_function(5, cache_logging_context={"log_prefix": "call1", "logger": logger})
+        result2 = test_function(
+            5, cache_logging_context={"log_prefix": "call2", "logger": logger}
+        )  # Different logging context
+
+        assert result1 == 10
+        assert result2 == 10
+        assert call_count == 1  # Second call should be cached despite different logging context
+
     def test_custom_persistence(self) -> None:
         custom_persistence = InMemoryCachePersistence()
 
