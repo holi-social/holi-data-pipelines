@@ -126,19 +126,29 @@ def _generate_cache_key(func: Callable[..., Any], args: Tuple[Any, ...], kwargs:
             func_body = f"{func.__module__}.{func.__name__}"
 
     # Serialize args and kwargs for hashing using deterministic approach
+    def _sort_recursively(obj: Any) -> Any:
+        """Recursively sort dictionary keys at all levels to ensure deterministic serialization."""
+        if isinstance(obj, dict):
+            return {k: _sort_recursively(v) for k, v in sorted(obj.items())}
+        elif isinstance(obj, list):
+            return [_sort_recursively(item) for item in obj]
+        else:
+            return obj
+
     def _serialize_deterministically(obj: Any) -> bytes:
         """Serialize objects deterministically for consistent cache keys."""
         try:
             # Try to use the object's dict representation if it has one (works for most objects)
             if hasattr(obj, "__dict__"):
                 # Sort dict items to ensure consistent ordering
-                obj_dict = dict(sorted(obj.__dict__.items()))
+                obj_dict = _sort_recursively(dict(obj.__dict__.items()))
                 return str(obj_dict).encode("utf-8")
             # For objects with model_dump method (like Pydantic models)
             elif hasattr(obj, "model_dump"):
                 # Use model_dump for consistent serialization
                 dumped = obj.model_dump()
-                return str(sorted(dumped.items()) if isinstance(dumped, dict) else dumped).encode("utf-8")
+                sorted_dumped = _sort_recursively(dumped) if isinstance(dumped, (dict, list)) else dumped
+                return str(sorted_dumped).encode("utf-8")
             # For basic types, use string representation
             else:
                 return str(obj).encode("utf-8")
