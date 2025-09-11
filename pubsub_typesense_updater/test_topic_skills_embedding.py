@@ -1,7 +1,5 @@
 import unittest
-from unittest import skip
 from unittest.mock import patch, MagicMock
-from langchain_core.prompt_values import StringPromptValue
 
 from topics_skills_embedding import (
     TopicEmbeddingJson,
@@ -20,7 +18,6 @@ class TestTopicSkillsEmbedding(unittest.TestCase):
             "VERTEX_AI_RETRIES": 3,
         },
     )
-    @skip("TODO fixme")
     def test_should_invoke_llm_correctly(self, callback_handler_mock, vertex_ai_mock):
         # Setup
         expected_output = {"foo": "bar"}
@@ -34,13 +31,11 @@ class TestTopicSkillsEmbedding(unittest.TestCase):
         vertex_ai_mock.return_value = llm_mock
 
         # Given
-        prompt = "Here is a donation with title '{title}', calculate some topics!"
-        input = {"title": "Help students"}
+        prompt = "Here is a donation with title 'Help students', calculate some topics!"
 
         # When
         output = invoke_llm_with_structured_output_cached.fn(
-            langchain_prompt=prompt,
-            input=input,
+            prompt=prompt,
             output_json_schema=output_schema,
             model_name="some-model",
         )
@@ -54,7 +49,5 @@ class TestTopicSkillsEmbedding(unittest.TestCase):
             callbacks=[langfuse_handler],
         )
         llm_mock.with_structured_output.assert_called_with(output_schema, method="json_mode")
-        model_mock.invoke.assert_called_with(
-            StringPromptValue(text="Here is a donation with title 'Help students', calculate some topics!")
-        )
+        model_mock.invoke.assert_called_with("Here is a donation with title 'Help students', calculate some topics!")
         self.assertEqual(output, expected_output)

@@ -112,8 +112,7 @@ def invoke_llm_with_structured_output_cached(
     1. LLMs then use controlled genetration to generate the response rather than function calling (faster).
     2. Passing the model class is not (easily) serializable, so it can't be used for cache key generation.
 
-    :param langchain_prompt: a prompt in the Langchain PromptTemplate format
-    :param input: a dict containing values to be rendered inside the prompt template
+    :param prompt: the prompt to execute
     :param output_json_schema:
     :param model_name: the LLM models name
     :return: a dict conforming to the output schema

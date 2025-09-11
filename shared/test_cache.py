@@ -159,7 +159,7 @@ class TestCacheDecorator:
         logger = logging.getLogger("test")
 
         @cache()
-        def test_function(x: int, timestamp: Any = None) -> int:
+        def test_function(x: int) -> int:
             nonlocal call_count
             call_count += 1
             return x * 2

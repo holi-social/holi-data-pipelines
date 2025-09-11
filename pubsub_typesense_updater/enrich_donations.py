@@ -45,7 +45,10 @@ def create_topics_v2_embedding_for_donation(donation: Donation) -> TopicEmbeddin
     prompt = langfuse.get_prompt("donations_topics_v2_embedding_prompt", fallback=fallback_prompt)
     # Note: Langfuse uses double curly brackets for variables, while langchain uses single curly brackets
     prompt_template = PromptTemplate.from_template(prompt.get_langchain_prompt())
-    prompt = prompt_template.invoke(input)
+    normalized_input = {
+        key: normalize_text(str(input[key])) for key in prompt_template.input_variables if key in input
+    }
+    prompt = prompt_template.invoke(normalized_input).to_string()
     set_cache_logging_context(logger, f"[id={donation.id} / topics_v2_embedding]")
     return TopicEmbeddingJson.model_validate(
         invoke_llm_with_structured_output_cached(
@@ -63,7 +66,10 @@ def create_skills_v2_embedding_for_donation(donation: Donation):
     prompt = langfuse.get_prompt("donations_skills_v2_embedding_prompt", fallback=fallback_prompt)
     # Note: Langfuse uses double curly brackets for variables, while langchain uses single curly brackets
     prompt_template = PromptTemplate.from_template(prompt.get_langchain_prompt())
-    prompt = prompt_template.invoke(input)
+    normalized_input = {
+        key: normalize_text(str(input[key])) for key in prompt_template.input_variables if key in input
+    }
+    prompt = prompt_template.invoke(normalized_input).to_string()
     set_cache_logging_context(logger, f"[id={donation.id} / skills_v2_embedding]")
     return SkillEmbeddingJson.model_validate(
         invoke_llm_with_structured_output_cached(

@@ -1,5 +1,4 @@
 import unittest
-from unittest import skip
 from unittest.mock import patch, MagicMock
 from topics_skills_embedding import (
     TopicEmbeddingJson,
@@ -65,11 +64,11 @@ class TestEnrichDonations(unittest.TestCase):
         "enrich_donations.invoke_llm_with_structured_output_cached",
         return_value=valid_topics_embedding_json,
     )
-    @skip("TODO fixme")
     def test_should_create_topics_v2_embedding(self, llm_mock: MagicMock, langfuse_get_client_mock: MagicMock) -> None:
         expected_prompt_template = (
             "Here is a donation with title '{title}' and description '{description}', estimate the topic similarities!"
         )
+        expected_prompt = f"Here is a donation with title '{test_donation.title}' and description '{normalized_description}', estimate the topic similarities!"
         langfuse_mock = MagicMock()
         prompt_mock = MagicMock()
         langfuse_get_client_mock.return_value = langfuse_mock
@@ -84,8 +83,7 @@ class TestEnrichDonations(unittest.TestCase):
     Estimate the similarity of the project to the given topics between -1 and 1 (-1 for not similar, 1 for similar)""",
         )
         llm_mock.assert_called_with(
-            langchain_prompt=expected_prompt_template,
-            input={"title": test_donation.title, "description": normalized_description},
+            prompt=expected_prompt,
             output_json_schema=TopicEmbeddingJson.model_json_schema(),
         )
         self.assertEqual(
@@ -121,11 +119,11 @@ class TestEnrichDonations(unittest.TestCase):
         "enrich_donations.invoke_llm_with_structured_output_cached",
         return_value=valid_skills_embedding_json,
     )
-    @skip("TODO fixme")
     def test_should_create_skills_v2_embedding(self, llm_mock: MagicMock, langfuse_get_client_mock: MagicMock) -> None:
         expected_prompt_template = (
             "Here is a donation with title '{title}' and description '{description}', estimate the skill similarities!"
         )
+        expected_prompt = f"Here is a donation with title '{test_donation.title}' and description '{normalized_description}', estimate the skill similarities!"
         langfuse_mock = MagicMock()
         prompt_mock = MagicMock()
         langfuse_get_client_mock.return_value = langfuse_mock
@@ -140,8 +138,7 @@ class TestEnrichDonations(unittest.TestCase):
     Estimate the similarity of the project to the given skills between -1 and 1 (-1 for not similar, 1 for similar)""",
         )
         llm_mock.assert_called_with(
-            langchain_prompt=expected_prompt_template,
-            input={"title": test_donation.title, "description": normalized_description},
+            prompt=expected_prompt,
             output_json_schema=SkillEmbeddingJson.model_json_schema(),
         )
         self.assertEqual(
