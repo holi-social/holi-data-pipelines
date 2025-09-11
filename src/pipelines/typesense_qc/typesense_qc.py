@@ -315,7 +315,9 @@ def typesense_qc_flow() -> State:
     errors = []
 
     for typ in all_types:
-        if not results[typ].passes_consistency_check():
+        if results[typ].passes_consistency_check():
+            logger.info("Consistency checks succeeded for type {typ}")
+        else:
             msg = f"BigQuery and Typesense are inconsistent for document type {typ}%: {pprint.pformat(results[typ])}"
             logger.error(msg)
             errors.append(msg)
