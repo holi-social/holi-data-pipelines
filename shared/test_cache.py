@@ -157,8 +157,8 @@ class TestCacheDecorator:
             call_count += 1
             return x * 2
 
-        result1 = test_function(5, cache_logging_context={"log_prefix": "call1", "logger": logger})  # type: ignore
-        result2 = test_function(  # type: ignore
+        result1 = test_function(5, cache_logging_context={"log_prefix": "call1", "logger": logger})
+        result2 = test_function(
             5, cache_logging_context={"log_prefix": "call2", "logger": logger}
         )  # Different logging context
 

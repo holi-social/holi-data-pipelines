@@ -183,7 +183,9 @@ def _generate_cache_key(func: Callable[..., Any], args: Tuple[Any, ...], kwargs:
 KWARGS_KEY_LOGGING_CONTEXT = "cache_logging_context"
 
 
-def cache(persistence: Optional[CachePersistence] = None, ignore_args: Optional[List[str]] = None) -> Callable[[F], F]:
+def cache(
+    persistence: Optional[CachePersistence] = None, ignore_args: Optional[List[str]] = None
+) -> Callable[[F], CachedFunction]:
     """
     Decorator that caches function results based on function body and parameters.
 
@@ -199,7 +201,7 @@ def cache(persistence: Optional[CachePersistence] = None, ignore_args: Optional[
 
     ignore_args = (ignore_args or []) + [KWARGS_KEY_LOGGING_CONTEXT]
 
-    def decorator(func: F) -> F:
+    def decorator(func: F) -> CachedFunction:
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             # Filter out ignored arguments for cache key generation
@@ -207,9 +209,10 @@ def cache(persistence: Optional[CachePersistence] = None, ignore_args: Optional[
 
             logger: logging.Logger | None = None
             log_prefix = ""
-            if kwargs.get(KWARGS_KEY_LOGGING_CONTEXT) is not None:
-                logger = kwargs[KWARGS_KEY_LOGGING_CONTEXT]["logger"]
-                log_prefix = kwargs[KWARGS_KEY_LOGGING_CONTEXT]["log_prefix"]
+            cache_logging_context = kwargs.get(KWARGS_KEY_LOGGING_CONTEXT)
+            if cache_logging_context is not None:
+                logger = cache_logging_context["logger"]
+                log_prefix = cache_logging_context["log_prefix"]
 
             # Handle ignored positional arguments
             sig = inspect.signature(func)
@@ -246,6 +249,6 @@ def cache(persistence: Optional[CachePersistence] = None, ignore_args: Optional[
         wrapper.cache_info = lambda: {"persistence": type(persistence).__name__}  # type: ignore[attr-defined]
         wrapper.fn = func  # type: ignore[attr-defined]
 
-        return cast(F, wrapper)
+        return cast(CachedFunction, wrapper)
 
     return decorator
