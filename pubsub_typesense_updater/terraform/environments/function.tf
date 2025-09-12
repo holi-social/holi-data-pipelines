@@ -5,6 +5,7 @@ resource "random_id" "pubsub_typesense_updater" {
   prefix      = "pubsub-typesense-updater-${local.environment_name}-"
 }
 
+# in CI, this is set via scripts/create-or-update-env.sh
 variable "pubsub_typesense_updater_source_zip" {
   type     = string
   nullable = false
@@ -54,7 +55,7 @@ resource "google_cloudfunctions2_function" "pubsub_typesense_updater" {
       BIGQUERY_TABLE_NAME_CLASSIFICATIONS = data.terraform_remote_state.data_pipelines_environment_state.outputs.bigquery_table_name_classifications
       REDIS_HOST                          = local.environment_name == "production" ? data.terraform_remote_state.holi_infra_state.outputs.redis_host_cmek_production : data.terraform_remote_state.holi_infra_state.outputs.redis_host_cmek_development
       REDIS_PORT                          = local.environment_name == "production" ? data.terraform_remote_state.holi_infra_state.outputs.redis_port_cmek_production : data.terraform_remote_state.holi_infra_state.outputs.redis_port_cmek_development
-      REDIS_DB                            = local.environment_name == "production" ? 14 : 6
+      REDIS_DB                            = 6 # Same for production and staging
       LANGFUSE_HOST                       = "https://cloud.langfuse.com"
       CACHE_DEBUG                         = "True"
       VERTEX_AI_PROJECT                   = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
