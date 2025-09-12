@@ -161,6 +161,9 @@ def get_donation_ids_bq() -> list[str]:
         SELECT id
         FROM `{donations_betterplace_raw()}`
         WHERE TIMESTAMP_TRUNC(_PARTITIONTIME, DAY) = TIMESTAMP_TRUNC(CURRENT_TIMESTAMP(), DAY)
+        AND completed_at IS NULL
+        AND closed_at IS NULL
+        AND donations_prohibited IS false
     """)  # noqa: S608
     return cast(list[str], [str(row["id"]) for row in result])
 
