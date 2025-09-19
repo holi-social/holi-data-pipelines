@@ -67,7 +67,7 @@ class ConsistencyCheck:
         return set(self.ts_ids) - set(self.bq_ids)
 
     def __repr__(self) -> str:
-        return str(
+        return pprint.pformat(
             {
                 "pg_ids_not_in_bq": sorted(self.pg_ids_not_in_bq()),
                 "bq_ids_not_in_pg": sorted(self.bq_ids_not_in_pg()),

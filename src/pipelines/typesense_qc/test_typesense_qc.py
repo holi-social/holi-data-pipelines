@@ -322,7 +322,7 @@ class TestTypesenseQCFlow(unittest.TestCase):
 
         self.assertEqual(result.type, "FAILED")
         self.assertEqual(
-            "BigQuery and Typesense are inconsistent for document type profile: {'pg_ids_not_in_bq': ['2', '3'], 'bq_ids_not_in_pg': [], 'bq_ids_not_in_ts': [], 'ts_ids_not_in_bq': ['2', '3']}",
+            "BigQuery and Typesense are inconsistent for document type profile: {'bq_ids_not_in_pg': [],\n 'bq_ids_not_in_ts': [],\n 'pg_ids_not_in_bq': ['2', '3'],\n 'ts_ids_not_in_bq': ['2', '3']}",
             result.message,
         )
 
@@ -358,7 +358,7 @@ class TestTypesenseQCFlow(unittest.TestCase):
 
         self.assertEqual(result.type, "FAILED")
         self.assertEqual(
-            "BigQuery and Typesense are inconsistent for document type space: {'pg_ids_not_in_bq': ['2', '3'], 'bq_ids_not_in_pg': [], 'bq_ids_not_in_ts': [], 'ts_ids_not_in_bq': ['2', '3']}",
+            "BigQuery and Typesense are inconsistent for document type space: {'bq_ids_not_in_pg': [],\n 'bq_ids_not_in_ts': [],\n 'pg_ids_not_in_bq': ['2', '3'],\n 'ts_ids_not_in_bq': ['2', '3']}",
             result.message,
         )
 
@@ -394,7 +394,7 @@ class TestTypesenseQCFlow(unittest.TestCase):
 
         self.assertEqual(result.type, "FAILED")
         self.assertEqual(
-            "BigQuery and Typesense are inconsistent for document type task: {'pg_ids_not_in_bq': ['2', '3'], 'bq_ids_not_in_pg': [], 'bq_ids_not_in_ts': [], 'ts_ids_not_in_bq': ['2', '3']}",
+            "BigQuery and Typesense are inconsistent for document type task: {'bq_ids_not_in_pg': [],\n 'bq_ids_not_in_ts': [],\n 'pg_ids_not_in_bq': ['2', '3'],\n 'ts_ids_not_in_bq': ['2', '3']}",
             result.message,
         )
 
@@ -430,7 +430,7 @@ class TestTypesenseQCFlow(unittest.TestCase):
 
         self.assertEqual(result.type, "FAILED")
         self.assertEqual(
-            "BigQuery and Typesense are inconsistent for document type volunteering: {'pg_ids_not_in_bq': [], 'bq_ids_not_in_pg': [], 'bq_ids_not_in_ts': [], 'ts_ids_not_in_bq': ['2', '3']}",
+            "BigQuery and Typesense are inconsistent for document type volunteering: {'bq_ids_not_in_pg': [],\n 'bq_ids_not_in_ts': [],\n 'pg_ids_not_in_bq': [],\n 'ts_ids_not_in_bq': ['2', '3']}",
             result.message,
         )
 
@@ -466,6 +466,6 @@ class TestTypesenseQCFlow(unittest.TestCase):
 
         self.assertEqual(result.type, "FAILED")
         self.assertEqual(
-            "BigQuery and Typesense are inconsistent for document type donation: {'pg_ids_not_in_bq': [], 'bq_ids_not_in_pg': [], 'bq_ids_not_in_ts': [], 'ts_ids_not_in_bq': ['2', '3']}",
+            "BigQuery and Typesense are inconsistent for document type donation: {'bq_ids_not_in_pg': [],\n 'bq_ids_not_in_ts': [],\n 'pg_ids_not_in_bq': [],\n 'ts_ids_not_in_bq': ['2', '3']}",
             result.message,
         )
