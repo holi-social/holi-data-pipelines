@@ -17,6 +17,7 @@ from events import (
     TaskDeletedEvent,
     TaskUpdatedEvent,
     UserDeletedEvent,
+    UserPayload,
     UserUpdatedEvent,
     get_event_type,
     get_event_version,
@@ -45,12 +46,19 @@ def bigquery_table_name_classifications() -> str:
     return os.environ.get("BIGQUERY_TABLE_NAME_CLASSIFICATIONS", "")
 
 
+def check_if_user_data_is_missing(user: UserPayload) -> bool:
+    return user.name is None or user.name.strip() == "" or user.identity is None
+
+
 def process_user_updated_event(ts_client: TypesenseClient, event: UserUpdatedEvent) -> None:
     logger.debug(f"[id={event.user.id}] Processing UserUpdated event")
-    if event.user.name is None or event.user.name.strip() == "":
+    data_missing = check_if_user_data_is_missing(event.user)
+    if data_missing:
         try:
             ts_client.delete(f"profile_{event.user.id}")
-            logger.info(f"[id={event.user.id}] Deleted user {event.user.id} from Typesense due to empty name")
+            logger.info(
+                f"[id={event.user.id}] Deleted user {event.user.id} from Typesense due to missing name or identity"
+            )
         except ObjectNotFound:
             pass
     else:

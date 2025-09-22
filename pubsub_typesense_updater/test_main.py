@@ -185,11 +185,27 @@ def test_user_updated(mock_client: MagicMock) -> None:
 
 
 @patch("typesense.client.Client")
-def test_ignores_deletes_user_without_name(mock_client: MagicMock) -> None:
+def test_deletes_user_without_name(mock_client: MagicMock) -> None:
     # users without names must not show up in search results
     user = user_payload.copy()
     # noinspection PyTypeChecker
     del user["name"]
+    process_event(mock_client, CloudEvent(attributes, message_data("UserUpdated", "1.1.0", {"user": user})))
+    mock_client.upsert.assert_not_called()
+    mock_client.delete.assert_called_with(f"profile_{user['id']}")
+
+    user["name"] = ""
+    process_event(mock_client, CloudEvent(attributes, message_data("UserUpdated", "1.1.0", {"user": user})))
+    mock_client.upsert.assert_not_called()
+    mock_client.delete.assert_called_with(f"profile_{user['id']}")
+
+
+@patch("typesense.client.Client")
+def test_deletes_user_without_identity(mock_client: MagicMock) -> None:
+    # users without names must not show up in search results
+    user = user_payload.copy()
+    # noinspection PyTypeChecker
+    del user["identity"]
     process_event(mock_client, CloudEvent(attributes, message_data("UserUpdated", "1.1.0", {"user": user})))
     mock_client.upsert.assert_not_called()
     mock_client.delete.assert_called_with(f"profile_{user['id']}")
