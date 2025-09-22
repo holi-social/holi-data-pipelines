@@ -5,6 +5,7 @@ from prefect import State, flow
 from prefect.states import Completed, Failed
 from typesense.exceptions import ObjectNotFound
 
+from src.common.extractors.bq_extractor import extract_latest_partition_timestamp_from_bigquery
 from src.common.logging.PipelineLogger import PipelineLogger
 from src.common.monitoring.flow import (
     on_cancellation_hooks,
@@ -16,6 +17,7 @@ from src.common.monitoring.metrics import report_number_of_processed_entities
 from src.common.external_data_pubsub_client import ExternalDataPubSubClient
 from src.common.typesense import extract_collection_name_from_schema
 from src.common.typesense_client import TypesenseClient, TypesenseClientConfig
+from src.pipelines.bigquery import donations_betterplace_raw
 from src.pipelines.profiles_to_typesense.ingest_from_scratch import profiles_to_typesense_ingest_from_scratch
 from src.pipelines.spaces_to_typesense.ingest_from_scratch import spaces_to_typesense_ingest_from_scratch
 from src.pipelines.tasks_to_typesense.ingest_from_scratch import (
@@ -29,6 +31,7 @@ from src.pipelines.volunteering_to_typesense.tasks import store_last_complete_in
 from src.pipelines.volunteering_to_typesense.voltastics_to_typesense_ingest_from_scratch import (
     voltastics_to_typesense_ingest_from_scratch,
 )
+from src.pipelines.donation_events.donation_events import donation_events_flow
 
 logger = PipelineLogger(__name__)
 
@@ -108,9 +111,14 @@ def all_to_typesense_ingest_from_scratch_flow(swap_alias: bool = True, drop_old_
     report_number_of_processed_entities(
         cast(int, profiles_result)
         + cast(int, spaces_result)
+        + cast(int, tasks_result)
         + cast(int, volunteering_result)
         + cast(int, aktion_mensch_result)
     )
+
+    logger.info("Trigger donation events for re-ingestion")
+    new_partition_date = extract_latest_partition_timestamp_from_bigquery(donations_betterplace_raw())
+    donation_events_flow(old_partition_date=None, new_partition_date=new_partition_date)
 
     return Completed()
 
