@@ -28,14 +28,81 @@ from src.pipelines.bigquery import (
     tasks_with_classifications,
     volunteering_voltastics_classified_enriched_partitioned,
     volunteering_aktion_mensch_classified_enriched_partitioned,
+    donations_betterplace_raw,
 )
 
 logger = PipelineLogger(__name__)
 
 PG_BQ_DEVIATION_TOLERANCE_FACTOR = 0.05
 
-DEVIATION_TOLERANCE_FACTOR = 0
-DEVIATION_TOLERANCE_IN_PERCENT = 0
+BQ_TS_DEVIATION_TOLERANCE_FACTOR = 0.01
+BQ_TS_DEVIATION_TOLERANCE_IN_PERCENT = BQ_TS_DEVIATION_TOLERANCE_FACTOR * 100
+
+
+@dataclasses.dataclass
+class ConsistencyCheck:
+    pg_ids: Optional[list[str]]
+    bq_ids: list[str]
+    ts_ids: list[str]
+
+    def pg_count(self) -> int:
+        return len(self.pg_ids) if self.pg_ids else 0
+
+    def bq_count(self) -> int:
+        return len(self.bq_ids)
+
+    def ts_count(self) -> int:
+        return len(self.ts_ids)
+
+    def pg_ids_not_in_bq(self) -> set[str]:
+        return set(self.pg_ids) - set(self.bq_ids) if self.pg_ids else set()
+
+    def bq_ids_not_in_pg(self) -> set[str]:
+        return set(self.bq_ids) - set(self.pg_ids) if self.pg_ids else set()
+
+    def bq_ids_not_in_ts(self) -> set[str]:
+        return set(self.bq_ids) - set(self.ts_ids)
+
+    def ts_ids_not_in_bq(self) -> set[str]:
+        return set(self.ts_ids) - set(self.bq_ids)
+
+    def __repr__(self) -> str:
+        return pprint.pformat(
+            {
+                "pg_ids_not_in_bq": sorted(self.pg_ids_not_in_bq()),
+                "bq_ids_not_in_pg": sorted(self.bq_ids_not_in_pg()),
+                "bq_ids_not_in_ts": sorted(self.bq_ids_not_in_ts()),
+                "ts_ids_not_in_bq": sorted(self.ts_ids_not_in_bq()),
+            }
+        )
+
+    def passes_consistency_check(self) -> bool:
+        bq_ts_diff_too_large = ConsistencyCheck.fails_bq_ts_tolerance(
+            count=self.bq_count(), count_failed=(len(self.bq_ids_not_in_ts()) + len(self.ts_ids_not_in_bq()))
+        )
+
+        diff_pg_bq = self.pg_ids_not_in_bq().union(self.bq_ids_not_in_pg())
+        diff_bq_ts = self.bq_ids_not_in_ts().union(self.ts_ids_not_in_bq())
+        processed_through_events_not_yet_in_bq = diff_pg_bq == diff_bq_ts
+
+        pg_bq_lags_too_much = (
+            ConsistencyCheck.fails_pg_bq_tolerance(
+                count=self.pg_count(),
+                count_failed=len(diff_pg_bq),
+            )
+            if self.pg_count()
+            else False
+        )
+
+        return (not bq_ts_diff_too_large or processed_through_events_not_yet_in_bq) and not pg_bq_lags_too_much
+
+    @staticmethod
+    def fails_pg_bq_tolerance(count: int, count_failed: int) -> bool:
+        return not math.isclose(count, count - count_failed, rel_tol=PG_BQ_DEVIATION_TOLERANCE_FACTOR)
+
+    @staticmethod
+    def fails_bq_ts_tolerance(count: int, count_failed: int) -> bool:
+        return not math.isclose(count, count - count_failed, rel_tol=BQ_TS_DEVIATION_TOLERANCE_FACTOR)
 
 
 def get_pg_connection() -> Connection:
@@ -155,6 +222,19 @@ def get_volunteering_ids_bq() -> list[str]:
 
 
 @task
+def get_donation_ids_bq() -> list[str]:
+    result = extract_data_from_bigquery(f"""
+        SELECT id
+        FROM `{donations_betterplace_raw()}`
+        WHERE TIMESTAMP_TRUNC(_PARTITIONTIME, DAY) = TIMESTAMP_TRUNC(CURRENT_TIMESTAMP(), DAY)
+        AND completed_at IS NULL
+        AND closed_at IS NULL
+        AND donations_prohibited IS false
+    """)  # noqa: S608
+    return cast(list[str], [str(row["id"]) for row in result])
+
+
+@task
 def get_ids_ts(ts_client: TypesenseClient, ts_collection: str, document_type: str) -> list[str]:
     def strip_prefix(id: str) -> str:
         return id.split(f"{document_type}_")[1]
@@ -199,108 +279,48 @@ def typesense_qc_flow() -> State:
     ts_client = TypesenseClient(TypesenseClientConfig.from_env())
     ts_collection = cast(str, variable_value("typesense_collection"))
 
-    profile_ids_pg = get_profile_ids_pg()
-    profile_ids_bq = get_profile_ids_bq()
-    profile_ids_ts = get_ids_ts(ts_client, ts_collection, "profile")
-
-    space_ids_pg = get_space_ids_pg()
-    space_ids_bq = get_space_ids_bq()
-    space_ids_ts = get_ids_ts(ts_client, ts_collection, "space")
-
-    task_ids_pg = get_task_ids_pg()
-    task_ids_bq = get_task_ids_bq()
-    task_ids_ts = get_ids_ts(ts_client, ts_collection, "task")
-
-    volunteering_ids_bq = get_volunteering_ids_bq()
-    volunteering_ids_ts = get_ids_ts(ts_client, ts_collection, "volunteering")
-
-    @dataclasses.dataclass
-    class ConsistencyCheckResult:
-        pg_count: Optional[int]
-        bq_count: int
-        ts_count: int
-        pg_ids_not_in_bq: Optional[set[str]]
-        bq_ids_not_in_pg: Optional[set[str]]
-        bq_ids_not_in_ts: set[str]
-        ts_ids_not_in_bq: set[str]
-
-        def passes_consistency_check(self) -> bool:
-            all_bq_docs_in_ts = self.bq_ids_not_in_ts == set()
-            not_too_many_docs_in_ts = self.ts_ids_not_in_bq == set()
-            processed_through_events_not_yet_in_bq = self.ts_ids_not_in_bq == self.pg_ids_not_in_bq
-            pg_bq_lags_too_much = (
-                ConsistencyCheckResult.fails_pg_bq_tolerance(
-                    count=self.pg_count,
-                    count_failed=len(self.pg_ids_not_in_bq or set()),
-                )
-                if self.pg_count
-                else False
-            )
-            bq_consistent_with_pg = self.bq_ids_not_in_pg is None or self.bq_ids_not_in_pg == set()
-
-            return (
-                all_bq_docs_in_ts
-                and (not_too_many_docs_in_ts or processed_through_events_not_yet_in_bq)
-                and not pg_bq_lags_too_much
-                and bq_consistent_with_pg
-            )
-
-        @staticmethod
-        def fails_pg_bq_tolerance(count: int, count_failed: int) -> bool:
-            return not math.isclose(count, count - count_failed, rel_tol=PG_BQ_DEVIATION_TOLERANCE_FACTOR)
-
-    results = {
-        "profile": ConsistencyCheckResult(
-            pg_count=len(profile_ids_pg),
-            bq_count=len(profile_ids_bq),
-            ts_count=len(profile_ids_ts),
-            pg_ids_not_in_bq=set(profile_ids_pg) - set(profile_ids_bq),
-            bq_ids_not_in_pg=set(profile_ids_bq) - set(profile_ids_pg),
-            bq_ids_not_in_ts=set(profile_ids_bq) - set(profile_ids_ts),
-            ts_ids_not_in_bq=set(profile_ids_ts) - set(profile_ids_bq),
+    checks = {
+        "profile": ConsistencyCheck(
+            pg_ids=get_profile_ids_pg(),
+            bq_ids=get_profile_ids_bq(),
+            ts_ids=get_ids_ts(ts_client, ts_collection, "profile"),
         ),
-        "space": ConsistencyCheckResult(
-            pg_count=len(space_ids_pg),
-            bq_count=len(space_ids_bq),
-            ts_count=len(space_ids_ts),
-            pg_ids_not_in_bq=set(space_ids_pg) - set(space_ids_bq),
-            bq_ids_not_in_pg=set(space_ids_bq) - set(space_ids_pg),
-            bq_ids_not_in_ts=set(space_ids_bq) - set(space_ids_ts),
-            ts_ids_not_in_bq=set(space_ids_ts) - set(space_ids_bq),
+        "space": ConsistencyCheck(
+            pg_ids=get_space_ids_pg(),
+            bq_ids=get_space_ids_bq(),
+            ts_ids=get_ids_ts(ts_client, ts_collection, "space"),
         ),
-        "task": ConsistencyCheckResult(
-            pg_count=len(task_ids_pg),
-            bq_count=len(task_ids_bq),
-            ts_count=len(task_ids_ts),
-            pg_ids_not_in_bq=set(task_ids_pg) - set(task_ids_bq),
-            bq_ids_not_in_pg=set(task_ids_bq) - set(task_ids_pg),
-            bq_ids_not_in_ts=set(task_ids_bq) - set(task_ids_ts),
-            ts_ids_not_in_bq=set(task_ids_ts) - set(task_ids_bq),
+        "task": ConsistencyCheck(
+            pg_ids=get_task_ids_pg(),
+            bq_ids=get_task_ids_bq(),
+            ts_ids=get_ids_ts(ts_client, ts_collection, "task"),
         ),
-        "volunteering": ConsistencyCheckResult(
-            pg_count=None,
-            bq_count=len(volunteering_ids_bq),
-            ts_count=len(volunteering_ids_ts),
-            pg_ids_not_in_bq=None,
-            bq_ids_not_in_pg=None,
-            bq_ids_not_in_ts=set(volunteering_ids_bq) - set(volunteering_ids_ts),
-            ts_ids_not_in_bq=set(volunteering_ids_ts) - set(volunteering_ids_bq),
+        "volunteering": ConsistencyCheck(
+            pg_ids=None,
+            bq_ids=get_volunteering_ids_bq(),
+            ts_ids=get_ids_ts(ts_client, ts_collection, "volunteering"),
+        ),
+        "donation": ConsistencyCheck(
+            pg_ids=None,
+            bq_ids=get_donation_ids_bq(),
+            ts_ids=get_ids_ts(ts_client, ts_collection, "donation"),
         ),
     }
 
-    all_types = ["profile", "space", "task", "volunteering"]
-    errors = []
+    errorMessages = []
 
-    for typ in all_types:
-        if not results[typ].passes_consistency_check():
-            msg = f"BigQuery and Typesense are inconsistent for document type {typ}%: {pprint.pformat(results[typ])}"
+    for checkType, check in checks.items():
+        if check.passes_consistency_check():
+            logger.info(f"Consistency checks succeeded for type {checkType}")
+        else:
+            msg = f"BigQuery and Typesense are inconsistent for document type {checkType}: {pprint.pformat(check)}"
             logger.error(msg)
-            errors.append(msg)
+            errorMessages.append(msg)
 
-    if errors:
-        return Failed(message="\n".join(errors))
+    if errorMessages:
+        return Failed(message="\n".join(errorMessages))
 
-    logger.info(f"Counts are within tolerance range of {DEVIATION_TOLERANCE_IN_PERCENT}% deviation: {results}")
+    logger.info(f"Counts are within tolerance range of {BQ_TS_DEVIATION_TOLERANCE_IN_PERCENT}% deviation: {checks}")
 
     return Completed()
 

@@ -16,23 +16,22 @@ function(s).
   * [Typesense](#typesense)
 <!-- TOC -->
 
-The repo uses `uv` (https://docs.astral.sh/uv/) as package and project manager. To use it, please install `uv` as
+The repo uses `uv` (<https://docs.astral.sh/uv/>) as package and project manager. To use it, please install `uv` as
 described on their website. The repo uses `uv`s workspaces concept to realize a monorepo structure (one repo with
 multiple, potentially interdependent projects):
 
 * `pubsub_typesense_updater` contains code for a Google Cloud Function that consumes domain event messages from Google
    Cloud Pub/Sub and updates the Typesense index accordingly
-* `src` contains data pipelines to be run with `Prefect` (https://www.prefect.io).
+* `src` contains data pipelines to be run with `Prefect` (<https://www.prefect.io>).
 * `shared` contains shared code `pubsub_typesense_updater` and `src`.
-
-
 
 ## Local Development
 
 ### Setup
+
 You need some tools installed: `uv`, `direnv`. See holi-meta/README.md for more information.
 
-Since (prefect)[#prefect] is not publicly available, but only via the GCP VPC, to execute terraform, we can
+Since [prefect](#prefect) is not publicly available, but only via the GCP VPC, to execute terraform, we can
 make use of an SSH tunnel by following these steps (work for staging and production):
 
 * Add the following line to your `etc/hosts`:
@@ -52,7 +51,6 @@ Let's run an example pipeline:
 uv run --package src src/pipelines/example/pipeline.py
 ```
 
-
 If the pipeline runs successfully, you're all set up.
 
 #### Troubleshooting
@@ -62,7 +60,7 @@ can debug the failures:
 
 * `PREFECT_API_URL` env var needs to be set to the staging or production instance (in `.envrc.local`, initialized
   with defaults from `.envrc.local.template`)
-    * OR you need to have the env var unset and provide all configuration for your flow via environment variables
+  * OR you need to have the env var unset and provide all configuration for your flow via environment variables
 * If you have `PREFECT_API_URL` set, you need an ssh tunnel to the prefect instance referenced by it.
   This normally is done for you via defaults in `.envrc.local`. For staging, you can do this manually via
   `gcloud compute ssh --zone "europe-north1-a" prefect-server-staging-green --tunnel-through-iap --project "holi-shared" -- -L8421:localhost:8421`.
@@ -102,13 +100,13 @@ prefect. To do that, follow these steps:
 * Create a branch and merge request for your flow and deployment, so it can be code reviewed later.
 * Merge the MR to main, so the staging prefect environment gets deployed with the new code.
 * Wait for the GitLab CI pipeline to successfully
-  finish: https://gitlab.holi.team/app/holi-data-pipelines/-/pipelines?ref=main
+  finish: <https://gitlab.holi.team/app/holi-data-pipelines/-/pipelines?ref=main>
 * Run the flow (via the deployment) in the prefect UI.
-  Visit http://prefect-server-staging.holi.internal:8421/deployments and find your flow. Press the "three-buttons-menu"
+  Visit <http://prefect-server-staging.holi.internal:8421/deployments> and find your flow. Press the "three-buttons-menu"
   at the right and select "Quick run" for a run without specifying any parameters, or select "Custom run" to specify
   parameters for the run.
 * Go to the run details (either by clicking "View run" in the notification that appears or by navigating to
-  http://prefect-server-staging.holi.internal:8421/runs and to the run detail page). You can monitor it's progress
+  <http://prefect-server-staging.holi.internal:8421/runs> and to the run detail page). You can monitor it's progress
   and status there.
 * If you need to inspect further, once a flow has finished, prefect provides a link to GCP logs at the end of the run
   details page. This link might only show up after a reload of the page.
@@ -121,9 +119,9 @@ This project defines data pipeline infrastructure in the `terraform` folder and 
 pyenv install $(cat .python-version)
 ```
 
-Install `terraform` via https://github.com/tfutils/tfenv .
+Install `terraform` via <https://github.com/tfutils/tfenv> .
 
-Install `direnv` via https://direnv.net/docs/installation.html .
+Install `direnv` via <https://direnv.net/docs/installation.html> .
 
 Allow direnv for the directory:
 
@@ -149,3 +147,19 @@ terraform apply
 ## Typesense
 
 See `TYPESENSE.md`.
+
+## Local execution
+
+Set up the environment variables missing from `.envrc.local.template`.
+
+For LLM usage login with `gcloud`:
+
+```sh
+gcloud auth application-default login
+```
+
+To start the a tunnel for redis cache (IP might change, checkout GCloud Memory Store Connections Primary Endpoint):
+
+```sh
+gcloud compute ssh --zone europe-north1-a nginx-proxy-old-domains-and-okuna-blue --tunnel-through-iap --project holi-shared -- -L6379:10.104.0.11:6379
+```

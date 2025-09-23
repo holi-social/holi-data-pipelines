@@ -117,9 +117,9 @@ pubsub_typesense_updater_validate:
     - cp -r ../shared/ .build/shared/
     - cp -r *.py requirements.txt .build/
     - cd .build
-    - zip -r pubsub_typesense_updater.zip .
+    - zip -r ${CI_COMMIT_SHA}_pubsub_typesense_updater.zip .
     - cd ..
-    - terraform/environments/scripts/create-or-update-env.sh "$ENVIRONMENT_ID" "$CI_COMMIT_SHA"
+    - terraform/environments/scripts/create-or-update-env.sh "$ENVIRONMENT_ID" "../../.build/${CI_COMMIT_SHA}_pubsub_typesense_updater.zip"
   interruptible: false
 
 pubsub_typesense_updater_staging_deploy:

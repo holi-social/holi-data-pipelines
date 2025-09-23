@@ -1,6 +1,7 @@
 import asyncio
 from asyncio import Queue
-from typing import Any, Callable, Coroutine
+from typing import Any, Callable, Coroutine, Optional
+from datetime import date
 
 import prefect
 from prefect import task
@@ -38,6 +39,23 @@ async def source_to_sink(
     return source_task.result()
 
 
+def stdout_sink(stop_document: Any = None) -> Callable[[Queue[Any]], Coroutine[Any, Any, None]]:
+    @task
+    async def write_to_bigquery(queue: Queue[Any]) -> None:
+        async def get_document_from_queue() -> Any:
+            result = await queue.get()
+            queue.task_done()
+            return result
+
+        finished = False
+        while not finished:
+            document = await get_document_from_queue()
+            if document == stop_document:  # Stop signal
+                finished = True
+
+    return write_to_bigquery
+
+
 def bigquery_sink(
     config: CrawlerConfig, stop_document: Any = None
 ) -> Callable[[Queue[Any]], Coroutine[Any, Any, None]]:
@@ -67,3 +85,9 @@ def update_last_successful_day(config: CrawlerConfig) -> None:
     state = _get_state(config)
     state.last_successful_day = config.partition_date
     state.persist_to_variable()
+
+
+@task
+def get_last_successful_day(config: CrawlerConfig) -> Optional[date]:
+    state = _get_state(config)
+    return state.last_successful_day

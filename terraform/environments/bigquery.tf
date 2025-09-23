@@ -561,6 +561,8 @@ resource "google_bigquery_table" "donations_betterplace_raw" {
   deletion_protection = true
 
   lifecycle {
+    # if schema changes would not be ignored, this would force automatic re-creation of the table (thereby losing all
+    # data) which is typically not what we want
     ignore_changes = [encryption_configuration, schema]
   }
 
@@ -604,13 +606,17 @@ resource "google_bigquery_table" "donations_betterplace_raw" {
          { "name": "id", "type": "INTEGER", "mode": "NULLABLE"},
          { "name": "city", "type": "STRING", "mode": "NULLABLE"},
          { "name": "name", "type": "STRING", "mode": "NULLABLE"}]},
+   { "name": "carrier_url", "type": "STRING", "mode": "NULLABLE" },
+   { "name": "carrier_country_en", "type": "STRING", "mode": "NULLABLE" },
    { "name": "id", "type": "INTEGER", "mode": "NULLABLE" },
    { "name": "completed_at", "type": "TIMESTAMP", "mode": "NULLABLE" },
    { "name": "description", "type": "STRING", "mode": "NULLABLE" },
+   { "name": "description_en", "type": "STRING", "mode": "NULLABLE" },
    { "name": "open_amount_in_cents", "type": "INTEGER", "mode": "NULLABLE" },
    { "name": "tax_deductible", "type": "BOOLEAN", "mode": "NULLABLE" },
    { "name": "hash", "type": "STRING", "mode": "NULLABLE" },
    { "name": "title", "type": "STRING", "mode": "NULLABLE" },
+   { "name": "title_en", "type": "STRING", "mode": "NULLABLE" },
    { "name": "negative_opinions_count", "type": "INTEGER", "mode": "NULLABLE" },
    { "name": "city", "type": "STRING", "mode": "NULLABLE" },
    { "name": "activated_at", "type": "TIMESTAMP", "mode": "NULLABLE" },
@@ -642,7 +648,9 @@ resource "google_bigquery_table" "donations_betterplace_raw" {
    { "name": "closed_at", "type": "TIMESTAMP", "mode": "NULLABLE" },
    { "name": "latitude", "type": "FLOAT", "mode": "NULLABLE" },
    { "name": "country", "type": "STRING", "mode": "NULLABLE" },
+   { "name": "country_en", "type": "STRING", "mode": "NULLABLE" },
    { "name": "summary", "type": "STRING", "mode": "NULLABLE" },
+   { "name": "summary_en", "type": "STRING", "mode": "NULLABLE" },
    { "name": "matching_events", "type": "RECORD", "mode": "REPEATED", "fields": [
          { "name": "banner_text_color", "type": "STRING", "mode": "NULLABLE"},
          { "name": "banner_background_color", "type": "STRING", "mode": "NULLABLE"},

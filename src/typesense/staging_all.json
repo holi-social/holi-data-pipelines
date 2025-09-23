@@ -189,6 +189,60 @@
       "type": "object[]",
       "optional": true,
       "index": false
+    },
+    {
+      "name": "donation_progress_percentage",
+      "type": "int32",
+      "optional": true,
+      "index": false
+    },
+    {
+      "name": "donation_open_amount_in_cents",
+      "type": "int32",
+      "optional": true,
+      "index": false
+    },
+    {
+      "name": "summary_de",
+      "type": "string",
+      "optional": true,
+      "index": false
+    },
+    {
+      "name": "summary_en",
+      "type": "string",
+      "optional": true,
+      "index": false
+    },
+    {
+      "name": "location_country_de",
+      "type": "string",
+      "optional": true,
+      "index": false
+    },
+    {
+      "name": "location_country_en",
+      "type": "string",
+      "optional": true,
+      "index": false
+    },
+    {
+      "name": "organizer_location",
+      "type": "string",
+      "optional": true,
+      "index": false
+    },
+    {
+      "name": "organizer_location_country_de",
+      "type": "string",
+      "optional": true,
+      "index": false
+    },
+    {
+      "name": "organizer_location_country_en",
+      "type": "string",
+      "optional": true,
+      "index": false
     }
   ]
 }

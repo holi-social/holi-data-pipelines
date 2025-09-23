@@ -2,6 +2,7 @@ import logging
 from typing import Optional, Any
 
 from cloudevents.http import CloudEvent
+from shared.events import DonationCreatedEvent, DonationUpdatedEvent, DonationDeletedEvent
 
 from events import (
     DomainEvent,
@@ -16,7 +17,7 @@ from events import (
 
 class EventProcessorLogger(logging.Logger):
     cloud_event: Optional[CloudEvent] = None
-    domain_event: Optional[DomainEvent] = None
+    domain_event: Optional[DomainEvent | DonationCreatedEvent | DonationUpdatedEvent | DonationDeletedEvent] = None
 
     def _get_labels(self) -> dict[str, str]:
         """Get labels based on cloud_event and domain_event properties."""
@@ -46,6 +47,15 @@ class EventProcessorLogger(logging.Logger):
             if isinstance(self.domain_event, TaskEvent):
                 labels["taskId"] = self.domain_event.task.id
                 labels["spaceId"] = self.domain_event.space.id
+
+            if isinstance(self.domain_event, DonationCreatedEvent):
+                labels["donationId"] = self.domain_event.data.id
+
+            if isinstance(self.domain_event, DonationUpdatedEvent):
+                labels["donationId"] = self.domain_event.data.id
+
+            if isinstance(self.domain_event, DonationDeletedEvent):
+                labels["donationId"] = self.domain_event.data.id
 
         return labels
 

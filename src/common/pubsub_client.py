@@ -1,19 +1,29 @@
-import json
-
+from typing import Optional
 from google.cloud import pubsub_v1  # type: ignore[attr-defined]
+from google.cloud.pubsub_v1.types import PublisherOptions  # type: ignore
 
-from src.common.events.ExternalDataEvent import ExternalDataEvent
+from shared.events import Event, EventPayloadT
 from src.common.variables import variable_value_as
 
 
 class PubSubClient:
-    def __init__(self) -> None:
+    def __init__(self, topic_name: str, ordering_key: Optional[str] = None) -> None:
         project_id = variable_value_as(str, "google_cloud_project_id")
-        topic_name = variable_value_as(str, "google_cloud_pubsub_external_data_topic_name")
 
-        self.publisher = pubsub_v1.PublisherClient()
+        self.publisher = pubsub_v1.PublisherClient(
+            publisher_options=PublisherOptions(enable_message_ordering=True if ordering_key else False)
+        )
         self.topic_name = f"projects/{project_id}/topics/{topic_name}"
+        self.ordering_key = ordering_key
 
-    def publish(self, event: ExternalDataEvent) -> pubsub_v1.publisher.futures.Future:
-        data = json.dumps(event.to_dict()).encode("utf-8")
-        return self.publisher.publish(self.topic_name, data)
+    def publish(
+        self, event: Event[EventPayloadT], ordering_key: Optional[str] = None
+    ) -> pubsub_v1.publisher.futures.Future:
+        data = event.data.model_dump_json().encode("utf-8")
+        return self.publisher.publish(
+            self.topic_name,
+            data=data,
+            ordering_key=ordering_key or self.ordering_key,
+            eventType=event.event_type,
+            eventVersion=str(event.event_version),
+        )

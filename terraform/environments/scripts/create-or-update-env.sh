@@ -9,7 +9,6 @@ export TF_LOG=TRACE
 cd terraform/environments
 
 WORKSPACE=$1
-#TAG=$2 # we let prefect build the docker image
 
 TF_LOG_PATH=terraform-init.log terraform init
 TF_LOG_PATH=terraform-version.log terraform version

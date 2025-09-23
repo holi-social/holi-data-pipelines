@@ -11,13 +11,17 @@ dependencies = [
     "google-cloud-logging==3.12.1",
     "shared",
     "pyfarmhash==0.4.0",
-    "semver==3.0.4",
+    "langchain-core>=0.3.74",
+    "langchain>=0.3.27",
+    "langchain-google-vertexai>=2.0.28",
+    "langfuse>=3.3.0",
 ]
 
 [dependency-groups]
 dev = [
     "faker==37.4.0",
     "pre-commit==4.2.0",
+    "pydantic==2.11.7",
     "pytest==8.4.1",
     "ruff==0.12.1",
     "types-pyfarmhash==0.4.0.20240902",

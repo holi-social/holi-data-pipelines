@@ -1,14 +1,15 @@
 import os
-import logging
+import json
+from cf_logging import logger
 from typing import Union
 
 import vertexai
 import functions_framework
-from google.cloud import bigquery, logging as gcloud_logging
+from cf_logging import add_logging_context
+from google.cloud import bigquery
 from cloudevents.http.event import CloudEvent
 from event_processor_logger import EventProcessorLogger
 from events import (
-    DomainEvent,
     SpaceCreatedEvent,
     SpaceDeletedEvent,
     SpaceUpdatedEvent,
@@ -16,26 +17,21 @@ from events import (
     TaskDeletedEvent,
     TaskUpdatedEvent,
     UserDeletedEvent,
+    UserPayload,
     UserUpdatedEvent,
     get_event_type,
     get_event_version,
+    parse_donation_created_event,
+    parse_donation_updated_event,
+    parse_donation_deleted_event,
 )
-
+from enrich_donations import enrich_donation, enriched_donation_to_typesense_doc
 from shared.classifiers.task_classification_input import TaskClassificationInput
+from shared.events import DonationCreatedEvent, DonationUpdatedEvent, DonationDeletedEvent
 from task_classifier import TaskClassifier
 
 from typesense_client import TypesenseClient
 from typesense.exceptions import ObjectNotFound
-
-logging.setLoggerClass(EventProcessorLogger)
-
-# only log to Google Cloud Logging if run in that environment
-if "K_SERVICE" in os.environ:
-    gcloud_logging_client = gcloud_logging.Client()  # type: ignore
-    gcloud_logging_client.setup_logging(log_level=logging.INFO)  # type: ignore
-
-logger = logging.getLogger("pubsub_typesense_updater")
-logger.setLevel(logging.DEBUG)
 
 
 def gcloud_project_id() -> str:
@@ -50,12 +46,19 @@ def bigquery_table_name_classifications() -> str:
     return os.environ.get("BIGQUERY_TABLE_NAME_CLASSIFICATIONS", "")
 
 
+def check_if_user_data_is_missing(user: UserPayload) -> bool:
+    return user.name is None or user.name.strip() == "" or user.identity is None
+
+
 def process_user_updated_event(ts_client: TypesenseClient, event: UserUpdatedEvent) -> None:
-    logger.debug(f"[id={event.user.id}] Processing event")
-    if event.user.name is None or event.user.name.strip() == "":
+    logger.debug(f"[id={event.user.id}] Processing UserUpdated event")
+    data_missing = check_if_user_data_is_missing(event.user)
+    if data_missing:
         try:
             ts_client.delete(f"profile_{event.user.id}")
-            logger.info(f"[id={event.user.id}] Deleted user {event.user.id} from Typesense due to empty name")
+            logger.info(
+                f"[id={event.user.id}] Deleted user {event.user.id} from Typesense due to missing name or identity"
+            )
         except ObjectNotFound:
             pass
     else:
@@ -64,7 +67,7 @@ def process_user_updated_event(ts_client: TypesenseClient, event: UserUpdatedEve
 
 
 def process_user_deleted_event(ts_client: TypesenseClient, event: UserDeletedEvent) -> None:
-    logger.debug(f"[id={event.user.id}] Processing event")
+    logger.debug(f"[id={event.user.id}] Processing UserDeleted event")
     try:
         ts_client.delete(f"profile_{event.user.id}")
     except ObjectNotFound:
@@ -75,13 +78,13 @@ def process_user_deleted_event(ts_client: TypesenseClient, event: UserDeletedEve
 def process_space_upserting_event(
     ts_client: TypesenseClient, event: Union[SpaceCreatedEvent, SpaceUpdatedEvent]
 ) -> None:
-    logger.debug(f"[id={event.space.id}] Processing event")
+    logger.debug(f"[id={event.space.id}] Processing space upserting event")
     ts_client.upsert(event.as_typesense_document())
     logger.info(f"[id={event.space.id}] Upserted space {event.space.id} in Typesense")
 
 
 def process_space_deleted_event(ts_client: TypesenseClient, event: SpaceDeletedEvent) -> None:
-    logger.debug(f"[id={event.space.id}] Processing event")
+    logger.debug(f"[id={event.space.id}] Processing SpaceDeleted event")
     try:
         ts_client.delete(f"space_{event.space.id}")
     except ObjectNotFound:
@@ -144,15 +147,41 @@ def _delete_task(ts_client: TypesenseClient, id: str) -> None:
 
 
 def process_task_deleted_event(ts_client: TypesenseClient, id: str) -> None:
-    logger.debug(f"[id={id}] Processing event")
+    logger.debug(f"[id={id}] Processing TaskDeleted event")
     _delete_task(ts_client, id)
 
 
-def process_event(ts_client: TypesenseClient, cloud_event: CloudEvent) -> None:
-    def add_logging_context(event: DomainEvent) -> None:
-        if isinstance(logger, EventProcessorLogger):
-            logger.domain_event = event
+def _upsert_donation(ts_client: TypesenseClient, event: DonationCreatedEvent | DonationUpdatedEvent) -> None:
+    enriched = enrich_donation(event.data)
+    typesense_doc = enriched_donation_to_typesense_doc(enriched)
+    ts_client.upsert(typesense_doc.model_dump_json())
+    logger.info(f"[id={event.data.id}] Upserted donation in Typesense")
 
+
+def process_donation_created_event(ts_client: TypesenseClient, event: DonationCreatedEvent) -> None:
+    logger.debug(f"[id={event.data.id}] Processing DonationCreated event")
+    _upsert_donation(ts_client, event)
+
+
+def process_donation_updated_event(ts_client: TypesenseClient, event: DonationUpdatedEvent) -> None:
+    logger.debug(f"[id={event.data.id}] Processing DonationUpdated event")
+    _upsert_donation(ts_client, event)
+
+
+def _delete_donation(ts_client: TypesenseClient, id: str) -> None:
+    try:
+        ts_client.delete(f"donation_{id}")
+    except ObjectNotFound:
+        pass
+    logger.info(f"[id={id}] Deleted donation in Typesense")
+
+
+def process_donation_deleted_event(ts_client: TypesenseClient, event: DonationDeletedEvent) -> None:
+    logger.debug(f"[id={event.data.id}] Processing DonationDeleted event")
+    _delete_donation(ts_client, str(event.data.id))
+
+
+def process_event(ts_client: TypesenseClient, cloud_event: CloudEvent) -> None:
     event_type = get_event_type(cloud_event)
     event_version = get_event_version(cloud_event)
 
@@ -197,6 +226,21 @@ def process_event(ts_client: TypesenseClient, cloud_event: CloudEvent) -> None:
         task_deleted_event = TaskDeletedEvent(cloud_event)
         add_logging_context(task_deleted_event)
         return process_task_deleted_event(ts_client, task_deleted_event.task.id)
+    elif event_type == "DonationCreated":
+        logger.debug("Parsing DonationCreated event")
+        donation_created_event = parse_donation_created_event(cloud_event)
+        add_logging_context(donation_created_event)
+        return process_donation_created_event(ts_client, donation_created_event)
+    elif event_type == "DonationUpdated":
+        logger.debug("Parsing DonationUpdated event")
+        donation_updated_event = parse_donation_updated_event(cloud_event)
+        add_logging_context(donation_updated_event)
+        return process_donation_updated_event(ts_client, donation_updated_event)
+    elif event_type == "DonationDeleted":
+        logger.debug("Parsing DonationDeleted event")
+        donation_deleted_event = parse_donation_deleted_event(cloud_event)
+        add_logging_context(donation_deleted_event)
+        return process_donation_deleted_event(ts_client, donation_deleted_event)
     else:
         # other events than handled above are assumed to (currently) not be of interest in search
         logger.debug(f"Ignoring {event_type} (v{event_version}) event.")
@@ -205,7 +249,24 @@ def process_event(ts_client: TypesenseClient, cloud_event: CloudEvent) -> None:
 
 @functions_framework.cloud_event
 def process_message(event: CloudEvent) -> None:
-    ts_client = TypesenseClient()
+    # when running locally, values exist in JSON serialization (including quotes) so we need to unwrap
+    def maybe_unwrap(v: str) -> str:
+        local_execution = "K_SERVICE" not in os.environ
+        return json.loads(v) if local_execution else v
+
+    typesense_api_key = maybe_unwrap(os.getenv("TYPESENSE_ADMIN_API_KEY"))
+    typesense_host = maybe_unwrap(os.getenv("TYPESENSE_HOST"))
+    typesense_port = maybe_unwrap(os.getenv("TYPESENSE_PORT", "443"))
+    typesense_protocol = maybe_unwrap(os.getenv("TYPESENSE_PROTOCOL"))
+    typesense_collection_name = maybe_unwrap(os.getenv("TYPESENSE_COLLECTION_NAME"))
+
+    ts_client = TypesenseClient(
+        api_key=typesense_api_key,
+        host=typesense_host,
+        port=typesense_port,
+        protocol=typesense_protocol,
+        collection_name=typesense_collection_name,
+    )
     if isinstance(logger, EventProcessorLogger):
         logger.cloud_event = event
     try:
