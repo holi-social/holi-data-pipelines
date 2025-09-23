@@ -53,8 +53,8 @@ resource "google_cloudfunctions2_function" "pubsub_typesense_updater" {
       GCLOUD_PROJECT_ID                   = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
       GCLOUD_LOCATION                     = local.default_region
       BIGQUERY_TABLE_NAME_CLASSIFICATIONS = data.terraform_remote_state.data_pipelines_environment_state.outputs.bigquery_table_name_classifications
-      REDIS_HOST                          = local.environment_name == "production" ? data.terraform_remote_state.holi_infra_state.outputs.redis_host_cmek_production : data.terraform_remote_state.holi_infra_state.outputs.redis_host_cmek_development
-      REDIS_PORT                          = local.environment_name == "production" ? data.terraform_remote_state.holi_infra_state.outputs.redis_port_cmek_production : data.terraform_remote_state.holi_infra_state.outputs.redis_port_cmek_development
+      REDIS_HOST                          = data.terraform_remote_state.holi_infra_state.outputs.redis_host_cmek_development
+      REDIS_PORT                          = data.terraform_remote_state.holi_infra_state.outputs.redis_port_cmek_development
       REDIS_DB                            = 6 # Same for production and staging
       LANGFUSE_HOST                       = "https://cloud.langfuse.com"
       CACHE_DEBUG                         = "True"
