@@ -38,7 +38,7 @@ def extract_data_from_bigquery(
 
 
 def extract_latest_partition_timestamp_from_bigquery(
-    table_name: str,
+    table_name: str, partition_time_column_name: Optional[str] = VIEW_PARTITION_TIME_COLUMN_NAME
 ) -> datetime:
     """
     Extracts the latest partition timestamp from a BigQuery table.
@@ -50,7 +50,7 @@ def extract_latest_partition_timestamp_from_bigquery(
         list[Dict]: A list containing a single dictionary with the latest partition timestamp.
     """
     query = (
-        f"SELECT MAX(`{VIEW_PARTITION_TIME_COLUMN_NAME}`) AS `{VIEW_PARTITION_TIME_COLUMN_NAME}` "  # noqa: S608
+        f"SELECT MAX(`{partition_time_column_name}`) AS `{VIEW_PARTITION_TIME_COLUMN_NAME}` "  # noqa: S608
         f"FROM `{table_name}`"
     )
     result = extract_data_from_bigquery(query)
@@ -60,7 +60,7 @@ def extract_latest_partition_timestamp_from_bigquery(
     latest_partition_timestamp = result[0].get(VIEW_PARTITION_TIME_COLUMN_NAME)
 
     if latest_partition_timestamp is None:
-        raise ValueError(f"Partition column `{VIEW_PARTITION_TIME_COLUMN_NAME}` returned no value.")
+        raise ValueError(f"Partition column `{partition_time_column_name}` returned no value.")
 
     return latest_partition_timestamp
 

@@ -614,7 +614,6 @@ resource "google_bigquery_table" "donations_betterplace_raw" {
    { "name": "description_en", "type": "STRING", "mode": "NULLABLE" },
    { "name": "open_amount_in_cents", "type": "INTEGER", "mode": "NULLABLE" },
    { "name": "tax_deductible", "type": "BOOLEAN", "mode": "NULLABLE" },
-   { "name": "hash", "type": "STRING", "mode": "NULLABLE" },
    { "name": "title", "type": "STRING", "mode": "NULLABLE" },
    { "name": "title_en", "type": "STRING", "mode": "NULLABLE" },
    { "name": "negative_opinions_count", "type": "INTEGER", "mode": "NULLABLE" },

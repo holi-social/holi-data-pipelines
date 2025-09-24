@@ -117,7 +117,9 @@ def all_to_typesense_ingest_from_scratch_flow(swap_alias: bool = True, drop_old_
     )
 
     logger.info("Trigger donation events for re-ingestion")
-    new_partition_date = extract_latest_partition_timestamp_from_bigquery(donations_betterplace_raw())
+    new_partition_date = extract_latest_partition_timestamp_from_bigquery(
+        table_name=donations_betterplace_raw(), partition_time_column_name="_PARTITIONTIME"
+    )
     donation_events_flow(old_partition_date=None, new_partition_date=new_partition_date)
 
     return Completed()

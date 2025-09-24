@@ -93,8 +93,6 @@ class TypesenseDocument(BaseModel):
     commitment_duration_ai_reasoning: Optional[str] = Field(
         None, description="AI reasoning for commitment duration derivation"
     )
-    # TODO(SF) probably remove?
-    space_id: Optional[str] = Field(None, description="Identifier for associated space")
     contact: Optional[List[ContactInfo]] = Field(None, description="List of contact information")
     donation_progress_percentage: Optional[int] = Field(
         None, description="Percentage of donation goal achieved", ge=0, le=100
