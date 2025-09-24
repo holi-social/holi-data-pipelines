@@ -145,7 +145,6 @@ def enriched_donation_to_typesense_doc(enriched: EnrichedDonation) -> TypesenseD
         commitment_duration=None,
         commitment_duration_ai_derived=None,
         commitment_duration_ai_reasoning=None,
-        space_id=None,
         contact=None,
         donation_progress_percentage=d.progress_percentage,
         donation_open_amount_in_cents=d.open_amount_in_cents,

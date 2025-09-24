@@ -45,7 +45,6 @@ def task_to_doc(row: TaskRow) -> TaskDoc:
     commitment_duration = parse_commitment_duration(cast(str, row.get("duration"))) if row.get("duration") else None
     return {
         "id": f"task_{str(row.get('id'))}",
-        "space_id": str(row.get("community_id")),
         "type": "task",
         "title_de": row.get("name"),
         "title_en": row.get("name"),
