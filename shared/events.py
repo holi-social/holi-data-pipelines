@@ -88,7 +88,6 @@ class Donation(BaseModel):
     description_en: Optional[str] = None
     summary: Optional[str] = None
     summary_en: Optional[str] = None
-    hash: Optional[str] = None
     open_amount_in_cents: Optional[int] = None
     donated_amount_in_cents: Optional[int] = None
     tax_deductible: Optional[bool] = None
