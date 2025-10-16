@@ -5,9 +5,10 @@ from unittest.mock import patch
 from pytest import fixture
 
 from src.common.external_data_pubsub_client import ExternalDataPubSubClient
-from src.pipelines.volunteering_to_typesense.tasks import diff_ingest, TypesenseDocId, ChangedRecords
+from src.pipelines.volunteering_to_typesense.tasks import diff_ingest, ChangedRecords
 from src.common.typesense_client import TypesenseClient
 from src.pipelines.volunteering_to_typesense.test_typesense_transformer import _row
+from src.pipelines.volunteering_to_typesense.typesense_doc_id import typesense_doc_id
 
 
 @fixture
@@ -75,7 +76,9 @@ def test_diff_ingest(
 
     # THEN deleted docs will be deleted from Typesense
     mock_delete_typesense_documents.assert_called_with(
-        mock_typesense_client, typesense_collection_name, [TypesenseDocId(doc["id"]) for doc in deleted_records]
+        mock_typesense_client,
+        typesense_collection_name,
+        [typesense_doc_id(doc["id"]) for doc in deleted_records],
     )
 
     # THEN deletion events are published to Pubsub

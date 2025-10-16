@@ -676,3 +676,43 @@ output "donations_betterplace_raw_table" {
 output "donations_betterplace_raw_table_full" {
   value = "${google_bigquery_table.donations_betterplace_raw.project}.${google_bigquery_table.donations_betterplace_raw.dataset_id}.${google_bigquery_table.donations_betterplace_raw.table_id}"
 }
+
+resource "google_bigquery_table" "petitions_innnit_raw" {
+  project    = local.project_id
+  dataset_id = local.dataset_id_datalake
+  table_id   = "petitions_innnit_raw"
+
+  time_partitioning {
+    type          = "DAY"
+    expiration_ms = 2592000000 # 30 days
+  }
+
+  deletion_protection = true
+
+  lifecycle {
+    ignore_changes = [encryption_configuration, schema]
+  }
+
+  schema = <<EOF
+[
+    { "name": "id", "type": "STRING", "mode": "REQUIRED" },
+    { "name": "title", "type": "STRING", "mode": "NULLABLE" },
+    { "name": "slug", "type": "STRING", "mode": "NULLABLE" },
+    { "name": "description", "type": "STRING", "mode": "NULLABLE" },
+    { "name": "signatures", "type": "INT64", "mode": "NULLABLE" },
+    { "name": "petitionSuccessful", "type": "BOOL", "mode": "NULLABLE" },
+    { "name": "tag", "type": "STRING", "mode": "NULLABLE" },
+    { "name": "initiators", "type": "JSON", "mode": "NULLABLE" },
+    { "name": "targets", "type": "JSON", "mode": "NULLABLE" },
+    { "name": "hash", "type": "STRING", "mode": "REQUIRED" }
+]
+EOF
+}
+
+output "petitions_innnit_raw_table" {
+  value = google_bigquery_table.petitions_innnit_raw.table_id
+}
+
+output "petitions_innnit_raw_table_full" {
+  value = "${google_bigquery_table.petitions_innnit_raw.project}.${google_bigquery_table.petitions_innnit_raw.dataset_id}.${google_bigquery_table.petitions_innnit_raw.table_id}"
+}

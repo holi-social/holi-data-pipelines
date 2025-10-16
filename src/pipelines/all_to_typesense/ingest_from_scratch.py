@@ -48,7 +48,7 @@ def all_to_typesense_ingest_from_scratch_flow(swap_alias: bool = True, drop_old_
     """
     typesense_client = TypesenseClient(TypesenseClientConfig.from_env())
     pubsub_client = ExternalDataPubSubClient()
-    alias_name = extract_collection_name_from_schema(schema_path=schema_path)
+    alias_name = extract_collection_name_from_schema(schema_path=schema_path())
 
     try:
         active_collection = typesense_client.get_active_collection_name(alias_name)
@@ -62,7 +62,7 @@ def all_to_typesense_ingest_from_scratch_flow(swap_alias: bool = True, drop_old_
     next_collection = f"{alias_name}_{datetime.now(timezone.utc).isoformat()}"
 
     typesense_client.drop_collection(next_collection)
-    typesense_client.create_collection(schema_file_path=schema_path, collection_name=next_collection)
+    typesense_client.create_collection(schema_file_path=schema_path(), collection_name=next_collection)
 
     logger.info("Ingesting profiles from scratch")
     profiles_result = profiles_to_typesense_ingest_from_scratch(typesense_client, next_collection)
