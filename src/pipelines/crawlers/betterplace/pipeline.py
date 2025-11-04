@@ -115,7 +115,7 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
             # pragmatically picking only carrier_url instead of the full carrier object as only the URL is being used
             # in the data pipeline downstream
             async def fetch_carrier_url(retry_client: RetryClient, project: Any) -> Any:
-                if not project["carrier"] or not project["carrier"]["links"]:
+                if not project["carrier"] or "links" not in project["carrier"]:
                     return project
                 carrier_links = project["carrier"]["links"]
                 carrier_details_url = get_url_with_relation(carrier_links, "self")
@@ -123,6 +123,8 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
                     return project
                 async with retry_client.get(carrier_details_url, headers=_HEADERS) as response:
                     data = await response.json()
+                    if not data or "links" not in data:
+                        return project
                     carrier_url = get_url_with_relation(data["links"], "website") or get_url_with_relation(
                         data["links"], "platform"
                     )
@@ -182,7 +184,9 @@ def crawl_betterplace(
         if dry_run:
             processed_entities_count = asyncio.run(source_to_sink(crawl(), stdout_sink(_STOP_DOC)))
         else:
-            processed_entities_count = asyncio.run(source_to_sink(crawl(), bigquery_sink(config(), _STOP_DOC)))
+            processed_entities_count = asyncio.run(
+                source_to_sink(crawl(), bigquery_sink(config(), stop_document=_STOP_DOC))
+            )
         update_last_successful_day(config())  # = finalize
         report_number_of_processed_entities(processed_entities_count)
         if wait_for_bq:
