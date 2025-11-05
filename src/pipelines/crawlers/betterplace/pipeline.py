@@ -69,8 +69,8 @@ def project_en_url(project_id: int) -> str:
 def get_url_with_relation(links: Optional[list[Any]], relation: str) -> Optional[str]:
     if not links:
         return None
-    matching_links = [link for link in links if link["rel"] == relation]
-    if len(matching_links) == 0:
+    matching_links = [link for link in links if "rel" in link and link["rel"] == relation]
+    if len(matching_links) == 0 or "href" not in matching_links[0]:
         return None
     return matching_links[0]["href"]
 
@@ -95,27 +95,30 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
             async def fetch_categories(retry_client: RetryClient, project: Any) -> Any:
                 async with retry_client.get(categories_url(project["id"])) as response:
                     response_json = await response.json()
-                    return project | {"categories": response_json["data"]}
+                    categories = response_json["data"] if response_json and "data" in response_json else []
+                    return project | {"categories": categories}
 
             # pragmatically picking only selected texts in English instead of the whole document as only they are being
             # used in the data pipeline downstream
             async def fetch_en_texts(retry_client: RetryClient, project: Any) -> Any:
                 async with retry_client.get(project_en_url(project["id"])) as response:
                     response_json = await response.json()
+                    if not response_json:
+                        return project
                     return project | {
-                        "country_en": response_json["country"],
-                        "summary_en": response_json["summary"],
-                        "title_en": response_json["title"],
-                        "description_en": response_json["description"],
+                        "country_en": response_json["country"] if "country" in response_json else None,
+                        "summary_en": response_json["summary"] if "summary" in response_json else None,
+                        "title_en": response_json["title"] if "title" in response_json else None,
+                        "description_en": response_json["description"] if "description" in response_json else None,
                         "carrier_country_en": response_json["carrier"]["country"]
-                        if response_json["carrier"]
+                        if "carrier" in response_json and "country" in response_json["carrier"]
                         else None,
                     }
 
             # pragmatically picking only carrier_url instead of the full carrier object as only the URL is being used
             # in the data pipeline downstream
             async def fetch_carrier_url(retry_client: RetryClient, project: Any) -> Any:
-                if not project["carrier"] or "links" not in project["carrier"]:
+                if "carrier" not in project or not project["carrier"] or "links" not in project["carrier"]:
                     return project
                 carrier_links = project["carrier"]["links"]
                 carrier_details_url = get_url_with_relation(carrier_links, "self")
