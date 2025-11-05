@@ -69,10 +69,10 @@ def project_en_url(project_id: int) -> str:
 def get_url_with_relation(links: Optional[list[Any]], relation: str) -> Optional[str]:
     if not links:
         return None
-    matching_links = [link for link in links if "rel" in link and link["rel"] == relation]
-    if len(matching_links) == 0 or "href" not in matching_links[0]:
+    matching_links = [link for link in links if link.get("rel") == relation]
+    if len(matching_links) == 0:
         return None
-    return matching_links[0]["href"]
+    return matching_links[0].get("href")
 
 
 # @task(cache_policy=TASK_SOURCE + RUN_ID)
@@ -95,7 +95,7 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
             async def fetch_categories(retry_client: RetryClient, project: Any) -> Any:
                 async with retry_client.get(categories_url(project["id"])) as response:
                     response_json = await response.json()
-                    categories = response_json["data"] if response_json and "data" in response_json else []
+                    categories = response_json.get("data", []) if response_json else []
                     return project | {"categories": categories}
 
             # pragmatically picking only selected texts in English instead of the whole document as only they are being
@@ -106,30 +106,26 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
                     if not response_json:
                         return project
                     return project | {
-                        "country_en": response_json["country"] if "country" in response_json else None,
-                        "summary_en": response_json["summary"] if "summary" in response_json else None,
-                        "title_en": response_json["title"] if "title" in response_json else None,
-                        "description_en": response_json["description"] if "description" in response_json else None,
-                        "carrier_country_en": response_json["carrier"]["country"]
-                        if "carrier" in response_json and "country" in response_json["carrier"]
-                        else None,
+                        "country_en": response_json.get("country"),
+                        "summary_en": response_json.get("summary"),
+                        "title_en": response_json.get("title"),
+                        "description_en": response_json.get("description"),
+                        "carrier_country_en": response_json.get("carrier", {}).get("country"),
                     }
 
             # pragmatically picking only carrier_url instead of the full carrier object as only the URL is being used
             # in the data pipeline downstream
             async def fetch_carrier_url(retry_client: RetryClient, project: Any) -> Any:
-                if "carrier" not in project or not project["carrier"] or "links" not in project["carrier"]:
-                    return project
-                carrier_links = project["carrier"]["links"]
+                carrier_links = project.get("carrier", {}).get("links")
                 carrier_details_url = get_url_with_relation(carrier_links, "self")
                 if not carrier_details_url:
                     return project
                 async with retry_client.get(carrier_details_url, headers=_HEADERS) as response:
                     data = await response.json()
-                    if not data or "links" not in data:
+                    if not data:
                         return project
-                    carrier_url = get_url_with_relation(data["links"], "website") or get_url_with_relation(
-                        data["links"], "platform"
+                    carrier_url = get_url_with_relation(data.get("links"), "website") or get_url_with_relation(
+                        data.get("links"), "platform"
                     )
                     return project | {"carrier_url": carrier_url}
 
@@ -152,7 +148,7 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
             skip_auto_headers=[],
             process_page=add_page_to_queue,
             headers=_HEADERS,
-            parallelism=5,
+            parallelism=2,
             stop_page=_STOP_DOC,
         ).crawl()
         return document_count
@@ -190,8 +186,8 @@ def crawl_betterplace(
             processed_entities_count = asyncio.run(
                 source_to_sink(crawl(), bigquery_sink(config(), stop_document=_STOP_DOC))
             )
-        update_last_successful_day(config())  # = finalize
-        report_number_of_processed_entities(processed_entities_count)
+            update_last_successful_day(config())  # = finalize
+            report_number_of_processed_entities(processed_entities_count)
         if wait_for_bq:
             wait_for_bigquery_data_to_be_accessible(table_name)
         return (old_partition_date, config().partition_date)
