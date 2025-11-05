@@ -40,6 +40,8 @@ logger = prefect.logging.get_logger()
 _CONFIG: Optional[CrawlerConfig] = None
 _HEADERS: Dict[str, str] = {"X-Requested-With": "holi"}
 _STOP_DOC = object()
+# Retry on all statuses except 200
+_RETRY_STATUSES = {x for x in range(100, 600) if x != 200}
 
 
 def config() -> CrawlerConfig:
@@ -133,7 +135,9 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
                 queue.put_nowait(_STOP_DOC)
             else:
                 async with ClientSession(timeout=ClientTimeout(total=300, sock_connect=10)) as session:
-                    retry_client = RetryClient(client_session=session, retry_options=ExponentialRetry())
+                    retry_client = RetryClient(
+                        client_session=session, retry_options=ExponentialRetry(statuses=_RETRY_STATUSES)
+                    )
                     for project in projects_page.get("data"):
                         document_count += 1
                         project_with_categories = await fetch_categories(retry_client, project)
@@ -148,7 +152,7 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
             skip_auto_headers=[],
             process_page=add_page_to_queue,
             headers=_HEADERS,
-            parallelism=2,
+            parallelism=1,
             stop_page=_STOP_DOC,
         ).crawl()
         return document_count
