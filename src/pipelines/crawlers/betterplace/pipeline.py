@@ -4,7 +4,7 @@ import asyncio
 from asyncio import Queue
 from typing import Any, Callable, Coroutine, Dict, Optional, cast
 from datetime import date
-from aiohttp import ClientSession, ClientTimeout
+from aiohttp import ClientSession, ClientTimeout, ClientResponse
 from aiohttp_retry import RetryClient, ExponentialRetry
 
 import prefect
@@ -42,6 +42,14 @@ _HEADERS: Dict[str, str] = {"X-Requested-With": "holi"}
 _STOP_DOC = object()
 # Retry on all statuses except 200
 _RETRY_STATUSES = {x for x in range(100, 600) if x != 200}
+
+
+async def _check_status_for_retry(response: ClientResponse) -> bool:
+    logger.info("Check for retry: {response.status} {response.status != 200} {response.headers.get('Retry-After')}")
+    return response.status != 200
+
+
+_RETRY_OPTIONS = ExponentialRetry(statuses=_RETRY_STATUSES, evaluate_response_callback=_check_status_for_retry)
 
 
 def config() -> CrawlerConfig:
@@ -136,7 +144,8 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
             else:
                 async with ClientSession(timeout=ClientTimeout(total=300, sock_connect=10)) as session:
                     retry_client = RetryClient(
-                        client_session=session, retry_options=ExponentialRetry(statuses=_RETRY_STATUSES)
+                        client_session=session,
+                        retry_options=_RETRY_OPTIONS,
                     )
                     for project in projects_page.get("data"):
                         document_count += 1
@@ -154,7 +163,7 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
             headers=_HEADERS,
             parallelism=1,
             stop_page=_STOP_DOC,
-            retry_options=ExponentialRetry(statuses=_RETRY_STATUSES),
+            retry_options=_RETRY_OPTIONS,
         ).crawl()
         return document_count
 
