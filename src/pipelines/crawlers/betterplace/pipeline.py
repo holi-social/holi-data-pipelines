@@ -154,6 +154,7 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
             headers=_HEADERS,
             parallelism=1,
             stop_page=_STOP_DOC,
+            retry_options=ExponentialRetry(statuses=_RETRY_STATUSES),
         ).crawl()
         return document_count
 
