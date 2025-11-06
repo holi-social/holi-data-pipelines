@@ -57,7 +57,7 @@ def config() -> CrawlerConfig:
 
 
 def projects_url() -> str:
-    return f"{config().api_url}/projects.json"
+    return f"{config().api_url}/projects.json?facets=completed:false|closed:false|prohibit_donations:false"
 
 
 def categories_url(project_id: int) -> str:
