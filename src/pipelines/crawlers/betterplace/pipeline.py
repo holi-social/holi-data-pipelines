@@ -45,7 +45,7 @@ _RETRY_STATUSES = {x for x in range(100, 600) if x != 200}
 
 
 async def _check_status_for_retry(response: ClientResponse) -> bool:
-    logger.info("Check for retry: {response.status} {response.status != 200} {response.headers.get('Retry-After')}")
+    logger.info(f"Check for retry: {response.status} {response.status != 200} {response.headers.get('Retry-After')}")
     return response.status != 200
 
 
