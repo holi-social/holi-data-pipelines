@@ -6,7 +6,7 @@ from typing import Any, Callable, Coroutine, Dict, Optional, cast
 from datetime import date
 from aiohttp import ClientSession, ClientTimeout, ClientResponse
 from aiohttp_retry import RetryClient, ExponentialRetry
-from tenacity import retry, stop_after_attempt
+from tenacity import retry, stop_after_attempt, wait_exponential_jitter
 
 import prefect
 from prefect import task, flow
@@ -107,7 +107,7 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
             nonlocal document_count
 
             # we need to perform sub requests for fetching more detail information
-            @retry(stop=stop_after_attempt(max_attempt_number=_MAX_RETRY_ATTEMPTS))
+            @retry(stop=stop_after_attempt(max_attempt_number=_MAX_RETRY_ATTEMPTS), wait=wait_exponential_jitter())
             async def fetch_categories(retry_client: RetryClient, project: Any) -> Any:
                 async with retry_client.get(categories_url(project["id"])) as response:
                     response_json = await response.json()
@@ -116,7 +116,7 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
 
             # pragmatically picking only selected texts in English instead of the whole document as only they are being
             # used in the data pipeline downstream
-            @retry(stop=stop_after_attempt(max_attempt_number=_MAX_RETRY_ATTEMPTS))
+            @retry(stop=stop_after_attempt(max_attempt_number=_MAX_RETRY_ATTEMPTS), wait=wait_exponential_jitter())
             async def fetch_en_texts(retry_client: RetryClient, project: Any) -> Any:
                 async with retry_client.get(project_en_url(project["id"])) as response:
                     response_json = await response.json()
@@ -132,7 +132,7 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
 
             # pragmatically picking only carrier_url instead of the full carrier object as only the URL is being used
             # in the data pipeline downstream
-            @retry(stop=stop_after_attempt(max_attempt_number=_MAX_RETRY_ATTEMPTS))
+            @retry(stop=stop_after_attempt(max_attempt_number=_MAX_RETRY_ATTEMPTS), wait=wait_exponential_jitter())
             async def fetch_carrier_url(retry_client: RetryClient, project: Any) -> Any:
                 carrier_links = project.get("carrier", {}).get("links")
                 carrier_details_url = get_url_with_relation(carrier_links, "self")

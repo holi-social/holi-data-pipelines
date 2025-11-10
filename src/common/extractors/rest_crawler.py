@@ -2,7 +2,7 @@ import asyncio
 from dataclasses import dataclass
 from typing import Any, Callable, Optional, Awaitable, Iterable
 from urllib.parse import urlencode
-from tenacity import retry, stop_after_attempt
+from tenacity import retry, stop_after_attempt, wait_exponential_jitter
 
 import prefect
 from aiohttp import ClientSession, ClientTimeout
@@ -63,7 +63,7 @@ class RestCrawler:
         self.timeout = timeout
         self.log_fn = log_function
 
-    @retry(stop=stop_after_attempt(max_attempt_number=_MAX_RETRY_ATTEMPTS))
+    @retry(stop=stop_after_attempt(max_attempt_number=_MAX_RETRY_ATTEMPTS), wait=wait_exponential_jitter())
     async def _fetch_total_entries(self, retry_client: RetryClient) -> int:
         if isinstance(self.get_full_count, int):
             return self.get_full_count
@@ -76,7 +76,7 @@ class RestCrawler:
                 data = await response.json()
                 return self.get_full_count(data)
 
-    @retry(stop=stop_after_attempt(max_attempt_number=_MAX_RETRY_ATTEMPTS))
+    @retry(stop=stop_after_attempt(max_attempt_number=_MAX_RETRY_ATTEMPTS), wait=wait_exponential_jitter())
     async def _fetch_documents(self, retry_client: RetryClient, paging_info: PagingInfo) -> list[Any]:
         params = self.get_params(paging_info)
         url_encoded_params = urlencode(params)
