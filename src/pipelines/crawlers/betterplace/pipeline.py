@@ -6,6 +6,7 @@ from typing import Any, Callable, Coroutine, Dict, Optional, cast
 from datetime import date
 from aiohttp import ClientSession, ClientTimeout, ClientResponse
 from aiohttp_retry import RetryClient, ExponentialRetry
+from tenacity import retry, stop_after_attempt
 
 import prefect
 from prefect import task, flow
@@ -42,14 +43,18 @@ _HEADERS: Dict[str, str] = {"X-Requested-With": "holi"}
 _STOP_DOC = object()
 # Retry on all statuses except 200
 _RETRY_STATUSES = {x for x in range(100, 600) if x != 200}
+_MAX_RETRY_ATTEMPTS = 3
 
 
 async def _check_status_for_retry(response: ClientResponse) -> bool:
-    logger.info(f"Check for retry: {response.status} {response.status != 200} {response.headers.get('Retry-After')}")
+    if response.status != 200:
+        logger.info(f"Check for retry header: {response.status} {response.headers.get('Retry-After')}")
     return response.status != 200
 
 
-_RETRY_OPTIONS = ExponentialRetry(statuses=_RETRY_STATUSES, evaluate_response_callback=_check_status_for_retry)
+_RETRY_OPTIONS = ExponentialRetry(
+    statuses=_RETRY_STATUSES, evaluate_response_callback=_check_status_for_retry, attempts=_MAX_RETRY_ATTEMPTS
+)
 
 
 def config() -> CrawlerConfig:
@@ -102,6 +107,7 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
             nonlocal document_count
 
             # we need to perform sub requests for fetching more detail information
+            @retry(stop=stop_after_attempt(max_attempt_number=_MAX_RETRY_ATTEMPTS))
             async def fetch_categories(retry_client: RetryClient, project: Any) -> Any:
                 async with retry_client.get(categories_url(project["id"])) as response:
                     response_json = await response.json()
@@ -110,6 +116,7 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
 
             # pragmatically picking only selected texts in English instead of the whole document as only they are being
             # used in the data pipeline downstream
+            @retry(stop=stop_after_attempt(max_attempt_number=_MAX_RETRY_ATTEMPTS))
             async def fetch_en_texts(retry_client: RetryClient, project: Any) -> Any:
                 async with retry_client.get(project_en_url(project["id"])) as response:
                     response_json = await response.json()
@@ -125,6 +132,7 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
 
             # pragmatically picking only carrier_url instead of the full carrier object as only the URL is being used
             # in the data pipeline downstream
+            @retry(stop=stop_after_attempt(max_attempt_number=_MAX_RETRY_ATTEMPTS))
             async def fetch_carrier_url(retry_client: RetryClient, project: Any) -> Any:
                 carrier_links = project.get("carrier", {}).get("links")
                 carrier_details_url = get_url_with_relation(carrier_links, "self")
@@ -142,7 +150,7 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
             if projects_page is _STOP_DOC:  # stop signal, last element
                 queue.put_nowait(_STOP_DOC)
             else:
-                async with ClientSession(timeout=ClientTimeout(total=300, sock_connect=10)) as session:
+                async with ClientSession(timeout=ClientTimeout(total=5 * 60, sock_connect=10)) as session:
                     retry_client = RetryClient(
                         client_session=session,
                         retry_options=_RETRY_OPTIONS,
@@ -161,7 +169,7 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
             skip_auto_headers=[],
             process_page=add_page_to_queue,
             headers=_HEADERS,
-            parallelism=1,
+            parallelism=2,
             stop_page=_STOP_DOC,
             retry_options=_RETRY_OPTIONS,
         ).crawl()
