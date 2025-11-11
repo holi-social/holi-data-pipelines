@@ -44,6 +44,7 @@ _STOP_DOC = object()
 # Retry on all statuses except 200
 _RETRY_STATUSES = {x for x in range(100, 600) if x != 200}
 _MAX_RETRY_ATTEMPTS = 3
+_TIMEOUT = ClientTimeout(total=600, sock_connect=10)
 
 
 async def _check_status_for_retry(response: ClientResponse) -> bool:
@@ -150,7 +151,7 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
             if projects_page is _STOP_DOC:  # stop signal, last element
                 queue.put_nowait(_STOP_DOC)
             else:
-                async with ClientSession(timeout=ClientTimeout(total=5 * 60, sock_connect=10)) as session:
+                async with ClientSession(timeout=_TIMEOUT) as session:
                     retry_client = RetryClient(
                         client_session=session,
                         retry_options=_RETRY_OPTIONS,
@@ -172,6 +173,7 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
             parallelism=2,
             stop_page=_STOP_DOC,
             retry_options=_RETRY_OPTIONS,
+            timeout=_TIMEOUT,
         ).crawl()
         return document_count
 
