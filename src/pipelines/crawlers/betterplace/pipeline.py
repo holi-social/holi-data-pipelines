@@ -47,15 +47,25 @@ _MAX_RETRY_ATTEMPTS = 3
 _TIMEOUT = ClientTimeout(total=600, sock_connect=10)
 
 
-async def _check_status_for_retry(response: ClientResponse) -> bool:
-    if response.status != 200:
-        logger.info(f"Check for retry header: {response.status} {response.headers.get('Retry-After')}")
-    return response.status != 200
+class ResponseAwareExponentialRetry(ExponentialRetry):
+    def __init__(self) -> None:
+        super().__init__(
+            statuses=_RETRY_STATUSES,
+            evaluate_response_callback=self._check_status_for_retry,
+            attempts=_MAX_RETRY_ATTEMPTS,
+        )
+
+    async def _check_status_for_retry(self, response: ClientResponse) -> bool:
+        return response.status != 200
+
+    def get_timeout(self, attempt: int, response: Optional[ClientResponse] = None) -> float:
+        if response is None or "Retry-After" not in response.headers:
+            return super().get_timeout(attempt, response)
+        logger.info(f"Got retry timeout header: {response.status} {response.headers.get('Retry-After')}")
+        return int(response.headers["Retry-After"])
 
 
-_RETRY_OPTIONS = ExponentialRetry(
-    statuses=_RETRY_STATUSES, evaluate_response_callback=_check_status_for_retry, attempts=_MAX_RETRY_ATTEMPTS
-)
+_RETRY_OPTIONS = ResponseAwareExponentialRetry()
 
 
 def config() -> CrawlerConfig:
@@ -100,6 +110,15 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
             "per_page": paging_info.size,
             "order": "id:DESC",
         }
+
+    def get_full_count(page: Any) -> int:
+        if "total_entries" not in page:
+            raise Exception("Invalid response for total count")
+        return page.get("total_entries")
+
+    def check_if_page_response_is_valid(page: Any) -> None:
+        if "data" not in page:
+            raise Exception("Invalid response")
 
     async def crawl_to_queue(queue: Queue[Any]) -> int:
         document_count = 0
@@ -166,11 +185,12 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
         await RestCrawler(
             url=projects_url(),
             get_params=projects_paging_params,
-            get_full_count=lambda page: page.get("total_entries", 0),
+            get_full_count=get_full_count,
             skip_auto_headers=[],
             process_page=add_page_to_queue,
+            check_if_page_response_is_valid=check_if_page_response_is_valid,
             headers=_HEADERS,
-            parallelism=2,
+            parallelism=5,
             stop_page=_STOP_DOC,
             retry_options=_RETRY_OPTIONS,
             timeout=_TIMEOUT,

@@ -14,6 +14,10 @@ logger = prefect.logging.get_logger()
 _MAX_RETRY_ATTEMPTS = 3
 
 
+def _always_succeeding_page_check(page: Any) -> None:
+    return
+
+
 @dataclass
 class PagingInfo:
     def __init__(self, offset: int, size: int):
@@ -41,6 +45,7 @@ class RestCrawler:
         get_full_count: Callable[[Any], int] | int,
         skip_auto_headers: Optional[Iterable[str]],
         process_page: Callable[[Any], Awaitable[None]],
+        check_if_page_response_is_valid: Callable[[Any], None] = _always_succeeding_page_check,
         page_size: int = 50,
         headers: Optional[dict[str, str]] = None,
         parallelism: int = 1,
@@ -56,6 +61,7 @@ class RestCrawler:
         self.page_size = page_size
         self.headers = headers
         self.process_page = process_page
+        self.check_if_page_response_is_valid = check_if_page_response_is_valid
         self.stop_page = stop_page
         # limit amount of parallel requests from the crawler
         self.semaphore = asyncio.Semaphore(parallelism)
@@ -93,6 +99,7 @@ class RestCrawler:
                 params=params,
             ) as response:
                 data = await response.json()
+                self.check_if_page_response_is_valid(data)
                 return data
 
     async def _fetch_and_process_chunk(self, session: RetryClient, paging_info: PagingInfo) -> None:
