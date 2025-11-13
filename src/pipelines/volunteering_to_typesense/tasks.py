@@ -1,10 +1,8 @@
 from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Any, List, Dict, Optional, cast, Tuple
-from urllib.parse import quote
 
-from prefect import task, State
-from prefect.states import Failed, Completed
+from prefect import task
 from prefect.variables import Variable
 from prefect.cache_policies import NONE
 
@@ -18,7 +16,8 @@ from src.common.typesense_client import TypesenseClient
 from src.common.external_data_pubsub_client import ExternalDataPubSubClient
 from src.common.variables import variable_value
 from src.pipelines.constants import LAST_INGESTION_TIMESTAMP_KEY, VOLUNTEERING_STATE_VARIABLE
-from src.pipelines.volunteering_to_typesense.typesense_doc_id import TypesenseDocId
+from src.pipelines.typesense import delete_typesense_documents
+from src.pipelines.volunteering_to_typesense.typesense_doc_id import typesense_doc_id
 from src.pipelines.volunteering_to_typesense.publish_typesense_changes import publish_volunteering_deletion
 from src.pipelines.volunteering_to_typesense.typesense_transformer import transform_row
 
@@ -63,70 +62,6 @@ def transform_data(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     transformed = [transform_row(row) for row in rows]
     logger.info(f"Transformed {len(rows)} rows of data")
     return transformed
-
-
-@task
-def delete_typesense_documents(
-    typesense_client: TypesenseClient,
-    typesense_collection_name: str,
-    document_ids_to_delete: list[TypesenseDocId],
-) -> bool:
-    """Deletes documents with the given IDs from the Typesense collection.
-
-    Args:
-        typesense_client (TypesenseClient): Typesense client
-        typesense_collection_name (str): name of the collection
-        document_ids_to_delete (list(TypesenseDocId)): IDs of documents to delete
-
-    Returns:
-        bool: True if deletion was successful, False otherwise
-    """
-    filter_str = f"id: [{', '.join([str(doc_id) for doc_id in document_ids_to_delete])}]"
-
-    try:
-        url_encoded_collection_name = quote(typesense_collection_name)
-        response = typesense_client.client.collections[url_encoded_collection_name].documents.delete(
-            {"filter_by": filter_str}
-        )
-
-        num_deleted = response.get("num_deleted")
-        deleted_all = num_deleted == len(document_ids_to_delete)
-
-        if deleted_all:
-            logger.info(f"Deleted {num_deleted} volunteering documents")
-        else:
-            missing = len(document_ids_to_delete) - num_deleted
-            logger.error(
-                f"Partial deletion: {num_deleted}/{len(document_ids_to_delete)} ({missing} missing). IDs: {document_ids_to_delete}"
-            )
-        return True
-    except Exception as e:
-        logger.error(
-            f"Error deleting {len(document_ids_to_delete)} documents from Typesense: "
-            + str(e)
-            + "\nFailed document ids: "
-            + ",".join([str(doc_id) for doc_id in document_ids_to_delete])
-        )
-        return False
-
-
-@task
-def validate_collection(typesense_client: TypesenseClient, collection_name: str) -> State:
-    """Validate the new collection before switching the alias."""
-    # test a sample search
-    url_encoded_collection_name = quote(collection_name)
-    sample_search = typesense_client.client.collections[url_encoded_collection_name].documents.search(
-        {
-            "q": "*",
-            "query_by": "type",
-            "page": 1,
-            "per_page": 1,
-        }
-    )
-    if not sample_search["hits"]:
-        return Failed(message=f"No documents found for {collection_name}")
-
-    return Completed()
 
 
 def load_last_complete_ingestion_timestamp() -> datetime | None:
@@ -189,7 +124,7 @@ def diff_ingest(
     deletion_succeeded = True
     if changed_records.deleted:
         deleted_record_ids = [record["id"] for record in changed_records.deleted]
-        document_ids_to_delete = [TypesenseDocId(deleted_id) for deleted_id in deleted_record_ids]
+        document_ids_to_delete = [typesense_doc_id(deleted_id) for deleted_id in deleted_record_ids]
         deletion_succeeded = delete_typesense_documents(
             typesense_client, typesense_collection_name, document_ids_to_delete
         )

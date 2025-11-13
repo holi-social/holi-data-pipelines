@@ -18,11 +18,10 @@ from src.common.monitoring.metrics import report_number_of_processed_entities
 from src.common.typesense import extract_collection_name_from_schema
 from src.common.typesense_client import TypesenseClient, TypesenseClientConfig
 from src.pipelines.bigquery import volunteering_aktion_mensch_classified_enriched_partitioned
-from src.pipelines.typesense import schema_path
+from src.pipelines.typesense import schema_path, validate_collection
 from src.pipelines.constants import LAST_INGESTION_TIMESTAMP_KEY, AKTION_MENSCH_STATE_VARIABLE
 from src.common.external_data_pubsub_client import ExternalDataPubSubClient
 from src.pipelines.volunteering_to_typesense.tasks import (
-    validate_collection,
     diff_ingest,
 )
 
@@ -56,7 +55,7 @@ def aktion_mensch_to_typesense_ingest_updates_flow() -> State:
     """Flow to ingest Aktion Mensch volunteering opportunities into Typesense."""
     typesense_client = TypesenseClient(TypesenseClientConfig.from_env())
     pubsub_client = ExternalDataPubSubClient()
-    alias_name = extract_collection_name_from_schema(schema_path=schema_path)
+    alias_name = extract_collection_name_from_schema(schema_path=schema_path())
     active_collection = typesense_client.get_active_collection_name(alias_name)
 
     task_result = aktion_mensch_to_typesense_ingest_updates(

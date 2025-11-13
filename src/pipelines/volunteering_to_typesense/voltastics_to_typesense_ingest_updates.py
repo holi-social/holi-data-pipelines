@@ -19,9 +19,8 @@ from src.common.external_data_pubsub_client import ExternalDataPubSubClient
 from src.common.typesense import extract_collection_name_from_schema
 from src.common.typesense_client import TypesenseClient, TypesenseClientConfig
 from src.pipelines.bigquery import volunteering_voltastics_classified_enriched_partitioned
-from src.pipelines.typesense import schema_path
+from src.pipelines.typesense import schema_path, validate_collection
 from src.pipelines.volunteering_to_typesense.tasks import (
-    validate_collection,
     diff_ingest,
     store_last_complete_ingestion_timestamp,
     load_last_complete_ingestion_timestamp,
@@ -42,7 +41,7 @@ def voltastics_to_typesense_ingest_updates_flow() -> State:
     """
     typesense_client = TypesenseClient(TypesenseClientConfig.from_env())
     pubsub_client = ExternalDataPubSubClient()
-    alias_name = extract_collection_name_from_schema(schema_path=schema_path)
+    alias_name = extract_collection_name_from_schema(schema_path=schema_path())
     active_collection = typesense_client.get_active_collection_name(alias_name)
     task_result = voltastics_to_typesense_ingest_updates(
         typesense_client=typesense_client,

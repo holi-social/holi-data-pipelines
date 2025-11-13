@@ -33,7 +33,7 @@ logger = PipelineLogger(__name__)
 )
 def voltastics_to_typesense_ingest_by_ids_flow(ids: List[int], partition_date: date) -> State:
     typesense_client = TypesenseClient(TypesenseClientConfig.from_env())
-    alias_name = extract_collection_name_from_schema(schema_path=schema_path)
+    alias_name = extract_collection_name_from_schema(schema_path=schema_path())
     # ruff: noqa: S608
     bq_query = f"""
     SELECT *

@@ -138,7 +138,6 @@ resource "prefect_variable" "aktion_mensch_crawler_table" {
   }
 }
 
-
 resource "prefect_variable" "betterplace_api_url" {
   name  = "betterplace_api_url"
   value = "https://api.betterplace.org/de/api_v4"
@@ -147,6 +146,35 @@ resource "prefect_variable" "betterplace_api_url" {
 resource "prefect_variable" "aktion_mensch_api_url" {
   name  = "aktion_mensch_api_url"
   value = "https://service.aktion-mensch.de:443/api/holi-social/v1/freiwilligendatenbank/export/angebote"
+}
+
+# crawler/innnit
+resource "prefect_variable" "innnit_crawler_table" {
+  name = "innnit_crawler_table"
+  value = {
+    project = local.default_project
+    dataset = local.dataset_datalake
+    table   = google_bigquery_table.petitions_innnit_raw.table_id
+  }
+}
+
+resource "prefect_variable" "innnit_api_url" {
+  name  = "innnit_api_url"
+  value = "https://api.retool.com/v1/workflows/2f353567-b7c1-4301-8272-b50f888ce2aa/startTrigger"
+}
+
+resource "prefect_block" "innnit_api_key" {
+  name      = "innnit_api_key"
+  type_slug = "gcpsecret"
+
+  data = jsonencode({
+    "gcp_credentials" = {
+      "project" = "holi-shared"
+    }
+    "secret_name"    = "INNNIT_API_KEY"
+    "secret_version" = "latest"
+  })
+  depends_on = [null_resource.prefect_server_available]
 }
 
 resource "prefect_variable" "bigquery_datalake" {

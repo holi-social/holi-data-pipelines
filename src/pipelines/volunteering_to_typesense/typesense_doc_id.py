@@ -1,9 +1,5 @@
-from dataclasses import dataclass
+from src.pipelines.typesense import TypesenseDocId
 
 
-@dataclass
-class TypesenseDocId:
-    id: str
-
-    def __str__(self) -> str:
-        return f"volunteering_{self.id}"
+def typesense_doc_id(id: str) -> TypesenseDocId:
+    return TypesenseDocId("volunteering", id)

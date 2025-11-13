@@ -26,7 +26,7 @@ from src.pipelines.volunteering_to_typesense.voltastics_to_typesense_ingest_upda
 def voltastics_to_typesense_ingest_from_scratch_flow() -> State | int:
     typesense_client = TypesenseClient(TypesenseClientConfig.from_env())
     pubsub_client = ExternalDataPubSubClient()
-    alias_name = extract_collection_name_from_schema(schema_path=schema_path)
+    alias_name = extract_collection_name_from_schema(schema_path=schema_path())
     active_collection = typesense_client.get_active_collection_name(alias_name)
 
     return voltastics_to_typesense_ingest_updates(

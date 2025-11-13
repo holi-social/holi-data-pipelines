@@ -8,8 +8,16 @@ from prefect.deployments.schedules import FlexibleScheduleList
 from prefect.events import DeploymentTriggerTypes, TriggerTypes
 
 from src.common.variables import variable_value_as
+from src.pipelines.crawlers.innnit.pipeline import crawl_innnit
 from src.pipelines.donation_events.donation_events import donation_events_flow
 from src.pipelines.donation_updates.donation_updates import donation_updates_flow
+from src.pipelines.petitions_to_typesense.innnit_to_typesense_ingest_from_scratch import (
+    petitions_innnit_to_typesense_ingest_from_scratch_flow,
+)
+from src.pipelines.petitions_to_typesense.innnit_to_typesense_ingest_updates import (
+    petitions_innnit_to_typesense_ingest_updates_flow,
+)
+from src.pipelines.petitions_to_typesense.petitions_updates import petitions_updates_flow
 from src.pipelines.volunteering_to_typesense.aktion_mensch_to_typesense_ingest_from_scratch import (
     aktion_mensch_to_typesense_ingest_from_scratch_flow,
 )
@@ -204,6 +212,28 @@ def get_deployments() -> List[RunnerDeployment]:
             aktion_mensch_to_typesense_ingest_updates_flow,
             description="Diff ingestion of volunteering opportunities from Aktion Mensch into Typesense",
             job_variables_overrides={"memory": "4096Mi"},
+        ),
+        # -------------- PETITIONS --------------
+        deployment_for_flow(
+            crawl_innnit,
+            description="Crawls innn.it for petition data and ingests them into BigQuery",
+            job_variables_overrides={"memory": "1024Mi"},
+        ),
+        deployment_for_flow(
+            petitions_innnit_to_typesense_ingest_from_scratch_flow,
+            description="Full ingestion of petition data from Innnit into Typesense",
+            job_variables_overrides={"memory": "4096Mi"},
+        ),
+        deployment_for_flow(
+            petitions_innnit_to_typesense_ingest_updates_flow,
+            description="Diff ingestion of petition data from Innnit into Typesense",
+            job_variables_overrides={"memory": "4096Mi"},
+        ),
+        deployment_for_flow(
+            petitions_updates_flow,
+            description="Orchestrates crawling and updating typesense for petition data",
+            job_variables_overrides={"memory": "4096Mi"},
+            schedules=[cron_schedule("50 1 * * *") if environment() == "production" else cron_schedule("50 2 * * *")],
         ),
         # -------------- AGGREGATING FLOWS --------------
         deployment_for_flow(
