@@ -164,7 +164,7 @@ resource "prefect_variable" "innnit_api_url" {
 }
 
 resource "prefect_block" "innnit_api_key" {
-  name      = "innnit_api_key"
+  name      = "innnit-api-key"
   type_slug = "gcpsecret"
 
   data = jsonencode({

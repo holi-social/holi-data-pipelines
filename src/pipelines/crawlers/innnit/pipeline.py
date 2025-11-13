@@ -46,7 +46,7 @@ def config() -> CrawlerConfig:
 
 async def crawl(queue: asyncio.Queue[Any]) -> int:
     async def fetch_data() -> list[Petition]:
-        api_key = secret_value("innnit_api_key")
+        api_key = secret_value("innnit-api-key")
         if not api_key:
             raise ValueError("Missing innn.it API key")
 
