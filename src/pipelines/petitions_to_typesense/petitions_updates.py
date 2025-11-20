@@ -1,4 +1,4 @@
-from prefect import flow, State
+from prefect import flow, State, Completed, Failed
 from typing import cast
 
 from src.common.monitoring.flow import on_cancellation_hooks, on_completion_hooks, on_crashed_hooks, on_failure_hooks
@@ -20,7 +20,7 @@ def petitions_updates_flow() -> State:
 
     innnit_ingestion_result = cast(State, innnit_ingestion_result)
 
-    return innnit_ingestion_result.fresh_copy()
+    return Completed() if innnit_ingestion_result is None or innnit_ingestion_result.is_completed() else Failed()
 
 
 if __name__ == "__main__":
