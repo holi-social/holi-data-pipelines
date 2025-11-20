@@ -44,7 +44,9 @@ def petitions_innnit_to_typesense_ingest_updates(
     last_complete_ingestion_timestamp: datetime | None,
 ) -> State | int:
     table_name = petitions_innnit_raw()
-    latest_partition_timestamp = extract_latest_partition_timestamp_from_bigquery(table_name)
+    latest_partition_timestamp = extract_latest_partition_timestamp_from_bigquery(
+        table_name, partition_time_column_name="_PARTITIONTIME"
+    )
 
     if (
         last_complete_ingestion_timestamp
