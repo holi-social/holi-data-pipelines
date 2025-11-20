@@ -66,7 +66,10 @@ def extract_latest_partition_timestamp_from_bigquery(
 
 
 def extract_upserted_records_in_partitions(
-    table_name: str, new_partition_date: date, old_partition_date: Optional[date] = None
+    table_name: str,
+    new_partition_date: date,
+    old_partition_date: Optional[date] = None,
+    partition_time_column_name: str = VIEW_PARTITION_TIME_COLUMN_NAME,
 ) -> list[Dict[str, Any]]:
     """
     Extracts new or updated records in a BigQuery table by comparing
@@ -88,12 +91,12 @@ def extract_upserted_records_in_partitions(
     WITH old_partition AS (
         SELECT *
         FROM `{table_name}`
-        WHERE TIMESTAMP_TRUNC({VIEW_PARTITION_TIME_COLUMN_NAME}, DAY) = TIMESTAMP('{old_partition_date.strftime("%Y-%m-%d") if old_partition_date else "1970-01-01"}')
+        WHERE TIMESTAMP_TRUNC({partition_time_column_name}, DAY) = TIMESTAMP('{old_partition_date.strftime("%Y-%m-%d") if old_partition_date else "1970-01-01"}')
     ),
     new_partition AS (
         SELECT *
         FROM `{table_name}`
-        WHERE TIMESTAMP_TRUNC({VIEW_PARTITION_TIME_COLUMN_NAME}, DAY) = TIMESTAMP('{new_partition_date.strftime("%Y-%m-%d")}')
+        WHERE TIMESTAMP_TRUNC({partition_time_column_name}, DAY) = TIMESTAMP('{new_partition_date.strftime("%Y-%m-%d")}')
     ),
     new_or_updated_records AS (
         SELECT *
@@ -115,7 +118,10 @@ def extract_upserted_records_in_partitions(
 
 
 def extract_deleted_records_in_partitions(
-    table_name: str, new_partition_date: date, old_partition_date: Optional[date] = None
+    table_name: str,
+    new_partition_date: date,
+    old_partition_date: Optional[date] = None,
+    partition_time_column_name: str = VIEW_PARTITION_TIME_COLUMN_NAME,
 ) -> list[Dict[str, Any]]:
     """
     Extracts deleted records in a BigQuery table by comparing
@@ -135,11 +141,11 @@ def extract_deleted_records_in_partitions(
 
     old_partition_where_clause = (
         f"""
-      TIMESTAMP_TRUNC({VIEW_PARTITION_TIME_COLUMN_NAME}, DAY) = TIMESTAMP('{old_partition_date.strftime("%Y-%m-%d")}')
+      TIMESTAMP_TRUNC({partition_time_column_name}, DAY) = TIMESTAMP('{old_partition_date.strftime("%Y-%m-%d")}')
     """
         if old_partition_date
         else f"""
-      TIMESTAMP_TRUNC({VIEW_PARTITION_TIME_COLUMN_NAME}, DAY) < TIMESTAMP('{new_partition_date.strftime("%Y-%m-%d")}')
+      TIMESTAMP_TRUNC({partition_time_column_name}, DAY) < TIMESTAMP('{new_partition_date.strftime("%Y-%m-%d")}')
     """
     )
 
@@ -153,7 +159,7 @@ def extract_deleted_records_in_partitions(
     new_partition AS (
         SELECT *
         FROM `{table_name}`
-        WHERE TIMESTAMP_TRUNC({VIEW_PARTITION_TIME_COLUMN_NAME}, DAY) = TIMESTAMP('{new_partition_date.strftime("%Y-%m-%d")}')
+        WHERE TIMESTAMP_TRUNC({partition_time_column_name}, DAY) = TIMESTAMP('{new_partition_date.strftime("%Y-%m-%d")}')
     ),
     deleted_records AS (
         SELECT *

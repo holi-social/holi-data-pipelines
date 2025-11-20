@@ -76,12 +76,14 @@ def extract_changed_records(
         table_name,
         new_partition_date=latest_partition_date,
         old_partition_date=last_complete_ingestion_date,
+        partition_time_column_name="_PARTITIONTIME",
     )
 
     deleted = extract_deleted_records_in_partitions(
         table_name,
         new_partition_date=latest_partition_date,
         old_partition_date=last_complete_ingestion_date,
+        partition_time_column_name="_PARTITIONTIME",
     )
 
     return ChangedRecords(
