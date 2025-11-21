@@ -1,4 +1,5 @@
-from prefect import flow, State, Completed, Failed
+from prefect import flow, State
+from prefect.states import Completed, Failed
 from typing import cast
 
 from src.common.monitoring.flow import on_cancellation_hooks, on_completion_hooks, on_crashed_hooks, on_failure_hooks
