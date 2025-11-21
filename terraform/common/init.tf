@@ -8,7 +8,7 @@ terraform {
     }
     google-beta = {
       source  = "hashicorp/google-beta"
-      version = "6.41.0"
+      version = "7.12.0"
     }
   }
   backend "gcs" {
