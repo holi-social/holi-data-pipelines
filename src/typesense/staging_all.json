@@ -198,6 +198,13 @@
       "index": false
     },
     {
+      "name": "signatures",
+      "type": "int32",
+      "optional": true,
+      "sort": true,
+      "index": false
+    },
+    {
       "name": "summary_de",
       "type": "string",
       "optional": true,
