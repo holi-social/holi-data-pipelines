@@ -4,7 +4,7 @@ tool.uv.package = false
 name = "shared"
 version = "1.0.0"
 dependencies = [
-    "aiohttp==3.12.15",
+    "aiohttp==3.13.2",
     "aiohttp-retry==2.9.1",
     "beautifulsoup4==4.13.5",
     "google-cloud-aiplatform==1.129.0",
