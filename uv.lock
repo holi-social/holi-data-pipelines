@@ -609,19 +609,22 @@ wheels = [
 
 [[package]]
 name = "functions-framework"
-version = "3.8.3"
+version = "3.10.0"
 source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
 dependencies = [
     { name = "click" },
     { name = "cloudevents" },
     { name = "flask" },
     { name = "gunicorn", marker = "sys_platform != 'win32'" },
+    { name = "starlette" },
+    { name = "uvicorn" },
+    { name = "uvicorn-worker" },
     { name = "watchdog" },
     { name = "werkzeug" },
 ]
-sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/functions-framework/functions_framework-3.8.3.tar.gz", hash = "sha256:95827698469e3979518d52e32def2f11230465877fef32afd49045013b2a469c" }
+sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/functions-framework/functions_framework-3.10.0.tar.gz", hash = "sha256:b699d56308a986c118773b7102cf1a8d7740557c30196f282fe509102d3aae8a" }
 wheels = [
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/functions-framework/functions_framework-3.8.3-py3-none-any.whl", hash = "sha256:fd352272c02ee08b4a3445e234213e43fbdd350365d98e2cce13e1575490bffe" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/functions-framework/functions_framework-3.10.0-py3-none-any.whl", hash = "sha256:fbeb7f383b35ed4c4e2eac47f33a756fe9814aa0c43d2c4dbb07b1aac02560c1" },
 ]
 
 [[package]]
@@ -2061,7 +2064,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "functions-framework", specifier = "==3.8.3" },
+    { name = "functions-framework", specifier = "==3.10.0" },
     { name = "google-cloud-logging", specifier = "==3.12.1" },
     { name = "langchain", specifier = ">=0.3.27" },
     { name = "langchain-core", specifier = ">=0.3.74" },
@@ -2987,6 +2990,19 @@ dependencies = [
 sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/uvicorn/uvicorn-0.34.3.tar.gz", hash = "sha256:35919a9a979d7a59334b6b10e05d77c1d0d574c50e0fc98b8b1a0f165708b55a" }
 wheels = [
     { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/uvicorn/uvicorn-0.34.3-py3-none-any.whl", hash = "sha256:16246631db62bdfbf069b0645177d6e8a77ba950cfedbfd093acef9444e4d885" },
+]
+
+[[package]]
+name = "uvicorn-worker"
+version = "0.3.0"
+source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
+dependencies = [
+    { name = "gunicorn" },
+    { name = "uvicorn" },
+]
+sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/uvicorn-worker/uvicorn_worker-0.3.0.tar.gz", hash = "sha256:6baeab7b2162ea6b9612cbe149aa670a76090ad65a267ce8e27316ed13c7de7b" }
+wheels = [
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/uvicorn-worker/uvicorn_worker-0.3.0-py3-none-any.whl", hash = "sha256:ef0fe8aad27b0290a9e602a256b03f5a5da3a9e5f942414ca587b645ec77dd52" },
 ]
 
 [[package]]
