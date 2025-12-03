@@ -23,6 +23,6 @@ dev = [
     "pre-commit==4.2.0",
     "pydantic==2.11.7",
     "pytest==8.4.2",
-    "ruff==0.12.12",
+    "ruff==0.14.7",
     "types-pyfarmhash==0.4.0.20240902",
 ]
