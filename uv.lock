@@ -642,6 +642,11 @@ wheels = [
     { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/google-auth/google_auth-2.40.3-py2.py3-none-any.whl", hash = "sha256:1370d4593e86213563547f97a92752fc658456fe4514c809544f330fed45a7ca" },
 ]
 
+[package.optional-dependencies]
+requests = [
+    { name = "requests" },
+]
+
 [[package]]
 name = "google-auth-httplib2"
 version = "0.2.0"
@@ -657,7 +662,7 @@ wheels = [
 
 [[package]]
 name = "google-cloud-aiplatform"
-version = "1.97.0"
+version = "1.129.0"
 source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
 dependencies = [
     { name = "docstring-parser" },
@@ -674,9 +679,9 @@ dependencies = [
     { name = "shapely" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/google-cloud-aiplatform/google_cloud_aiplatform-1.97.0.tar.gz", hash = "sha256:01277ac5648abe7d2af688b123d7d050c1a34922e9f4297e51e44d165cb79b45" }
+sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/google-cloud-aiplatform/google_cloud_aiplatform-1.129.0.tar.gz", hash = "sha256:c53b9d6c529b4de2962b34425b0116f7a382a926b26e02c2196e372f9a31d196" }
 wheels = [
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/google-cloud-aiplatform/google_cloud_aiplatform-1.97.0-py2.py3-none-any.whl", hash = "sha256:4db9455308110b1e8c1b587bd3ff34449fa459fda45c4466b9b2d9ae259a7af6" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/google-cloud-aiplatform/google_cloud_aiplatform-1.129.0-py2.py3-none-any.whl", hash = "sha256:b0052143a1bc05894e59fc6f910e84c504e194fadf877f84fc790b38a2267739" },
 ]
 
 [[package]]
@@ -874,20 +879,21 @@ wheels = [
 
 [[package]]
 name = "google-genai"
-version = "1.20.0"
+version = "1.53.0"
 source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
 dependencies = [
     { name = "anyio" },
-    { name = "google-auth" },
+    { name = "google-auth", extra = ["requests"] },
     { name = "httpx" },
     { name = "pydantic" },
     { name = "requests" },
+    { name = "tenacity" },
     { name = "typing-extensions" },
     { name = "websockets" },
 ]
-sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/google-genai/google_genai-1.20.0.tar.gz", hash = "sha256:dccca78f765233844b1bd4f1f7a2237d9a76fe6038cf9aa72c0cd991e3c107b5" }
+sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/google-genai/google_genai-1.53.0.tar.gz", hash = "sha256:938a26d22f3fd32c6eeeb4276ef204ef82884e63af9842ce3eac05ceb39cbd8d" }
 wheels = [
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/google-genai/google_genai-1.20.0-py3-none-any.whl", hash = "sha256:ccd61d6ebcb14f5c778b817b8010e3955ae4f6ddfeaabf65f42f6d5e3e5a8125" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/google-genai/google_genai-1.53.0-py3-none-any.whl", hash = "sha256:65a3f99e5c03c372d872cda7419f5940e723374bb12a2f3ffd5e3e56e8eb2094" },
 ]
 
 [[package]]
@@ -2572,7 +2578,7 @@ requires-dist = [
     { name = "aiohttp", specifier = "==3.12.15" },
     { name = "aiohttp-retry", specifier = "==2.9.1" },
     { name = "beautifulsoup4", specifier = "==4.13.4" },
-    { name = "google-cloud-aiplatform", specifier = "==1.97.0" },
+    { name = "google-cloud-aiplatform", specifier = "==1.129.0" },
     { name = "ratelimit", specifier = "==2.2.1" },
     { name = "redis", specifier = "==6.4.0" },
     { name = "semver", specifier = "==3.0.4" },
