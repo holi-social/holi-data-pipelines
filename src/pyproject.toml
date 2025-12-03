@@ -25,7 +25,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "faker==37.4.3",
+    "faker==37.12.0",
     "mypy==1.16.1",
     "pre-commit==4.2.0",
     "pytest==8.4.2",
