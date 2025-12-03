@@ -1065,7 +1065,7 @@ dev = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "pre-commit", specifier = "==4.2.0" },
+    { name = "pre-commit", specifier = "==4.5.0" },
     { name = "ruff", specifier = "==0.14.7" },
 ]
 
@@ -1780,7 +1780,7 @@ wheels = [
 
 [[package]]
 name = "pre-commit"
-version = "4.2.0"
+version = "4.5.0"
 source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
 dependencies = [
     { name = "cfgv" },
@@ -1789,9 +1789,9 @@ dependencies = [
     { name = "pyyaml" },
     { name = "virtualenv" },
 ]
-sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/pre-commit/pre_commit-4.2.0.tar.gz", hash = "sha256:601283b9757afd87d40c4c4a9b2b5de9637a8ea02eaff7adc2d0fb4e04841146" }
+sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/pre-commit/pre_commit-4.5.0.tar.gz", hash = "sha256:dc5a065e932b19fc1d4c653c6939068fe54325af8e741e74e88db4d28a4dd66b" }
 wheels = [
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/pre-commit/pre_commit-4.2.0-py2.py3-none-any.whl", hash = "sha256:a009ca7205f1eb497d10b845e52c838a98b6cdd2102a6c8e4540e94ee75c58bd" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/pre-commit/pre_commit-4.5.0-py2.py3-none-any.whl", hash = "sha256:25e2ce09595174d9c97860a95609f9f852c0614ba602de3561e267547f2335e1" },
 ]
 
 [[package]]
@@ -2040,7 +2040,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "faker", specifier = "==37.12.0" },
-    { name = "pre-commit", specifier = "==4.2.0" },
+    { name = "pre-commit", specifier = "==4.5.0" },
     { name = "pydantic", specifier = "==2.11.10" },
     { name = "pytest", specifier = "==8.4.2" },
     { name = "ruff", specifier = "==0.14.7" },
@@ -2589,7 +2589,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "mypy", specifier = "==1.16.1" },
-    { name = "pre-commit", specifier = "==4.2.0" },
+    { name = "pre-commit", specifier = "==4.5.0" },
     { name = "pytest", specifier = "==8.4.2" },
     { name = "ruff", specifier = "==0.14.7" },
 ]
@@ -2717,7 +2717,7 @@ requires-dist = [
 dev = [
     { name = "faker", specifier = "==37.12.0" },
     { name = "mypy", specifier = "==1.16.1" },
-    { name = "pre-commit", specifier = "==4.2.0" },
+    { name = "pre-commit", specifier = "==4.5.0" },
     { name = "pytest", specifier = "==8.4.2" },
     { name = "ruff", specifier = "==0.14.7" },
     { name = "types-python-dateutil", specifier = "==2.9.0.20251115" },
