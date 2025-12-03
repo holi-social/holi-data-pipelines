@@ -2714,7 +2714,7 @@ dev = [
     { name = "pre-commit", specifier = "==4.2.0" },
     { name = "pytest", specifier = "==8.4.1" },
     { name = "ruff", specifier = "==0.12.12" },
-    { name = "types-python-dateutil", specifier = "==2.9.0.20250516" },
+    { name = "types-python-dateutil", specifier = "==2.9.0.20251115" },
     { name = "types-pyyaml", specifier = "==6.0.12.20250516" },
     { name = "types-requests", specifier = "==2.32.4.20250611" },
 ]
@@ -2793,11 +2793,11 @@ wheels = [
 
 [[package]]
 name = "types-python-dateutil"
-version = "2.9.0.20250516"
+version = "2.9.0.20251115"
 source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
-sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/types-python-dateutil/types_python_dateutil-2.9.0.20250516.tar.gz", hash = "sha256:13e80d6c9c47df23ad773d54b2826bd52dbbb41be87c3f339381c1700ad21ee5" }
+sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/types-python-dateutil/types_python_dateutil-2.9.0.20251115.tar.gz", hash = "sha256:8a47f2c3920f52a994056b8786309b43143faa5a64d4cbb2722d6addabdf1a58" }
 wheels = [
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/types-python-dateutil/types_python_dateutil-2.9.0.20250516-py3-none-any.whl", hash = "sha256:2b2b3f57f9c6a61fba26a9c0ffb9ea5681c9b83e69cd897c6b5f668d9c0cab93" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/types-python-dateutil/types_python_dateutil-2.9.0.20251115-py3-none-any.whl", hash = "sha256:9cf9c1c582019753b8639a081deefd7e044b9fa36bd8217f565c6c4e36ee0624" },
 ]
 
 [[package]]
