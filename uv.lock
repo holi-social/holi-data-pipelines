@@ -1796,7 +1796,7 @@ wheels = [
 
 [[package]]
 name = "prefect"
-version = "3.4.0"
+version = "3.4.25"
 source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
 dependencies = [
     { name = "aiosqlite" },
@@ -1828,6 +1828,7 @@ dependencies = [
     { name = "orjson" },
     { name = "packaging" },
     { name = "pathspec" },
+    { name = "pluggy" },
     { name = "prometheus-client" },
     { name = "pydantic" },
     { name = "pydantic-core" },
@@ -1835,27 +1836,26 @@ dependencies = [
     { name = "pydantic-settings" },
     { name = "python-dateutil" },
     { name = "python-slugify" },
-    { name = "python-socks" },
     { name = "pytz" },
     { name = "pyyaml" },
     { name = "readchar" },
     { name = "rfc3339-validator" },
     { name = "rich" },
     { name = "ruamel-yaml" },
+    { name = "semver" },
     { name = "sniffio" },
     { name = "sqlalchemy", extra = ["asyncio"] },
     { name = "toml" },
     { name = "typer" },
     { name = "typing-extensions" },
-    { name = "ujson" },
     { name = "uv" },
     { name = "uvicorn" },
     { name = "websockets" },
     { name = "whenever" },
 ]
-sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/prefect/prefect-3.4.0.tar.gz", hash = "sha256:ba0ba1eac388cb498e01216cc3c0036fcbe99909bb4beb78652ffa3051588a27" }
+sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/prefect/prefect-3.4.25.tar.gz", hash = "sha256:c12943e75f2dc3f06b5d1f4bd4fabf7cd10ffeca35d56a15ad7cff4890067f5a" }
 wheels = [
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/prefect/prefect-3.4.0-py3-none-any.whl", hash = "sha256:fabc51b289358492e1fe614aefec654eb15744f4224d47ff3eb7d026d3995c73" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/prefect/prefect-3.4.25-py3-none-any.whl", hash = "sha256:9dc8b443b354a06446d5e0b153584defb4da0d2882f7c96a1dd78cfa657a94ea" },
 ]
 
 [package.optional-dependencies]
@@ -1865,7 +1865,7 @@ gcp = [
 
 [[package]]
 name = "prefect-gcp"
-version = "0.6.7"
+version = "0.6.12"
 source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
 dependencies = [
     { name = "google-api-python-client" },
@@ -1875,9 +1875,9 @@ dependencies = [
     { name = "python-slugify" },
     { name = "tenacity" },
 ]
-sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/prefect-gcp/prefect_gcp-0.6.7.tar.gz", hash = "sha256:e3ac9be4660c34ed4a36dda0b6a8df06e82483ecbb5ebba73f4534028fe1863e" }
+sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/prefect-gcp/prefect_gcp-0.6.12.tar.gz", hash = "sha256:46edd75e68ca53ae91da60c621902b5dc064619c8251be39ff18f0765ab0c6c3" }
 wheels = [
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/prefect-gcp/prefect_gcp-0.6.7-py3-none-any.whl", hash = "sha256:36afe44e7bf87dff718e36831685864a548bf3e4c0a1b576405b899e36bab906" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/prefect-gcp/prefect_gcp-0.6.12-py3-none-any.whl", hash = "sha256:135ca4a18a1a2603936fe6c0b1a2c214ae38674ad2db1ad90e8095348e89922e" },
 ]
 
 [package.optional-dependencies]
@@ -2239,15 +2239,6 @@ dependencies = [
 sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/python-slugify/python-slugify-8.0.4.tar.gz", hash = "sha256:59202371d1d05b54a9e7720c5e038f928f45daaffe41dd10822f3907b937c856" }
 wheels = [
     { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/python-slugify/python_slugify-8.0.4-py2.py3-none-any.whl", hash = "sha256:276540b79961052b66b7d116620b36518847f52d5fd9e3a70164fc8c50faa6b8" },
-]
-
-[[package]]
-name = "python-socks"
-version = "2.7.1"
-source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
-sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/python-socks/python_socks-2.7.1.tar.gz", hash = "sha256:f1a0bb603830fe81e332442eada96757b8f8dec02bd22d1d6f5c99a79704c550" }
-wheels = [
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/python-socks/python_socks-2.7.1-py3-none-any.whl", hash = "sha256:2603c6454eeaeb82b464ad705be188989e8cf1a4a16f0af3c921d6dd71a49cec" },
 ]
 
 [[package]]
@@ -2700,8 +2691,8 @@ requires-dist = [
     { name = "opentelemetry-exporter-gcp-monitoring", specifier = "==1.9.0a0" },
     { name = "opentelemetry-resourcedetector-gcp", specifier = "==1.9.0a0" },
     { name = "phonenumbers", specifier = ">=9.0.10" },
-    { name = "prefect", extras = ["gcp"], specifier = "==3.4.0" },
-    { name = "prefect-gcp", extras = ["all-extras"], specifier = "==0.6.7" },
+    { name = "prefect", extras = ["gcp"], specifier = "==3.4.25" },
+    { name = "prefect-gcp", extras = ["all-extras"], specifier = "==0.6.12" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2.9" },
     { name = "pyarrow", specifier = ">=3.0.0" },
     { name = "pydantic", specifier = "==2.11.7" },
@@ -2879,24 +2870,6 @@ dependencies = [
 sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/tzlocal/tzlocal-5.3.1.tar.gz", hash = "sha256:cceffc7edecefea1f595541dbd6e990cb1ea3d19bf01b2809f362a03dd7921fd" }
 wheels = [
     { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/tzlocal/tzlocal-5.3.1-py3-none-any.whl", hash = "sha256:eb1a66c3ef5847adf7a834f1be0800581b683b5608e74f86ecbcef8ab91bb85d" },
-]
-
-[[package]]
-name = "ujson"
-version = "5.10.0"
-source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
-sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/ujson/ujson-5.10.0.tar.gz", hash = "sha256:b3cd8f3c5d8c7738257f1018880444f7b7d9b66232c64649f562d7ba86ad4bc1" }
-wheels = [
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/ujson/ujson-5.10.0-cp313-cp313-macosx_10_9_x86_64.whl", hash = "sha256:618efd84dc1acbd6bff8eaa736bb6c074bfa8b8a98f55b61c38d4ca2c1f7f287" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/ujson/ujson-5.10.0-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:38d5d36b4aedfe81dfe251f76c0467399d575d1395a1755de391e58985ab1c2e" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/ujson/ujson-5.10.0-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:67079b1f9fb29ed9a2914acf4ef6c02844b3153913eb735d4bf287ee1db6e557" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/ujson/ujson-5.10.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:d7d0e0ceeb8fe2468c70ec0c37b439dd554e2aa539a8a56365fd761edb418988" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/ujson/ujson-5.10.0-cp313-cp313-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:59e02cd37bc7c44d587a0ba45347cc815fb7a5fe48de16bf05caa5f7d0d2e816" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/ujson/ujson-5.10.0-cp313-cp313-musllinux_1_2_aarch64.whl", hash = "sha256:2a890b706b64e0065f02577bf6d8ca3b66c11a5e81fb75d757233a38c07a1f20" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/ujson/ujson-5.10.0-cp313-cp313-musllinux_1_2_i686.whl", hash = "sha256:621e34b4632c740ecb491efc7f1fcb4f74b48ddb55e65221995e74e2d00bbff0" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/ujson/ujson-5.10.0-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:b9500e61fce0cfc86168b248104e954fead61f9be213087153d272e817ec7b4f" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/ujson/ujson-5.10.0-cp313-cp313-win32.whl", hash = "sha256:4c4fc16f11ac1612f05b6f5781b384716719547e142cfd67b65d035bd85af165" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/ujson/ujson-5.10.0-cp313-cp313-win_amd64.whl", hash = "sha256:4573fd1695932d4f619928fd09d5d03d917274381649ade4328091ceca175539" },
 ]
 
 [[package]]
