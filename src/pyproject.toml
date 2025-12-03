@@ -12,7 +12,7 @@ dependencies = [
     "pyarrow>=3.0.0",
     "pydantic==2.11.10",
     "python-dateutil==2.9.0.post0",
-    "requests==2.32.4",
+    "requests==2.32.5",
     "trycast==1.2.1",
     "typing-extensions==4.15.0",
     "opentelemetry-resourcedetector-gcp==1.9.0a0",
