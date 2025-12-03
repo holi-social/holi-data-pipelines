@@ -7,7 +7,7 @@ dependencies = [
     "aiohttp==3.12.13",
     "aiohttp-retry==2.9.1",
     "beautifulsoup4==4.13.4",
-    "google-cloud-aiplatform==1.97.0",
+    "google-cloud-aiplatform==1.129.0",
     "ratelimit==2.2.1",
     "redis==6.4.0",
     "semver==3.0.4",
