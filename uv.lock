@@ -224,15 +224,15 @@ wheels = [
 
 [[package]]
 name = "beautifulsoup4"
-version = "4.13.5"
+version = "4.14.3"
 source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
 dependencies = [
     { name = "soupsieve" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/beautifulsoup4/beautifulsoup4-4.13.5.tar.gz", hash = "sha256:5e70131382930e7c3de33450a2f54a63d5e4b19386eab43a5b34d594268f3695" }
+sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/beautifulsoup4/beautifulsoup4-4.14.3.tar.gz", hash = "sha256:6292b1c5186d356bba669ef9f7f051757099565ad9ada5dd630bd9de5fa7fb86" }
 wheels = [
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/beautifulsoup4/beautifulsoup4-4.13.5-py3-none-any.whl", hash = "sha256:642085eaa22233aceadff9c69651bc51e8bf3f874fb6d7104ece2beb24b47c4a" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/beautifulsoup4/beautifulsoup4-4.14.3-py3-none-any.whl", hash = "sha256:0918bfe44902e6ad8d57732ba310582e98da931428d231a5ecb9e7c703a735bb" },
 ]
 
 [[package]]
@@ -2611,7 +2611,7 @@ dev = [
 requires-dist = [
     { name = "aiohttp", specifier = "==3.13.2" },
     { name = "aiohttp-retry", specifier = "==2.9.1" },
-    { name = "beautifulsoup4", specifier = "==4.13.5" },
+    { name = "beautifulsoup4", specifier = "==4.14.3" },
     { name = "google-cloud-aiplatform", specifier = "==1.129.0" },
     { name = "ratelimit", specifier = "==2.2.1" },
     { name = "redis", specifier = "==6.4.0" },
