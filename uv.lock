@@ -2348,7 +2348,7 @@ wheels = [
 
 [[package]]
 name = "requests"
-version = "2.32.4"
+version = "2.32.5"
 source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
 dependencies = [
     { name = "certifi" },
@@ -2356,9 +2356,9 @@ dependencies = [
     { name = "idna" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/requests/requests-2.32.4.tar.gz", hash = "sha256:27d0316682c8a29834d3264820024b62a36942083d52caf2f14c0591336d3422" }
+sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/requests/requests-2.32.5.tar.gz", hash = "sha256:dbba0bac56e100853db0ea71b82b4dfd5fe2bf6d3754a8893c3af500cec7d7cf" }
 wheels = [
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/requests/requests-2.32.4-py3-none-any.whl", hash = "sha256:27babd3cda2a6d50b30443204ee89830707d396671944c998b5975b031ac2b2c" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/requests/requests-2.32.5-py3-none-any.whl", hash = "sha256:2462f94637a34fd532264295e186976db0f5d453d1cdd31473c85a6a161affb6" },
 ]
 
 [[package]]
@@ -2706,7 +2706,7 @@ requires-dist = [
     { name = "pyarrow", specifier = ">=3.0.0" },
     { name = "pydantic", specifier = "==2.11.10" },
     { name = "python-dateutil", specifier = "==2.9.0.post0" },
-    { name = "requests", specifier = "==2.32.4" },
+    { name = "requests", specifier = "==2.32.5" },
     { name = "shared", virtual = "shared" },
     { name = "trycast", specifier = "==1.2.1" },
     { name = "typing-extensions", specifier = "==4.15.0" },
