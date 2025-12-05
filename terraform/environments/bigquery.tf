@@ -22,7 +22,7 @@ resource "google_bigquery_table" "location_cache" {
     { "name": "location", "type": "STRING", "mode": "REQUIRED"},
     { "name": "latitude", "type": "FLOAT", "mode": "NULLABLE"},
     { "name": "longitude", "type": "FLOAT", "mode": "NULLABLE"},
-    { "name": "created_at", "type": "TIMESTAMP", "mode": "NULLABLE", "defaultExpression": "CURRENT_TIMESTAMP()" }
+    { "name": "created_at", "type": "TIMESTAMP", "mode": "NULLABLE", "defaultValueExpression": "CURRENT_TIMESTAMP()" }
   ]
   EOF
 

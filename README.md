@@ -31,6 +31,12 @@ multiple, potentially interdependent projects):
 
 You need some tools installed: `uv`, `direnv`. See holi-meta/README.md for more information.
 
+The project uses uv workspaces. To sync and install dependencies for all workspaces you can run:
+
+```shell
+uv sync --all-packages
+```
+
 Since [prefect](#prefect) is not publicly available, but only via the GCP VPC, to execute terraform, we can
 make use of an SSH tunnel by following these steps (work for staging and production):
 
@@ -137,7 +143,7 @@ terraform init
 
 ## Running
 
-Now, you can run terraform ( in the corresponding repositories `terraform/common` and `terraform/environments` ) via
+Now, you can run terraform (in the corresponding repositories `terraform/common` and `terraform/environments`) via
 
 ```shell
 terraform plan

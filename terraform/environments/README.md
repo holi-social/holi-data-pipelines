@@ -10,6 +10,7 @@ Since (prefect)[#prefect] is nut publically available, but only via the GCP VPC,
   `127.0.0.1 prefect-server-staging.holi.internal prefect-server-production.holi.internal`
 * Before you execute any `terraform ...` command, execute, depending on environment (in a separate shell, and keep open), example for staging:
   `gcloud compute ssh --zone "europe-north1-a" prefect-server-staging-green --project "holi-shared" --tunnel-through-iap -- -L8420:localhost:8420`
+* Select the correct terraform with: `terraform workspace select staging|production`
 
 ## Prefect
 

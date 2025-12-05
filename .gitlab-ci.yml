@@ -176,7 +176,7 @@ pubsub_typesense_updater_production_deploy:
   interruptible: false
 
 .prefect_deploy:
-  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.4.0-python3.13"
+  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.4.25-python3.13"
   variables:
     ENVIRONMENT_ID: $CI_ENVIRONMENT_SLUG
   cache: !reference [ .uv_cache_ro_pipelines ]
@@ -189,7 +189,7 @@ pubsub_typesense_updater_production_deploy:
   resource_group: $ENVIRONMENT_ID
 
 .smoketest:
-  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.4.0-python3.13"
+  image: "europe-north1-docker.pkg.dev/holi-shared/docker-hub-remote/prefecthq/prefect:3.4.25-python3.13"
   cache: !reference [ .uv_cache_ro_pipelines ]
   before_script:
     - pip install --root-user-action ignore --disable-pip-version-check uv
