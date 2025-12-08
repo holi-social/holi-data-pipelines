@@ -8,7 +8,7 @@ dependencies = [
     "shared",
     "langdetect==1.0.9",
     "prefect-gcp[all-extras]==0.6.12",
-    "prefect[gcp]==3.4.25",
+    "prefect[gcp]==3.6.5",
     "pyarrow>=3.0.0",
     "pydantic==2.12.5",
     "python-dateutil==2.9.0.post0",
