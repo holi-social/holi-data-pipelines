@@ -61,8 +61,8 @@ class VolunteeringCommitmentDurationClassifier(CommitmentDurationClassifier[Volt
         self.logger.debug(f"[id={item_id}] raw time requirement response: {response}")
         return self._parse_and_validate_response(response)
 
-    @sleep_and_retry  # type: ignore[misc]
-    @limits(calls=MODEL_RATE_LIMIT_PER_MINUTE, period=60)  # type: ignore[misc]
+    @sleep_and_retry  # type: ignore[misc, untyped-decorator]
+    @limits(calls=MODEL_RATE_LIMIT_PER_MINUTE, period=60)  # type: ignore[misc, untyped-decorator]
     def _invoke_model(self, prompt: str) -> str:
         response = self.model.generate_content(prompt)
         return response.text
