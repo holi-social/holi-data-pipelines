@@ -704,7 +704,8 @@ resource "google_bigquery_table" "petitions_innnit_raw" {
     { "name": "tag", "type": "STRING", "mode": "NULLABLE" },
     { "name": "initiators", "type": "JSON", "mode": "NULLABLE" },
     { "name": "targets", "type": "JSON", "mode": "NULLABLE" },
-    { "name": "hash", "type": "STRING", "mode": "REQUIRED" }
+    { "name": "hash", "type": "STRING", "mode": "REQUIRED" },
+    { "name": "featuredImage", "type": "STRING", "mode": "NULLABLE" }
 ]
 EOF
 }
