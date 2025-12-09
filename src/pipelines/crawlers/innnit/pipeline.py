@@ -69,6 +69,7 @@ async def crawl(queue: asyncio.Queue[Any]) -> int:
             tag=petition["tag_title"],
             initiators=json.dumps(petition["initiatorNames"]),
             targets=json.dumps(petition["targetNames"]),
+            featuredImage=petition["featuredImage"],
         )
         hash = hash_row(row)
 

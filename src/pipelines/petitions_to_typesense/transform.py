@@ -20,6 +20,7 @@ class PetitionDoc(TypedDict):
     tag: str
     initiators: list[str]
     targets: list[str]
+    featuredImage: str
 
 
 def _parse_string_list(value: Any) -> list[str]:
@@ -61,6 +62,7 @@ def petition_to_doc(petition: PetitionRow) -> PetitionDoc:
         "tag": petition["tag"],
         "initiators": _parse_string_list(petition["initiators"]),
         "targets": _parse_string_list(petition["targets"]),
+        "featuredImage": petition["featuredImage"],
     }
 
 

@@ -13,6 +13,7 @@ class Petition(TypedDict):
     tag_title: str
     initiatorNames: list[str]
     targetNames: list[str]
+    featuredImage: str
 
 
 JsonStr: TypeAlias = str
@@ -28,6 +29,7 @@ class _UnhashedPetitionRow(TypedDict):
     tag: str
     initiators: JsonStr
     targets: JsonStr
+    featuredImage: str
 
 
 class PetitionRow(_UnhashedPetitionRow):
@@ -45,6 +47,7 @@ def hash_row(row: _UnhashedPetitionRow) -> str:
             str(row["petitionSuccessful"]),
             row["tag"],
             row["initiators"],
+            row["featuredImage"],
         ]
     )
 
