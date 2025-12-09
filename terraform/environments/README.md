@@ -18,7 +18,7 @@ Since (prefect)[#prefect] is nut publically available, but only via the GCP VPC,
 
 In ´prefect-server.tf`, we define a VM that hosts the prefect server. It runs with the data-pipeline service account. 
 
-First run, please execute:
+Before the first run, please execute:
 
 `terraform apply -target=google_compute_instance.prefect_server_green -target=google_dns_record_set.prefect_server_holi_internal`
 
@@ -26,7 +26,12 @@ Afterwards, the server is available and you can provision the prefect specific r
 
 `terraform apply`
 
-If you want to redeploy/re-setup the prefect server, please do
+If you want to redeploy the prefect server only, you can use:
+
+`terraform apply -target="google_compute_instance.prefect_server_green" --replace="google_compute_instance.prefect_server_green"`
+`terraform apply`
+
+If you want completely re-setup the prefect server, please do
 
 * `terraform destroy -target=google_compute_instance.prefect_server_green`
 * `terraform apply -target=google_compute_instance.prefect_server_green -target=google_dns_record_set.prefect_server_holi_internal`
