@@ -148,6 +148,7 @@ def _expected_task_ts_doc(
         "description_de": task_event_payload["description"],
         "description_en": task_event_payload["description"],
         "location": task_event_payload["location"],
+        # GeoJSON uses X (longitude), Y (latitude) order, we need to reverse it to match the lat, lng "standard"
         "location_lat_lng": [
             task_event_payload["geolocationGeoJSON"]["coordinates"][1],
             task_event_payload["geolocationGeoJSON"]["coordinates"][0],
