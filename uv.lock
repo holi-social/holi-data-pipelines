@@ -2966,7 +2966,7 @@ requires-dist = [
     { name = "python-dateutil", specifier = "==2.9.0.post0" },
     { name = "requests", specifier = "==2.32.5" },
     { name = "shared", virtual = "shared" },
-    { name = "trycast", specifier = "==1.2.1" },
+    { name = "trycast", specifier = "==1.3.0" },
     { name = "typing-extensions", specifier = "==4.15.0" },
     { name = "whenever", specifier = "==0.9.3" },
 ]
@@ -3024,11 +3024,11 @@ wheels = [
 
 [[package]]
 name = "trycast"
-version = "1.2.1"
+version = "1.3.0"
 source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
-sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/trycast/trycast-1.2.1.tar.gz", hash = "sha256:158b35facacefce78c0084a95a6ef12cd93be2d39d7d913d03218bae0c442ea1" }
+sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/trycast/trycast-1.3.0.tar.gz", hash = "sha256:09ba60415234b033bb80756db154056e95519edc35f4973a267c63e9e0d848c9" }
 wheels = [
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/trycast/trycast-1.2.1-py3-none-any.whl", hash = "sha256:1a4a18712d82bcc358c923df96901f503d172997d7f6bb819228a7822660ac44" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/trycast/trycast-1.3.0-py3-none-any.whl", hash = "sha256:e02f15c4e375b3b958017ba111a51dc0587756536f0228f4385e9548b69fae84" },
 ]
 
 [[package]]
