@@ -6,6 +6,7 @@ from typing import Any, Callable, Coroutine, Dict, Optional, cast
 from datetime import date
 from aiohttp import ClientSession, ClientTimeout, ClientResponse
 from aiohttp_retry import RetryClient, ExponentialRetry
+from codetiming import Timer
 from tenacity import retry, stop_after_attempt, wait_exponential_jitter
 
 import prefect
@@ -43,8 +44,8 @@ _HEADERS: Dict[str, str] = {"X-Requested-With": "holi"}
 _STOP_DOC = object()
 # Retry on all statuses except 200
 _RETRY_STATUSES = {x for x in range(100, 600) if x != 200}
-_MAX_RETRY_ATTEMPTS = 3
-_TIMEOUT = ClientTimeout(total=600, sock_connect=10)
+_MAX_RETRY_ATTEMPTS = 5
+_TIMEOUT = ClientTimeout(total=600, sock_connect=10)  # 10min
 
 
 class ResponseAwareExponentialRetry(ExponentialRetry):
@@ -113,12 +114,12 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
 
     def get_full_count(page: Any) -> int:
         if "total_entries" not in page:
-            raise Exception("Invalid response for total count")
+            raise Exception("Invalid response no total_entries")
         return page.get("total_entries")
 
     def check_if_page_response_is_valid(page: Any) -> None:
         if "data" not in page:
-            raise Exception("Invalid response")
+            raise Exception("Invalid response no data")
 
     async def crawl_to_queue(queue: Queue[Any]) -> int:
         document_count = 0
@@ -177,10 +178,14 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
                     )
                     for project in projects_page.get("data"):
                         document_count += 1
-                        project_with_categories = await fetch_categories(retry_client, project)
-                        project_with_carrier_url = await fetch_carrier_url(retry_client, project_with_categories)
-                        project_with_en_texts = await fetch_en_texts(retry_client, project_with_carrier_url)
-                        queue.put_nowait(project_with_en_texts)
+                        with Timer(
+                            text=(f"Fetching data for project {project['id']} took {{:0.4f}} seconds"),
+                            logger=logger.info,
+                        ):
+                            project_with_categories = await fetch_categories(retry_client, project)
+                            project_with_carrier_url = await fetch_carrier_url(retry_client, project_with_categories)
+                            project_with_en_texts = await fetch_en_texts(retry_client, project_with_carrier_url)
+                            queue.put_nowait(project_with_en_texts)
 
         await RestCrawler(
             url=projects_url(),
@@ -191,6 +196,7 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
             check_if_page_response_is_valid=check_if_page_response_is_valid,
             headers=_HEADERS,
             parallelism=5,
+            page_size=100,
             stop_page=_STOP_DOC,
             retry_options=_RETRY_OPTIONS,
             timeout=_TIMEOUT,
