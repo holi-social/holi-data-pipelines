@@ -20,7 +20,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "faker==38.2.0",
-    "pre-commit==4.5.0",
+    "pre-commit==4.5.1",
     "pydantic==2.12.5",
     "pytest==9.0.2",
     "ruff==0.14.9",
