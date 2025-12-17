@@ -726,7 +726,7 @@ wheels = [
 
 [[package]]
 name = "google-cloud-aiplatform"
-version = "1.131.0"
+version = "1.132.0"
 source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
 dependencies = [
     { name = "docstring-parser" },
@@ -743,9 +743,9 @@ dependencies = [
     { name = "shapely" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/google-cloud-aiplatform/google_cloud_aiplatform-1.131.0.tar.gz", hash = "sha256:9877cf620dfda19cd85aac242ef43a28fb7eca71230afdf6c5a19ea591ab8c73" }
+sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/google-cloud-aiplatform/google_cloud_aiplatform-1.132.0.tar.gz", hash = "sha256:345d113ffe2b6f705810453418dc75f3e0ad9354e499be75f6dac5f1464d30b4" }
 wheels = [
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/google-cloud-aiplatform/google_cloud_aiplatform-1.131.0-py2.py3-none-any.whl", hash = "sha256:de2b74d010d2223a5f7e21979b395ce50c4e4546dfae024ee3d0fdc7ea093ae8" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/google-cloud-aiplatform/google_cloud_aiplatform-1.132.0-py2.py3-none-any.whl", hash = "sha256:4e68673a61f6f5700f607fb35baf38015b06351175706fc25b6bc5f436741bd8" },
 ]
 
 [[package]]
@@ -2827,7 +2827,7 @@ requires-dist = [
     { name = "aiohttp", specifier = "==3.13.2" },
     { name = "aiohttp-retry", specifier = "==2.9.1" },
     { name = "beautifulsoup4", specifier = "==4.14.3" },
-    { name = "google-cloud-aiplatform", specifier = "==1.131.0" },
+    { name = "google-cloud-aiplatform", specifier = "==1.132.0" },
     { name = "ratelimit", specifier = "==2.2.1" },
     { name = "redis", specifier = "==7.1.0" },
     { name = "semver", specifier = "==3.0.4" },
