@@ -53,6 +53,7 @@ class RestCrawler:
         retry_options: Optional[RetryOptionsBase] = _default_retry,
         timeout: Optional[ClientTimeout] = _default_timeout,
         log_function: Callable[[str], None] = logger.info,
+        only_log_exceptions: bool = False,
     ):
         self.url = url
         self.get_params = get_params
@@ -68,6 +69,7 @@ class RestCrawler:
         self.retry_options = retry_options
         self.timeout = timeout
         self.log_fn = log_function
+        self.only_log_exceptions = only_log_exceptions
 
     @retry(stop=stop_after_attempt(max_attempt_number=_MAX_RETRY_ATTEMPTS), wait=wait_exponential_jitter())
     async def _fetch_total_entries(self, retry_client: RetryClient) -> int:
@@ -103,9 +105,14 @@ class RestCrawler:
                 return data
 
     async def _fetch_and_process_chunk(self, session: RetryClient, paging_info: PagingInfo) -> None:
-        async with self.semaphore:
-            page = await self._fetch_documents(session, paging_info)
-            await self.process_page(page)
+        try:
+            async with self.semaphore:
+                page = await self._fetch_documents(session, paging_info)
+                await self.process_page(page)
+        except Exception as e:  # catch any exception here to not beak processing of other pages
+            self.log_fn(f"Failed to process page #{paging_info.page_number()}: {e}")
+            if not self.only_log_exceptions:
+                raise e
 
     async def crawl(self) -> None:
         async with ClientSession(timeout=self.timeout, skip_auto_headers=self.skip_auto_headers) as session:

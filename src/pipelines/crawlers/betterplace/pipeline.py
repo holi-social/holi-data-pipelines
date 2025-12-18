@@ -196,10 +196,11 @@ def crawl() -> Callable[[Queue[Any]], Coroutine[Any, Any, int]]:
             check_if_page_response_is_valid=check_if_page_response_is_valid,
             headers=_HEADERS,
             parallelism=5,
-            page_size=100,
+            page_size=50,
             stop_page=_STOP_DOC,
             retry_options=_RETRY_OPTIONS,
             timeout=_TIMEOUT,
+            only_log_exceptions=True,
         ).crawl()
         return document_count
 
