@@ -98,7 +98,7 @@
         "type": "integer",
         "title": "Job Timeout",
         "default": 86400,
-        "maximum": 86400,
+        "maximum": 604800,
         "description": "Max allowed time duration the Job may be active before Cloud Run will actively try to mark it failed and kill associated containers (maximum of 86400 seconds, 1 day).",
         "exclusiveMinimum": 0
       },
