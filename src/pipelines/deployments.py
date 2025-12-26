@@ -135,12 +135,12 @@ def get_deployments() -> List[RunnerDeployment]:
         deployment_for_flow(
             crawl_betterplace,
             description="Crawls betterplace.org for charity projects and ingests them into BigQuery",
-            job_variables_overrides={"memory": "1024Mi"},
+            job_variables_overrides={"memory": "1024Mi", "timeout": "604800"},
         ),
         deployment_for_flow(
             donation_updates_flow,
             description="Orchestration flow to execute donation crawler and emit events",
-            job_variables_overrides={"memory": "2048Mi"},
+            job_variables_overrides={"memory": "2048Mi", "timeout": "604800"},
             schedules=[cron_schedule("0 0 * * *")] if environment() == "production" else None,
         ),
         deployment_for_flow(
