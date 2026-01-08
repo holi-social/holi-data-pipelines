@@ -694,16 +694,15 @@ wheels = [
 
 [[package]]
 name = "google-auth"
-version = "2.45.0"
+version = "2.47.0"
 source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
 dependencies = [
-    { name = "cachetools" },
     { name = "pyasn1-modules" },
     { name = "rsa" },
 ]
-sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/google-auth/google_auth-2.45.0.tar.gz", hash = "sha256:90d3f41b6b72ea72dd9811e765699ee491ab24139f34ebf1ca2b9cc0c38708f3" }
+sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/google-auth/google_auth-2.47.0.tar.gz", hash = "sha256:833229070a9dfee1a353ae9877dcd2dec069a8281a4e72e72f77d4a70ff945da" }
 wheels = [
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/google-auth/google_auth-2.45.0-py2.py3-none-any.whl", hash = "sha256:82344e86dc00410ef5382d99be677c6043d72e502b625aa4f4afa0bdacca0f36" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/google-auth/google_auth-2.47.0-py3-none-any.whl", hash = "sha256:c516d68336bfde7cf0da26aab674a36fedcf04b37ac4edd59c597178760c3498" },
 ]
 
 [package.optional-dependencies]
@@ -726,7 +725,7 @@ wheels = [
 
 [[package]]
 name = "google-cloud-aiplatform"
-version = "1.132.0"
+version = "1.133.0"
 source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
 dependencies = [
     { name = "docstring-parser" },
@@ -740,12 +739,11 @@ dependencies = [
     { name = "proto-plus" },
     { name = "protobuf" },
     { name = "pydantic" },
-    { name = "shapely" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/google-cloud-aiplatform/google_cloud_aiplatform-1.132.0.tar.gz", hash = "sha256:345d113ffe2b6f705810453418dc75f3e0ad9354e499be75f6dac5f1464d30b4" }
+sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/google-cloud-aiplatform/google_cloud_aiplatform-1.133.0.tar.gz", hash = "sha256:3a6540711956dd178daaab3c2c05db476e46d94ac25912b8cf4f59b00b058ae0" }
 wheels = [
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/google-cloud-aiplatform/google_cloud_aiplatform-1.132.0-py2.py3-none-any.whl", hash = "sha256:4e68673a61f6f5700f607fb35baf38015b06351175706fc25b6bc5f436741bd8" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/google-cloud-aiplatform/google_cloud_aiplatform-1.133.0-py2.py3-none-any.whl", hash = "sha256:dfc81228e987ca10d1c32c7204e2131b3c8d6b7c8e0b4e23bf7c56816bc4c566" },
 ]
 
 [[package]]
@@ -2772,33 +2770,6 @@ wheels = [
 ]
 
 [[package]]
-name = "shapely"
-version = "2.1.1"
-source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
-dependencies = [
-    { name = "numpy" },
-]
-sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/shapely/shapely-2.1.1.tar.gz", hash = "sha256:500621967f2ffe9642454808009044c21e5b35db89ce69f8a2042c2ffd0e2772" }
-wheels = [
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/shapely/shapely-2.1.1-cp313-cp313-macosx_10_13_x86_64.whl", hash = "sha256:3004a644d9e89e26c20286d5fdc10f41b1744c48ce910bd1867fdff963fe6c48" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/shapely/shapely-2.1.1-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:1415146fa12d80a47d13cfad5310b3c8b9c2aa8c14a0c845c9d3d75e77cb54f6" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/shapely/shapely-2.1.1-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:21fcab88b7520820ec16d09d6bea68652ca13993c84dffc6129dc3607c95594c" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/shapely/shapely-2.1.1-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:e5ce6a5cc52c974b291237a96c08c5592e50f066871704fb5b12be2639d9026a" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/shapely/shapely-2.1.1-cp313-cp313-musllinux_1_2_aarch64.whl", hash = "sha256:04e4c12a45a1d70aeb266618d8cf81a2de9c4df511b63e105b90bfdfb52146de" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/shapely/shapely-2.1.1-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:6ca74d851ca5264aae16c2b47e96735579686cb69fa93c4078070a0ec845b8d8" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/shapely/shapely-2.1.1-cp313-cp313-win32.whl", hash = "sha256:fd9130501bf42ffb7e0695b9ea17a27ae8ce68d50b56b6941c7f9b3d3453bc52" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/shapely/shapely-2.1.1-cp313-cp313-win_amd64.whl", hash = "sha256:ab8d878687b438a2f4c138ed1a80941c6ab0029e0f4c785ecfe114413b498a97" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/shapely/shapely-2.1.1-cp313-cp313t-macosx_10_13_x86_64.whl", hash = "sha256:0c062384316a47f776305ed2fa22182717508ffdeb4a56d0ff4087a77b2a0f6d" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/shapely/shapely-2.1.1-cp313-cp313t-macosx_11_0_arm64.whl", hash = "sha256:4ecf6c196b896e8f1360cc219ed4eee1c1e5f5883e505d449f263bd053fb8c05" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/shapely/shapely-2.1.1-cp313-cp313t-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:fb00070b4c4860f6743c600285109c273cca5241e970ad56bb87bef0be1ea3a0" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/shapely/shapely-2.1.1-cp313-cp313t-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:d14a9afa5fa980fbe7bf63706fdfb8ff588f638f145a1d9dbc18374b5b7de913" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/shapely/shapely-2.1.1-cp313-cp313t-musllinux_1_2_aarch64.whl", hash = "sha256:b640e390dabde790e3fb947198b466e63223e0a9ccd787da5f07bcb14756c28d" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/shapely/shapely-2.1.1-cp313-cp313t-musllinux_1_2_x86_64.whl", hash = "sha256:69e08bf9697c1b73ec6aa70437db922bafcea7baca131c90c26d59491a9760f9" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/shapely/shapely-2.1.1-cp313-cp313t-win32.whl", hash = "sha256:ef2d09d5a964cc90c2c18b03566cf918a61c248596998a0301d5b632beadb9db" },
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/shapely/shapely-2.1.1-cp313-cp313t-win_amd64.whl", hash = "sha256:8cb8f17c377260452e9d7720eeaf59082c5f8ea48cf104524d953e5d36d4bdb7" },
-]
-
-[[package]]
 name = "shared"
 version = "1.0.0"
 source = { virtual = "shared" }
@@ -2827,7 +2798,7 @@ requires-dist = [
     { name = "aiohttp", specifier = "==3.13.3" },
     { name = "aiohttp-retry", specifier = "==2.9.1" },
     { name = "beautifulsoup4", specifier = "==4.14.3" },
-    { name = "google-cloud-aiplatform", specifier = "==1.132.0" },
+    { name = "google-cloud-aiplatform", specifier = "==1.133.0" },
     { name = "ratelimit", specifier = "==2.2.1" },
     { name = "redis", specifier = "==7.1.0" },
     { name = "semver", specifier = "==3.0.4" },
