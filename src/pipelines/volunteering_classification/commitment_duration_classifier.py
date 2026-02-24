@@ -15,7 +15,7 @@ from shared.classifiers.commitment_duration_classifier import (
 from src.common.str_utils import shorten_str, remove_html
 from src.pipelines.volunteering_classification.voltastics_classification_input import VoltasticsClassificationInput
 
-MODEL_NAME = "gemini-2.0-flash-001"
+MODEL_NAME = "gemini-2.5-flash"
 MODEL_RATE_LIMIT_PER_MINUTE = 2000
 MODEL_INVOCATION_RETRY_ATTEMPTS = 3
 
