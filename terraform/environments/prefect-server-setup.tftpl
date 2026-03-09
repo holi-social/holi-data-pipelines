@@ -185,7 +185,7 @@ server {
 }
 EOF
 ln -fs /etc/nginx/sites-available/prefect-server /etc/nginx/sites-enabled/prefect-server
-rm /etc/nginx/sites-enabled/default
+rm -f /etc/nginx/sites-enabled/default
 systemctl reload nginx
 
 # prefect setup
