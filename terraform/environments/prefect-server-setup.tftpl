@@ -216,6 +216,9 @@ PREFECT_UI_API_URL = "http://${internal_domain}:${internal_port}/api"
 PREFECT_UI_URL = "http://${internal_domain}:${internal_port}/"
 PREFECT_API_DATABASE_CONNECTION_URL="postgresql+asyncpg://${database_username}:${database_password}@${database_host}:5432/${database_name}"
 PREFECT_SERVER_DATABASE_SQLALCHEMY_POOL_PRE_PING = "True"
+PREFECT_SERVER_DATABASE_SQLALCHEMY_POOL_SIZE = "5"
+PREFECT_SERVER_DATABASE_SQLALCHEMY_MAX_OVERFLOW = "10"
+PREFECT_SERVER_DATABASE_CONNECTION_TIMEOUT = "10"
 EOF
 
 cat << 'EOF' > /etc/systemd/system/prefect-server.service
@@ -229,6 +232,7 @@ Environment=VIRTUAL_ENV="/srv/prefect-server/.venv"
 Environment=PREFECT_HOME="/srv/prefect-server"
 Environment=PREFECT_PROFILES_PATH="/srv/prefect-server/profiles.toml"
 Restart=on-failure
+RestartSec=5
 WorkingDirectory=/srv/prefect-server
 ExecStart=/srv/prefect-server/.venv/bin/prefect server start
 ExecStop=/srv/prefect-server/.venv/bin/prefect server stop
@@ -237,7 +241,39 @@ ExecStop=/srv/prefect-server/.venv/bin/prefect server stop
 WantedBy=multi-user.target
 EOF
 
+cat << 'HEALTHCHECK_EOF' > /srv/prefect-server/healthcheck.sh
+#!/bin/bash
+if ! curl -sf --max-time 10 http://localhost:4200/api/health > /dev/null 2>&1; then
+  echo "$(date -Iseconds) Prefect health check failed, restarting service" | systemd-cat -t prefect-healthcheck -p warning
+  systemctl restart prefect-server
+fi
+HEALTHCHECK_EOF
+chmod +x /srv/prefect-server/healthcheck.sh
+
+cat << 'EOF' > /etc/systemd/system/prefect-healthcheck.service
+[Unit]
+Description=Prefect Server Health Check
+After=prefect-server.service
+
+[Service]
+Type=oneshot
+ExecStart=/srv/prefect-server/healthcheck.sh
+EOF
+
+cat << 'EOF' > /etc/systemd/system/prefect-healthcheck.timer
+[Unit]
+Description=Run Prefect health check every 60 seconds
+
+[Timer]
+OnBootSec=120
+OnUnitActiveSec=60
+
+[Install]
+WantedBy=timers.target
+EOF
+
 systemctl enable --now prefect-server
+systemctl enable --now prefect-healthcheck.timer
 
 prefect version
 
