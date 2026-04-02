@@ -152,13 +152,13 @@ def get_deployments() -> List[RunnerDeployment]:
         deployment_for_flow(
             classification_qc,
             description="Quality check to ensure that not too many classifications are failing",
-            schedules=[cron_schedule("00 7 * * *")],
+            schedules=[cron_schedule("00 7 * * *")] if environment() == "production" else None,
             job_variables_overrides={"memory": "1024Mi"},
         ),
         deployment_for_flow(
             typesense_qc_flow,
             description="Quality check for the state of replication of entities into Typesense",
-            schedules=[cron_schedule("00 7 * * *")],
+            schedules=[cron_schedule("00 7 * * *")] if environment() == "production" else None,
             job_variables_overrides={"memory": "1024Mi"},
         ),
         # -------------- VOLUNTEERING - VOLTASTICS --------------
@@ -233,13 +233,13 @@ def get_deployments() -> List[RunnerDeployment]:
             petitions_updates_flow,
             description="Orchestrates crawling and updating typesense for petition data",
             job_variables_overrides={"memory": "4096Mi"},
-            schedules=[cron_schedule("50 1 * * *") if environment() == "production" else cron_schedule("50 2 * * *")],
+            schedules=[cron_schedule("50 1 * * *")] if environment() == "production" else None,
         ),
         # -------------- AGGREGATING FLOWS --------------
         deployment_for_flow(
             volunteering_updates_flow,
             description="Orchestrates crawling, classification and enrichment and updating Typesense indexes for volunteering",
-            schedules=[cron_schedule("40 1 * * *") if environment() == "production" else cron_schedule("40 2 * * *")],
+            schedules=[cron_schedule("40 1 * * *")] if environment() == "production" else None,
             job_variables_overrides={"memory": "4096Mi"},
         ),
         deployment_for_flow(
