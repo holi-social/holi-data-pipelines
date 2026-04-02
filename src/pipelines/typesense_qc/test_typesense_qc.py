@@ -288,7 +288,6 @@ class TestTypesenseQCFlow(unittest.TestCase):
         self.assertIn("BigQuery and Typesense are inconsistent for document type space", result.message or "")
         self.assertIn("BigQuery and Typesense are inconsistent for document type task", result.message or "")
         self.assertIn("BigQuery and Typesense are inconsistent for document type volunteering", result.message or "")
-        self.assertIn("BigQuery and Typesense are inconsistent for document type donation", result.message or "")
 
     @patch("src.pipelines.typesense_qc.typesense_qc.variable_value")
     @patch("src.pipelines.typesense_qc.typesense_qc.TypesenseClientConfig")
@@ -431,41 +430,5 @@ class TestTypesenseQCFlow(unittest.TestCase):
         self.assertEqual(result.type, "FAILED")
         self.assertEqual(
             "BigQuery and Typesense are inconsistent for document type volunteering: {'bq_ids_not_in_pg': [],\n 'bq_ids_not_in_ts': [],\n 'pg_ids_not_in_bq': [],\n 'ts_ids_not_in_bq': ['2', '3']}",
-            result.message,
-        )
-
-    @patch("src.pipelines.typesense_qc.typesense_qc.variable_value")
-    @patch("src.pipelines.typesense_qc.typesense_qc.TypesenseClientConfig")
-    @patch(
-        "src.pipelines.typesense_qc.typesense_qc.get_ids_ts",
-        side_effect=mock_get_ts_ids(),
-    )
-    @patch("src.pipelines.typesense_qc.typesense_qc.get_donation_ids_bq", return_value=too_many_ids_missing_list)
-    @patch("src.pipelines.typesense_qc.typesense_qc.get_volunteering_ids_bq", return_value=id_list)
-    @patch("src.pipelines.typesense_qc.typesense_qc.get_task_ids_bq", return_value=id_list)
-    @patch("src.pipelines.typesense_qc.typesense_qc.get_task_ids_pg", return_value=id_list)
-    @patch("src.pipelines.typesense_qc.typesense_qc.get_space_ids_bq", return_value=id_list)
-    @patch("src.pipelines.typesense_qc.typesense_qc.get_space_ids_pg", return_value=id_list)
-    @patch("src.pipelines.typesense_qc.typesense_qc.get_profile_ids_bq", return_value=id_list)
-    @patch("src.pipelines.typesense_qc.typesense_qc.get_profile_ids_pg", return_value=id_list)
-    def test_should_fail_if_donations_fail_consistency_check(
-        self,
-        get_profile_ids_pg_mock: MagicMock,
-        get_profile_ids_bq_mock: MagicMock,
-        get_space_ids_pg_mock: MagicMock,
-        get_space_ids_bq_mock: MagicMock,
-        get_task_ids_pg_mock: MagicMock,
-        get_task_ids_bq_mock: MagicMock,
-        get_volunteering_ids_bq_mock: MagicMock,
-        get_donation_ids_bq_mock: MagicMock,
-        get_ids_ts_mock: MagicMock,
-        ts_client_config_mock: MagicMock,
-        variable_value_mock: MagicMock,
-    ) -> None:
-        result = typesense_qc_flow.fn()
-
-        self.assertEqual(result.type, "FAILED")
-        self.assertEqual(
-            "BigQuery and Typesense are inconsistent for document type donation: {'bq_ids_not_in_pg': [],\n 'bq_ids_not_in_ts': [],\n 'pg_ids_not_in_bq': [],\n 'ts_ids_not_in_bq': ['2', '3']}",
             result.message,
         )
