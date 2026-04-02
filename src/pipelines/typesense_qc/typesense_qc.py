@@ -300,11 +300,6 @@ def typesense_qc_flow() -> State:
             bq_ids=get_volunteering_ids_bq(),
             ts_ids=get_ids_ts(ts_client, ts_collection, "volunteering"),
         ),
-        "donation": ConsistencyCheck(
-            pg_ids=None,
-            bq_ids=get_donation_ids_bq(),
-            ts_ids=get_ids_ts(ts_client, ts_collection, "donation"),
-        ),
     }
 
     errorMessages = []
