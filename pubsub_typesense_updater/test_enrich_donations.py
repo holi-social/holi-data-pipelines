@@ -59,29 +59,18 @@ class TestEnrichDonations(unittest.TestCase):
 
         self.assertEqual(result, expected_text_input)
 
-    @patch("enrich_donations.get_client")
     @patch(
         "enrich_donations.invoke_llm_with_structured_output_cached",
         return_value=valid_topics_embedding_json,
     )
-    def test_should_create_topics_v2_embedding(self, llm_mock: MagicMock, langfuse_get_client_mock: MagicMock) -> None:
-        expected_prompt_template = (
-            "Here is a donation with title '{title}' and description '{description}', estimate the topic similarities!"
+    def test_should_create_topics_v2_embedding(self, llm_mock: MagicMock) -> None:
+        expected_prompt = (
+            f"Here is a donation project with title '{test_donation.title}' and decription '{normalized_description}'.\n"
+            "Estimate the similarity of the project to the given topics between -1 and 1 (-1 for not similar, 1 for similar)"
         )
-        expected_prompt = f"Here is a donation with title '{test_donation.title}' and description '{normalized_description}', estimate the topic similarities!"
-        langfuse_mock = MagicMock()
-        prompt_mock = MagicMock()
-        langfuse_get_client_mock.return_value = langfuse_mock
-        langfuse_mock.get_prompt.return_value = prompt_mock
-        prompt_mock.get_langchain_prompt.return_value = expected_prompt_template
 
         result = create_topics_v2_embedding_for_donation(test_donation)
 
-        langfuse_mock.get_prompt.assert_called_with(
-            "donations_topics_v2_embedding_prompt",
-            fallback="""Here is a donation project with title '{{title}}' and decription '{{description}}'.
-    Estimate the similarity of the project to the given topics between -1 and 1 (-1 for not similar, 1 for similar)""",
-        )
         llm_mock.assert_called_with(
             prompt=expected_prompt,
             output_json_schema=TopicEmbeddingJson.model_json_schema(),
@@ -91,21 +80,11 @@ class TestEnrichDonations(unittest.TestCase):
             valid_topics_embedding.model_dump_json(),
         )
 
-    @patch("enrich_donations.get_client")
     @patch(
         "enrich_donations.invoke_llm_with_structured_output_cached",
         return_value={"animal_welfare": 0},
     )
-    def test_should_raise_exception_for_invalid_topics_embedding(
-        self, llm_mock: MagicMock, langfuse_get_client_mock: MagicMock
-    ) -> None:
-        expected_prompt_template = "Here is a donation with title '{title}', estimate the topic similarities!"
-        langfuse_mock = MagicMock()
-        prompt_mock = MagicMock()
-        langfuse_get_client_mock.return_value = langfuse_mock
-        langfuse_mock.get_prompt.return_value = prompt_mock
-        prompt_mock.get_langchain_prompt.return_value = expected_prompt_template
-
+    def test_should_raise_exception_for_invalid_topics_embedding(self, llm_mock: MagicMock) -> None:
         with self.assertRaises(Exception) as ctx:
             create_topics_v2_embedding_for_donation(test_donation)
 
@@ -114,29 +93,18 @@ class TestEnrichDonations(unittest.TestCase):
             str(ctx.exception),
         )
 
-    @patch("enrich_donations.get_client")
     @patch(
         "enrich_donations.invoke_llm_with_structured_output_cached",
         return_value=valid_skills_embedding_json,
     )
-    def test_should_create_skills_v2_embedding(self, llm_mock: MagicMock, langfuse_get_client_mock: MagicMock) -> None:
-        expected_prompt_template = (
-            "Here is a donation with title '{title}' and description '{description}', estimate the skill similarities!"
+    def test_should_create_skills_v2_embedding(self, llm_mock: MagicMock) -> None:
+        expected_prompt = (
+            f"Here is a donation project with title '{test_donation.title}' and decription '{normalized_description}'.\n"
+            "Estimate the similarity of the project to the given skills between -1 and 1 (-1 for not similar, 1 for similar)"
         )
-        expected_prompt = f"Here is a donation with title '{test_donation.title}' and description '{normalized_description}', estimate the skill similarities!"
-        langfuse_mock = MagicMock()
-        prompt_mock = MagicMock()
-        langfuse_get_client_mock.return_value = langfuse_mock
-        langfuse_mock.get_prompt.return_value = prompt_mock
-        prompt_mock.get_langchain_prompt.return_value = expected_prompt_template
 
         result = create_skills_v2_embedding_for_donation(test_donation)
 
-        langfuse_mock.get_prompt.assert_called_with(
-            "donations_skills_v2_embedding_prompt",
-            fallback="""Here is a donation project with title '{{title}}' and decription '{{description}}'.
-    Estimate the similarity of the project to the given skills between -1 and 1 (-1 for not similar, 1 for similar)""",
-        )
         llm_mock.assert_called_with(
             prompt=expected_prompt,
             output_json_schema=SkillEmbeddingJson.model_json_schema(),
@@ -146,21 +114,11 @@ class TestEnrichDonations(unittest.TestCase):
             valid_skills_embedding.model_dump_json(),
         )
 
-    @patch("enrich_donations.get_client")
     @patch(
         "enrich_donations.invoke_llm_with_structured_output_cached",
         return_value={"animal_care": 0},
     )
-    def test_should_raise_exception_for_invalid_skills_embedding(
-        self, llm_mock: MagicMock, langfuse_get_client_mock: MagicMock
-    ) -> None:
-        expected_prompt_template = "Here is a donation, estimate the skill similarities!"
-        langfuse_mock = MagicMock()
-        prompt_mock = MagicMock()
-        langfuse_get_client_mock.return_value = langfuse_mock
-        langfuse_mock.get_prompt.return_value = prompt_mock
-        prompt_mock.get_langchain_prompt.return_value = expected_prompt_template
-
+    def test_should_raise_exception_for_invalid_skills_embedding(self, llm_mock: MagicMock) -> None:
         with self.assertRaises(Exception) as ctx:
             create_skills_v2_embedding_for_donation(test_donation)
 

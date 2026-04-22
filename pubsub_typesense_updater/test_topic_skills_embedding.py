@@ -9,7 +9,6 @@ from topics_skills_embedding import (
 
 class TestTopicSkillsEmbedding(unittest.TestCase):
     @patch("topics_skills_embedding.ChatVertexAI")
-    @patch("topics_skills_embedding.CallbackHandler")
     @patch(
         "os.environ",
         {
@@ -18,12 +17,10 @@ class TestTopicSkillsEmbedding(unittest.TestCase):
             "VERTEX_AI_RETRIES": 3,
         },
     )
-    def test_should_invoke_llm_correctly(self, callback_handler_mock, vertex_ai_mock):
+    def test_should_invoke_llm_correctly(self, vertex_ai_mock):
         # Setup
         expected_output = {"foo": "bar"}
         output_schema = TopicEmbeddingJson.model_json_schema()
-        langfuse_handler = MagicMock()
-        callback_handler_mock.return_value = langfuse_handler
         model_mock = MagicMock()
         model_mock.invoke.return_value = expected_output
         llm_mock = MagicMock()
@@ -46,7 +43,6 @@ class TestTopicSkillsEmbedding(unittest.TestCase):
             project="project",
             location="location",
             max_retries=3,
-            callbacks=[langfuse_handler],
         )
         llm_mock.with_structured_output.assert_called_with(output_schema, method="json_mode")
         model_mock.invoke.assert_called_with("Here is a donation with title 'Help students', calculate some topics!")

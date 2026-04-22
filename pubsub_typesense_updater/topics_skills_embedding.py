@@ -1,7 +1,6 @@
 import os
 
 from pydantic import BaseModel, Field
-from langfuse.langchain import CallbackHandler
 from typing import Dict, Any
 from langchain_google_vertexai import ChatVertexAI
 
@@ -117,13 +116,11 @@ def invoke_llm_with_structured_output_cached(
     :param model_name: the LLM models name
     :return: a dict conforming to the output schema
     """
-    langfuse_handler = CallbackHandler()
     llm = ChatVertexAI(
         model_name=model_name,
         project=os.getenv("VERTEX_AI_PROJECT"),
         location=os.getenv("VERTEX_AI_LOCATION"),
         max_retries=int(os.getenv("VERTEX_AI_RETRIES", 2)),
-        callbacks=[langfuse_handler],
     )
     model_with_structure = llm.with_structured_output(output_json_schema, method="json_mode")
     structured_output = model_with_structure.invoke(prompt)

@@ -7,7 +7,6 @@ from similarity_embedding import (
     SimilarityEmbedding,
     create_similarity_embedding,
 )
-from langfuse import get_client
 from langchain_core.prompts import PromptTemplate
 from topics_skills_embedding import (
     invoke_llm_with_structured_output_cached,
@@ -17,6 +16,12 @@ from topics_skills_embedding import (
 from typesense_document import TypesenseDocument, TypesenseDocumentType
 from shared.events import Donation, DonationLink, DonationPicture
 from typing import Optional, List
+
+TOPICS_V2_EMBEDDING_PROMPT_TEMPLATE = """Here is a donation project with title '{title}' and decription '{description}'.
+Estimate the similarity of the project to the given topics between -1 and 1 (-1 for not similar, 1 for similar)"""
+
+SKILLS_V2_EMBEDDING_PROMPT_TEMPLATE = """Here is a donation project with title '{title}' and decription '{description}'.
+Estimate the similarity of the project to the given skills between -1 and 1 (-1 for not similar, 1 for similar)"""
 
 
 def create_text_input_for_similarity_embedding_from_donation(donation: Donation) -> str:
@@ -39,12 +44,7 @@ def create_similarity_embedding_for_donation(donation: Donation) -> SimilarityEm
 
 def create_topics_v2_embedding_for_donation(donation: Donation) -> TopicEmbeddingJson:
     input = donation.model_dump()
-    langfuse = get_client()
-    fallback_prompt = """Here is a donation project with title '{{title}}' and decription '{{description}}'.
-    Estimate the similarity of the project to the given topics between -1 and 1 (-1 for not similar, 1 for similar)"""
-    prompt = langfuse.get_prompt("donations_topics_v2_embedding_prompt", fallback=fallback_prompt)
-    # Note: Langfuse uses double curly brackets for variables, while langchain uses single curly brackets
-    prompt_template = PromptTemplate.from_template(prompt.get_langchain_prompt())
+    prompt_template = PromptTemplate.from_template(TOPICS_V2_EMBEDDING_PROMPT_TEMPLATE)
     normalized_input = {
         key: normalize_text(str(input[key])) for key in prompt_template.input_variables if key in input
     }
@@ -60,12 +60,7 @@ def create_topics_v2_embedding_for_donation(donation: Donation) -> TopicEmbeddin
 
 def create_skills_v2_embedding_for_donation(donation: Donation):
     input = donation.model_dump()
-    langfuse = get_client()
-    fallback_prompt = """Here is a donation project with title '{{title}}' and decription '{{description}}'.
-    Estimate the similarity of the project to the given skills between -1 and 1 (-1 for not similar, 1 for similar)"""
-    prompt = langfuse.get_prompt("donations_skills_v2_embedding_prompt", fallback=fallback_prompt)
-    # Note: Langfuse uses double curly brackets for variables, while langchain uses single curly brackets
-    prompt_template = PromptTemplate.from_template(prompt.get_langchain_prompt())
+    prompt_template = PromptTemplate.from_template(SKILLS_V2_EMBEDDING_PROMPT_TEMPLATE)
     normalized_input = {
         key: normalize_text(str(input[key])) for key in prompt_template.input_variables if key in input
     }
