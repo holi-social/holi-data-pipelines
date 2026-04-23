@@ -56,7 +56,6 @@ resource "google_cloudfunctions2_function" "pubsub_typesense_updater" {
       REDIS_HOST                          = data.terraform_remote_state.holi_infra_state.outputs.redis_host_cmek_development
       REDIS_PORT                          = data.terraform_remote_state.holi_infra_state.outputs.redis_port_cmek_development
       REDIS_DB                            = 6 # Same for production and staging
-      LANGFUSE_HOST                       = "https://cloud.langfuse.com"
       CACHE_DEBUG                         = "True"
       VERTEX_AI_PROJECT                   = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
       VERTEX_AI_LOCATION                  = local.default_region
@@ -83,19 +82,6 @@ resource "google_cloudfunctions2_function" "pubsub_typesense_updater" {
       version    = "latest"
     }
 
-    secret_environment_variables {
-      key        = "LANGFUSE_SECRET_KEY"
-      project_id = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
-      secret     = "LANGFUSE_SECRET_KEY"
-      version    = "latest"
-    }
-
-    secret_environment_variables {
-      key        = "LANGFUSE_PUBLIC_KEY"
-      project_id = data.terraform_remote_state.holi_infra_state.outputs.shared_project_id
-      secret     = "LANGFUSE_PUBLIC_KEY"
-      version    = "latest"
-    }
   }
 
 
