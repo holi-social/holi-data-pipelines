@@ -23,5 +23,5 @@ dev = [
     "pydantic==2.12.5",
     "pytest==9.0.2",
     "ruff==0.14.14",
-    "types-pyfarmhash==0.4.0.20240902",
+    "types-pyfarmhash==0.4.0.20260408",
 ]

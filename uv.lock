@@ -2148,7 +2148,7 @@ dev = [
     { name = "pydantic", specifier = "==2.12.5" },
     { name = "pytest", specifier = "==9.0.2" },
     { name = "ruff", specifier = "==0.14.14" },
-    { name = "types-pyfarmhash", specifier = "==0.4.0.20240902" },
+    { name = "types-pyfarmhash", specifier = "==0.4.0.20260408" },
 ]
 
 [[package]]
@@ -2957,11 +2957,11 @@ wheels = [
 
 [[package]]
 name = "types-pyfarmhash"
-version = "0.4.0.20240902"
+version = "0.4.0.20260408"
 source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
-sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/types-pyfarmhash/types-pyfarmhash-0.4.0.20240902.tar.gz", hash = "sha256:6844405542f50048b0fa97fd2357fc6524532fc83de21d5696500c73c0189420" }
+sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/types-pyfarmhash/types_pyfarmhash-0.4.0.20260408.tar.gz", hash = "sha256:1e0480cd567d8b718d519598aa026a435a9b88235700df22d672922665666ea6" }
 wheels = [
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/types-pyfarmhash/types_pyfarmhash-0.4.0.20240902-py3-none-any.whl", hash = "sha256:e1c623b3856ead3de52418f0ae54563e7d0d8d840495a33427fbd0fcaf3ba5fd" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/types-pyfarmhash/types_pyfarmhash-0.4.0.20260408-py3-none-any.whl", hash = "sha256:d27264ad9382fe2b360cdaa557a44dee48a92e330014c5b99a894d50a1787e70" },
 ]
 
 [[package]]
