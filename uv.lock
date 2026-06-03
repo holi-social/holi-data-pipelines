@@ -636,7 +636,7 @@ wheels = [
 
 [[package]]
 name = "functions-framework"
-version = "3.10.0"
+version = "3.10.1"
 source = { registry = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/simple/" }
 dependencies = [
     { name = "click" },
@@ -649,9 +649,9 @@ dependencies = [
     { name = "watchdog" },
     { name = "werkzeug" },
 ]
-sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/functions-framework/functions_framework-3.10.0.tar.gz", hash = "sha256:b699d56308a986c118773b7102cf1a8d7740557c30196f282fe509102d3aae8a" }
+sdist = { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/functions-framework/functions_framework-3.10.1.tar.gz", hash = "sha256:e60174022fc1b293dd0a33f1c6894dabd44852c0d440a51e7defd198e8d05ca5" }
 wheels = [
-    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/functions-framework/functions_framework-3.10.0-py3-none-any.whl", hash = "sha256:fbeb7f383b35ed4c4e2eac47f33a756fe9814aa0c43d2c4dbb07b1aac02560c1" },
+    { url = "https://europe-north1-python.pkg.dev/holi-shared/pypi-remote/functions-framework/functions_framework-3.10.1-py3-none-any.whl", hash = "sha256:48e7fd752d32dfeb528d1c9bf5d95960b6f0bb392f2a4da689f4d3c7a82c1230" },
 ]
 
 [[package]]
@@ -2132,7 +2132,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "functions-framework", specifier = "==3.10.0" },
+    { name = "functions-framework", specifier = "==3.10.1" },
     { name = "google-cloud-logging", specifier = "==3.13.0" },
     { name = "langchain", specifier = ">=0.3.27" },
     { name = "langchain-core", specifier = ">=0.3.74" },
