@@ -1,2 +1,2 @@
-prefect[gcp]==3.6.5
-prefect-gcp[all_extras]==0.6.12
+prefect[gcp]==3.6.29
+prefect-gcp[all_extras]==0.6.20
